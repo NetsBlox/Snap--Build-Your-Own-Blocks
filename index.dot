@@ -71,6 +71,9 @@
         {{ } else { }}
         <script type="text/javascript" src="dist/app.min.js?v=1.28.1"></script>
         {{ } }}
+        <script type="text/javascript" src="https://cdn.babylonjs.com/babylon.js"></script>
+        <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+        <script src="https://cdn.babylonjs.com/Oimo.js"></script>
 
         <script type="text/javascript">
         {{ if (it.username) { }}
@@ -79,9 +82,13 @@
         {{ } }}
         </script>
         <script type="text/javascript" src="src/main.js"></script>
+
+        <script type="text/javascript" src="src/babylon.js"></script>
+
     </head>
     <body style="margin: 0;">
         <canvas id="world" tabindex="1" style="position: absolute;" ></canvas>
+        <canvas id="3dcanvas" style="position: absolute;" ></canvas>
     </body>
 {{ if (it.googleAnalyticsKey) { }}
     <script>
