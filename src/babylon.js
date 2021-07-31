@@ -103,6 +103,7 @@ const activateBabylon = async function () {
             }
         }
 
+        stage = world.children[0].children.find(c => c.name == 'Stage');
         if (stage.boundingBox().width() != canvas.width || stage.boundingBox().height() != canvas.height ) {
             resizeBabylonCanvas();
         }
