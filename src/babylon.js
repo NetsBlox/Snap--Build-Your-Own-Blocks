@@ -24,21 +24,26 @@ const activateBabylon = async function () {
     //await Ammo();
 
     // Parameters : name, position, scene
-    camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(0, 1.25, 2.5), scene);
+    camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(4, 10, -4), scene);
     camera.speed = 0.4;
     camera.minZ = 0.01;
 
     // Targets the camera to a particular position. In this case the scene origin
-    camera.setTarget(BABYLON.Vector3.Zero());
-
+    //camera.setTarget(BABYLON.Vector3.Zero());
+    
     // Attach the camera to the canvas
     camera.attachControl(canvas, true);
     
     light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), scene);
     
-    //// Make ground
-    //var ground = BABYLON.Mesh.CreateGround('ground1', 6, 6, 2, scene);
+    // Make ground
+    let groundSize = 8;
+    var ground = BABYLON.Mesh.CreateGround('ground_floor', groundSize, groundSize, 2, scene);
+    ground.position.x = groundSize / 2;
+    ground.position.z = -groundSize / 2;
+    ground.position.y = 2;
     
+    camera.setTarget(ground.position);
     
     // // scene.enablePhysics(new BABYLON.Vector3(0, -9.8, 0), new BABYLON.CannonJSPlugin());
     // // scene.getPhysicsEngine().setTimeStep(.05);
@@ -58,11 +63,13 @@ const activateBabylon = async function () {
                     if (bodiesInfo[label].image == 'parallax_robot') {
                         bodyMeshes[label] = addRobot().then(result => {
                             result.setPivotMatrix(BABYLON.Matrix.Translation(0, 1, 0), false);
+                            result.position.y = 0.15;
                             bodyMeshes[label] = result;
                         });
                     } else {
                         bodyMeshes[label] = addBlock(bodiesInfo[label].width / 100, bodiesInfo[label].height / 100).then(result => {
                             result.setPivotMatrix(BABYLON.Matrix.Translation(0, 1, 0), false);
+                            result.position.y = 1;
                             bodyMeshes[label] = result;
                         });
                     }
@@ -101,9 +108,9 @@ const activateBabylon = async function () {
         }
 
         // Limit camera
-        if (camera.position._y < 0.1) {
-            camera.position._y = 0.1;
-            camera.position._isDirty = true;
+        const cameraMinY = 0.1;
+        if (camera.position.y < cameraMinY) {
+            camera.position.y = cameraMinY;
         }
 
         canvas.style.left = stage.boundingBox().left() + 'px';
