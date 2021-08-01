@@ -124,6 +124,13 @@ const activateBabylon = async function () {
     window.addEventListener('resize', function(){
         engine.resize();
     });
+
+    setTimeout(() => {
+        // Enable VR if available
+        if ('getVRDisplays' in navigator || 'xr' in navigator){
+            scene.createDefaultVRExperience({ createDeviceOrientationCamera: false, useXR: true });
+        }
+    }, 1000);
 };
 
 const makePhysicsObject = (newMeshes, scene, scaling)=>{
