@@ -775,18 +775,22 @@ SyntaxElementMorph.prototype.setLabelColor = function (
     shadowOffset
 ) {
     this.children.forEach(morph => {
+        let textclr = textColor;
+        if (textclr.eq(WHITE)) textclr = morph.overrideWhite || WHITE;
+        else if (textclr.eq(BLACK)) textclr = morph.overrideBlack || BLACK;
+
         if (morph instanceof StringMorph && !morph.isProtectedLabel) {
             morph.shadowOffset = shadowOffset || morph.shadowOffset;
             morph.shadowColor = shadowColor || morph.shadowColor;
-            morph.setColor(textColor);
+            morph.setColor(textclr);
         } else if (morph instanceof MultiArgMorph
                 || morph instanceof ArgLabelMorph
                 || (morph instanceof SymbolMorph && !morph.isProtectedLabel)
                 || (morph instanceof InputSlotMorph
                     && morph.isReadOnly)) {
-            morph.setLabelColor(textColor, shadowColor, shadowOffset);
+            morph.setLabelColor(textclr, shadowColor, shadowOffset);
         } else if (morph.isLoop) { // C-shaped slot with loop arrow symbol
-            morph.loop().setLabelColor(textColor, shadowColor, shadowOffset);
+            morph.loop().setLabelColor(textclr, shadowColor, shadowOffset);
         }
     });
 };
@@ -1950,7 +1954,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             MorphicPreferences.isFlat ?
                     ZERO : this.embossing, // shadowOffset
             this.color.darker(this.labelContrast), // shadowColor
-            WHITE, // color
+            this.overrideWhite || WHITE, // color
             this.labelFontName // fontName
         );
 
@@ -2517,13 +2521,13 @@ BlockSymbolMorph.prototype.getRenderColor = function () {
     var block = this.parentThatIsA(BlockMorph);
     if (MorphicPreferences.isFlat) {
         if (this.isFading) {
-            return this.color.mixed(block.alpha, WHITE);
+            return this.color.mixed(block.alpha, this.overrideWhite || WHITE);
         }
-        if (this.color.eq(WHITE)) {
+        if (this.color.eq(this.overrideWhite || WHITE)) {
             return this.parent.alpha > 0.5 ? this.color
                 : block.color.solid().darker(Math.max(block.alpha * 200, 0.1));
         }
-        if (this.color.eq(BLACK)) {
+        if (this.color.eq(this.overrideBlack || BLACK)) {
             return this.parent.alpha > 0.5 ? this.color
                 : block.color.solid().darker(Math.max(block.alpha * 200, 0.1));
         }
@@ -2535,11 +2539,11 @@ BlockSymbolMorph.prototype.getRenderColor = function () {
             SpriteMorph.prototype.paletteColor
         );
     }
-    if (this.color.eq(BLACK)) {
+    if (this.color.eq(this.overrideBlack || BLACK)) {
         return block.alpha > 0.5 ? this.color
             : block.color.solid().lighter(Math.max(block.alpha * 200, 0.1));
     }
-    if (this.color.eq(WHITE)) {
+    if (this.color.eq(this.overrideWhite || WHITE)) {
         return this.parent.alpha > 0.5 ? this.color
             : block.color.solid().lighter(Math.max(block.alpha * 200, 0.1));
     }
@@ -4598,7 +4602,7 @@ BlockMorph.prototype.forceNormalColoring = function () {
     var clr = this.getCategoryColor(this.category);
     this.setColor(clr);
     this.setLabelColor(
-        WHITE,
+        this.overrideWhite || WHITE,
         clr.darker(this.labelContrast),
         MorphicPreferences.isFlat ? ZERO : this.embossing
     );
@@ -4632,13 +4636,13 @@ BlockMorph.prototype.fixLabelColor = function () {
         var clr = this.getCategoryColor(this.category);
         if (this.color.eq(clr)) {
             this.setLabelColor(
-                WHITE,
+                this.overrideWhite || WHITE,
                 clr.darker(this.labelContrast),
                 MorphicPreferences.isFlat ? null : this.embossing
             );
         } else {
             this.setLabelColor(
-                BLACK,
+                this.overrideBlack || BLACK,
                 clr.lighter(this.zebraContrast)
                     .lighter(this.labelContrast * 2),
                 MorphicPreferences.isFlat ? null : this.embossing.neg()
@@ -8971,7 +8975,7 @@ InputSlotMorph.prototype.init = function (
     this.constant = null;
 
     InputSlotMorph.uber.init.call(this, null, true);
-    this.color = WHITE;
+    this.color = this.overrideWhite || WHITE;
     this.add(contents);
     this.add(arrow);
     contents.isEditable = true;
@@ -9718,7 +9722,7 @@ InputSlotMorph.prototype.setChoices = function (dict, readonly) {
         if (!readonly) {
             cnts.shadowOffset = ZERO;
             cnts.shadowColor = null;
-            cnts.setColor(BLACK);
+            cnts.setColor(this.overrideBlack || BLACK);
         }
     }
     this.fixLayout();
@@ -9773,10 +9777,10 @@ InputSlotMorph.prototype.fixLayout = function () {
     contents.isEditable = (!this.isReadOnly);
     if (this.isReadOnly) {
         contents.disableSelecting();
-        contents.color = WHITE;
+        contents.color = this.overrideWhite || WHITE;
     } else {
         contents.enableSelecting();
-        contents.color = BLACK;
+        contents.color = this.overrideBlack || BLACK;
     }
 
     if (this.choices) {
@@ -10327,9 +10331,9 @@ InputSlotStringMorph.prototype.getRenderColor = function () {
         if (this.isEditable) {
             return this.color;
         }
-        return this.parent.alpha > 0.5 ? this.color : BLACK;
+        return this.parent.alpha > 0.5 ? this.color : this.overrideBlack || BLACK;
     }
-    return this.parent.alpha > 0.25 ? this.color : WHITE;
+    return this.parent.alpha > 0.25 ? this.color : this.overrideWhite || WHITE;
 };
 
 InputSlotStringMorph.prototype.getShadowRenderColor = function () {
@@ -11240,7 +11244,7 @@ TextSlotMorph.prototype.init = function (
     this.constant = null;
 
     InputSlotMorph.uber.init.call(this, null, null, null, null, true); // sil.
-    this.color = WHITE;
+    this.color = this.overrideWhite || WHITE;
     this.add(contents);
     this.add(arrow);
     contents.isEditable = true;

@@ -283,7 +283,7 @@ StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value, meta) 
             if (type.name === 'Enum') {
                 const choiceDict = {};
                 for (const v of type.params) choiceDict[v] = v;
-                return new HintInputSlotMorph(value || '', fieldname, false, choiceDict, false);
+                return new HintInputSlotMorph(value || '', fieldname, false, choiceDict, true);
             }
         }
 
@@ -475,14 +475,15 @@ function HintInputSlotMorph(text, hint, isNumeric, choiceDict, isReadOnly) {
     this.empty = true;
     InputSlotMorph.call(this, text, isNumeric, choiceDict, isReadOnly);
 
-    // If the StringMorph gets clicked on when empty, the hint text
-    // should be "ghostly"
-    this.contents().mouseClickLeft = function() {
-        if (self.isEmptySlot()) {
-            this.text = '';
-        }
-        StringMorph.prototype.mouseClickLeft.apply(this, arguments);
-    };
+    // If the StringMorph gets clicked on when empty, the hint text should be "ghostly"
+    if (!choiceDict) { // don't wipe out enum inputs
+        this.contents().mouseClickLeft = function() {
+            if (self.isEmptySlot()) {
+                this.text = '';
+            }
+            StringMorph.prototype.mouseClickLeft.apply(this, arguments);
+        };
+    }
 }
 
 HintInputSlotMorph.prototype.evaluate = function() {
@@ -492,18 +493,30 @@ HintInputSlotMorph.prototype.evaluate = function() {
     return InputSlotMorph.prototype.evaluate.call(this);
 };
 
+const WHITE_HINT = new Color(190, 190, 190);
+const BLACK_HINT = new Color(100, 100, 100);
 HintInputSlotMorph.prototype.setContents = function(value) {
-    var color = BLACK,
-        contents = this.contents();
+    const contents = this.contents();
+    let color;
 
-    // If empty, set to the hint text
     InputSlotMorph.prototype.setContents.apply(this, arguments);
-    this.empty = value === '';
-    if (this.isEmptySlot()) {  // Set the contents to the hint text
-        // Set the text to the hint text
+
+    this.overrideWhite = null;
+    this.overrideBlack = null;
+
+    // If empty, set contents to the hint text
+    this.empty = !value || value === '';
+    if (this.isEmptySlot()) {
         contents.text = this.hintText;
-        color = new Color(100, 100, 100);
+        if (this.isReadOnly) {
+            this.overrideWhite = WHITE_HINT;
+            this.overrideBlack = BLACK_HINT;
+        }
+        color = this.isReadOnly ? WHITE_HINT : BLACK_HINT;
+    } else {
+        color = this.isReadOnly ? WHITE : BLACK;
     }
+
     contents.fixLayout();
     contents.color = color;
     contents.rerender();
