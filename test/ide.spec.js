@@ -690,7 +690,7 @@ describe('ide', function() {
 
                 const api = new EmbeddedNetsBloxAPI(frame);
                 await api.addEventListener('test', deferred.resolve);
-                driver.ide().events.dispatchEvent('test', {someData: true});
+                driver.ide().events.dispatchEvent(new CustomEvent('test', {detail: {someData: true}}));
                 const event = await deferred.promise;
                 assert.equal(event.type, 'test');
                 assert(event.detail.someData);

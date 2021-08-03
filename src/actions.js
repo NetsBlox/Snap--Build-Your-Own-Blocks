@@ -3058,7 +3058,7 @@ ActionManager.prototype.afterActionApplied = function(action) {
     // a custom block)
 
     active.onSetActive();
-    ide.events.dispatchEvent('action', action);
+    ide.events.dispatchEvent(new CustomEvent('action', {detail: action}));
 };
 
 ActionManager.prototype.onMessage = function(msg) {

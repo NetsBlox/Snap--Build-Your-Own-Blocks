@@ -511,10 +511,6 @@ class Events extends EventTarget {
         this._listeners = {};
     }
 
-    dispatchEvent(type, data) {
-        super.dispatchEvent(new CustomEvent(type, {detail: data}));
-    }
-
     _registerListener(id, callback) {
         this._listeners[id] = callback;
     }
