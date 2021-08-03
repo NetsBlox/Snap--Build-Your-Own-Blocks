@@ -3058,13 +3058,7 @@ ActionManager.prototype.afterActionApplied = function(action) {
     // a custom block)
 
     active.onSetActive();
-    this.listeners.forEach(pair => {
-        const [source, origin] = pair;;
-        source.postMessage({
-            type: 'action',
-            data: action
-        }, origin);
-    });
+    ide.events.dispatchEvent('action', action);
 };
 
 ActionManager.prototype.onMessage = function(msg) {
