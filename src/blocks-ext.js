@@ -271,14 +271,12 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
 StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value, meta) {
     // Input slot is empty or has a string
     if (!value || typeof value === 'string') {
-        const baseTypes = getInputTypeMeta().baseTypes;
+        const typeMeta = getInputTypeMeta();
 
         // follow the base type chain to see if we can make a strongly typed slot
-        for (let type = (meta || {}).type; type; type = baseTypes[type.name]) {
+        for (let type = (meta || {}).type; type; type = (typeMeta[type.name] || {}).baseType) {
             if (type.name === 'Number') {
-                const v = new HintInputSlotMorph(value || '', fieldname, true, undefined, false);
-                v.setContents('');
-                return v;
+                return new HintInputSlotMorph(value || '', fieldname, true, undefined, false);
             }
             if (type.name === 'Enum') {
                 const choiceDict = {};
