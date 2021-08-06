@@ -6,10 +6,9 @@ var lastUpdateTime;
 var nextUpdateTime;
 var roomInfo;
 var roomID;
-
 var bodyMeshes = {};
 
-const geckosTest = function(){
+const connectToRoboScapeSim = function(){
     geckosSocket = geckos();
     geckosSocket.onConnect(e => {
         joinRoom('create');
@@ -67,7 +66,7 @@ const geckosTest = function(){
 };
 
 /**
- * Send message to join room
+ * Send message to join a room
  * @param {string} room
  * @param {string} env
  */
@@ -80,43 +79,24 @@ function joinRoom(room, env = '') {
     geckosSocket.emit('joinRoom', { roomID: room, env });
 }
 
+/**
+ * Import robot mesh and add it to scene
+ * @returns Robot mesh object
+ */
 const addRobot = async function () {
     let imported = await BABYLON.SceneLoader.ImportMeshAsync('', './src/', 'parallax_robot.gltf');
-
-    // let physicsRoot = makePhysicsObject(imported.meshes, scene, 1);
-    // physicsRoot.position.y += 1.5;
-
-    // let mesh = imported.meshes[1];
-
-    // var collidersVisible = true;
-    // var boxCollider = BABYLON.Mesh.CreateBox('box1', 0.3, scene);
-    // boxCollider.position.y = mesh.position._y;
-    // boxCollider.isVisible = collidersVisible;
-    
-    // // Create a physics root and add all children
-    // mesh.addChild(boxCollider);
-    // mesh.position.y += 1;
-
-    // // Enable physics on colliders first then physics root of the mesh
-    // boxCollider.physicsImpostor = new BABYLON.PhysicsImpostor(boxCollider, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 1 }, scene);
-    // mesh.physicsImpostor = new BABYLON.PhysicsImpostor(mesh, BABYLON.PhysicsImpostor.NoImpostor, {  
-    //     mass: 5,
-    //     friction: 0.5,
-    //     restitution: 0.5,
-    //     nativeOptions: {
-    //         noSleep: true,
-    //         move: true
-    //     }
-    // }, scene);
-    //
-    //return mesh;
-
     imported.meshes[0].scaling.scaleInPlace(2);
     return imported.meshes[0];
 };
 
-
+// Create update function for robots
 window.addEventListener('load', () => {
+    // Load geckos
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'src/geckos.io-client.1.7.2.min.js';
+    document.body.appendChild(script);
+
     updateLoopFunctions.push((frameTime) => {
         if (bodies) {
             // Show robots

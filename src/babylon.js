@@ -16,6 +16,13 @@ const resizeBabylonCanvas = function () {
 };
 
 const activateBabylon = async function () {
+
+    // Wait for Babylon to load
+    if (typeof BABYLON == 'undefined') {
+        setTimeout(activateBabylon, 200);
+        return;
+    }
+
     canvas = document.getElementById('3dcanvas');
     engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
     stage = world.children[0].children.find(c => c.name == 'Stage');
@@ -134,6 +141,28 @@ const addBlock = async function (width, height) {
 };
 
 window.addEventListener('load', () => {
+    // Create 3D canvas
+    document.querySelector('#world').insertAdjacentHTML('afterend', '<canvas id="3dcanvas" style="position: absolute; width: 0;" ><\/canvas>');
+
+    // Load Babylon
+    var babylonScripts = ['https://preview.babylonjs.com/babylon.js','https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js','https://preview.babylonjs.com/ammo.js','https://preview.babylonjs.com/cannon.js','https://preview.babylonjs.com/Oimo.js'];
+    var scriptPromises = [];
+
+    for (let file of babylonScripts) {
+        scriptPromises.push(new Promise((resolve, reject) => {
+            var script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = file;
+            script.async = false;
+            script.onload = resolve;
+            document.body.appendChild(script);
+        }));
+    }
+
     disableRetinaSupport(); // Need to find fix for this
-    setTimeout(activateBabylon, 200);
+
+    // Wait for scripts to load
+    Promise.all(scriptPromises).then(() => {
+        setTimeout(activateBabylon, 200);
+    });
 });
