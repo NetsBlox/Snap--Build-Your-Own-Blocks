@@ -291,5 +291,6 @@ function joinRoom(room, env = '') {
 }
 
 window.addEventListener('load', () => {
+    disableRetinaSupport(); // Need to find fix for this
     setTimeout(activateBabylon, 200);
 });
