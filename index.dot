@@ -78,6 +78,7 @@
         <script src="https://preview.babylonjs.com/Oimo.js"></script>
 
         <script src="src/geckos.io-client.1.7.2.min.js"></script>
+        <script type="text/javascript" src="src/roboscapesim.js"></script>
         
         <script type="text/javascript">
         {{ if (it.username) { }}
