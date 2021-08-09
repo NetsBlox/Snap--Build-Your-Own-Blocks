@@ -3,11 +3,8 @@
    world, Services, BLACK, SERVER_URL*/
 // Extensions to the Snap blocks
 
-let CACHED_TYPE_META = undefined;
 function getInputTypeMeta() {
-    if (CACHED_TYPE_META) return CACHED_TYPE_META;
-    CACHED_TYPE_META = JSON.parse(utils.getUrlSync(`${SERVER_URL}/services/input-types`));
-    return CACHED_TYPE_META;
+    return utils.getUrlSyncCached(`${SERVER_URL}/services/input-types`, x => JSON.parse(x));
 }
 
 function sortDict(dict) {
@@ -188,7 +185,7 @@ function StructInputSlotMorph(
     this.fields = [];
     this.fieldContent = [];
     this.getFieldNames = typeof fieldValues === 'string' ? this[fieldValues] : fieldValues || nop;
-    this.getFieldMeta = fieldMeta || function(){};
+    this.getFieldMeta = fieldMeta || nop;
 
     InputSlotMorph.call(this, value, isNumeric, choiceDict, isReadOnly);
     this.isStatic = true;
