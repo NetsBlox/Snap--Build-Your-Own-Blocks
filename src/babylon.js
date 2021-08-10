@@ -3,6 +3,8 @@ var engine;
 var stage;
 var scene;
 var camera;
+var ui;
+var vrHelper;
 
 var updateLoopFunctions = [];
 
@@ -83,6 +85,13 @@ const activateBabylon = async function () {
         canvas.style.left = stage.boundingBox().left() + 'px';
         canvas.style.top = stage.boundingBox().top() + 'px';
 
+        // Position VR helper button if it is initialized
+        if (vrHelper && vrHelper._btnVR) {
+            vrHelper._btnVR.style.position = 'absolute';
+            vrHelper._btnVR.style.left = (stage.boundingBox().left() + stage.boundingBox().width() - 85 ) + 'px';
+            vrHelper._btnVR.style.top = (stage.boundingBox().top() + 5 ) + 'px';
+        }
+
         scene.render();
     });
 
@@ -91,10 +100,13 @@ const activateBabylon = async function () {
         engine.resize();
     });
 
+    // Initialize UI texture
+    ui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI('UI');
+
     setTimeout(() => {
         // Enable VR if available
         if ('getVRDisplays' in navigator || 'xr' in navigator){
-            scene.createDefaultVRExperience({ createDeviceOrientationCamera: false, useXR: true });
+            vrHelper = scene.createDefaultVRExperience({ createDeviceOrientationCamera: false, useXR: true });
         }
     }, 1000);
 };
@@ -145,7 +157,7 @@ window.addEventListener('load', () => {
     document.querySelector('#world').insertAdjacentHTML('afterend', '<canvas id="3dcanvas" style="position: absolute; width: 0;" ><\/canvas>');
 
     // Load Babylon
-    var babylonScripts = ['https://preview.babylonjs.com/babylon.js','https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js','https://preview.babylonjs.com/ammo.js','https://preview.babylonjs.com/cannon.js','https://preview.babylonjs.com/Oimo.js'];
+    var babylonScripts = ['https://preview.babylonjs.com/babylon.js','https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js','https://preview.babylonjs.com/ammo.js','https://preview.babylonjs.com/cannon.js','https://preview.babylonjs.com/Oimo.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
     var scriptPromises = [];
 
     for (let file of babylonScripts) {
