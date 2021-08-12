@@ -32,7 +32,7 @@ const activateBabylon = async function () {
     scene = new BABYLON.Scene(engine);
     
     //enable Physics in the scene
-    //await Ammo();
+    await Ammo();
 
     // Parameters : name, position, scene
     camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(4, 10, -4), scene);
@@ -56,7 +56,7 @@ const activateBabylon = async function () {
     
     camera.setTarget(ground.position);
     
-    // // scene.enablePhysics(new BABYLON.Vector3(0, -9.8, 0), new BABYLON.CannonJSPlugin());
+    scene.enablePhysics(null, new BABYLON.AmmoJSPlugin());
     // // scene.getPhysicsEngine().setTimeStep(.05);
     // scene.enablePhysics(null, new BABYLON.OimoJSPlugin());
     // // scene.getPhysicsEngine().setMaxSteps(10);
