@@ -11,7 +11,7 @@ var bodyMeshes = {};
 const connectToRoboScapeSim = function(){
     geckosSocket = geckos();
     geckosSocket.onConnect(e => {
-        joinRoom('create');
+        
 
         // Handle incremental updates
         geckosSocket.on('update', data => {
@@ -64,6 +64,11 @@ const connectToRoboScapeSim = function(){
         });
     });
 };
+
+
+function newRoom() {
+    joinRoom('create');
+}
 
 /**
  * Send message to join a room
