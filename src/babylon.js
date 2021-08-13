@@ -8,6 +8,131 @@ var vrHelper;
 
 var updateLoopFunctions = [];
 
+CanvasMorph.prototype = new DialogBoxMorph();
+CanvasMorph.uber = DialogBoxMorph.prototype;
+CanvasMorph.id = 0;
+
+function CanvasMorph(title, url) {
+    this.init(title, url);
+}
+
+CanvasMorph.prototype.init = function(title = 'Canvas') {
+    var myself = this;
+
+    this.minWidth = 600;
+    this.minHeight = 300;
+    this.handle = new HandleMorph(this, null, null, 8, 8);
+
+    this.canvas = document.createElement('canvas');
+    this.canvas.style.position = 'relative';
+    canvas = this.canvas;
+    
+    this.loaded = false;
+
+    this.background = new Morph();
+    this.background.setColor(new Color(200, 200, 200));
+
+    CanvasMorph.uber.init.call(this);
+    this.add(this.background);
+    this.key = 'canvas' + CanvasMorph.id++;
+
+    this.labelString = title;
+    this.createLabel();
+    this.addButton('hide', 'Close');
+    this.rerender();
+    this.fixLayout();
+    this.rerender();
+};
+
+CanvasMorph.prototype.fixLayout = function() {
+    var th = fontHeight(this.titleFontSize) + this.titlePadding * 2;
+
+    this.bounds.setWidth(Math.max(this.minWidth, this.width()));
+    this.bounds.setHeight(Math.max(this.minHeight, this.height()));
+
+    this.background.setPosition(this.position().add(new Point(
+        this.padding,
+        th + this.padding
+    )));
+
+    if (this.label) {
+        this.label.setCenter(this.center());
+        this.label.setTop(this.top() + (th - this.label.height()) / 2);
+    }
+
+    if (this.buttons && (this.buttons.children.length > 0)) {
+        this.buttons.fixLayout();
+        this.bounds.setHeight(
+            this.height()
+                    + this.buttons.height()
+                    + this.padding
+        );
+        this.bounds.setWidth(
+            Math.max(
+                this.width(),
+                this.buttons.width()
+                        + (2 * this.padding)
+            )
+        );
+        this.buttons.setCenter(this.center());
+        this.buttons.setBottom(this.bottom() - this.padding);
+    }
+
+    this.fixCanvasLayout();
+    this.handle.rerender();
+};
+
+
+CanvasMorph.prototype.fixCanvasLayout = function() {
+    var width = this.width() - 2 * this.padding,
+        bh = this.buttons ? this.buttons.height() : 0,
+        lh = this.label ? this.label.height() : 0,
+        height = this.height() - 4 * this.padding - bh - lh;
+
+    this.canvas.style.width = width + 'px';
+    this.canvas.style.height = height + 'px';
+    this.background.setExtent(new Point(width, height));
+};
+
+
+CanvasMorph.prototype.show = function() {
+    CanvasMorph.uber.show.call(this);
+    this.canvas.style.display = 'inline';
+};
+
+CanvasMorph.prototype.hide = function() {
+    CanvasMorph.uber.hide.call(this);
+    this.canvas.style.display = 'none';
+};
+
+CanvasMorph.prototype.justDropped = function() {
+    this.setCanvasPosition();
+};
+
+CanvasMorph.prototype.setCanvasPosition = function() {
+    var titleHeight = Math.floor(
+            fontHeight(this.titleFontSize) + this.titlePadding * 2,
+        ),
+        top = this.top() + titleHeight + this.padding,
+        left = this.left() + this.padding,
+        width = this.width() - 2*this.padding;
+
+    this.canvas.style.left = left + 'px';
+    this.canvas.style.top = top + 'px';
+    this.canvas.style.width = width + 'px';
+};
+
+CanvasMorph.prototype.popUp = function(world) {
+    document.body.appendChild(this.canvas);
+    CanvasMorph.uber.popUp.call(this, world);
+    this.setCanvasPosition();
+};
+
+CanvasMorph.prototype.destroy = function() {
+    this.canvas.remove();
+    CanvasMorph.uber.destroy.call(this);
+};
+
 const resizeBabylonCanvas = function () {
     // Size 3d canvas to overlay stage
     canvas.style.width = stage.boundingBox().width() + 'px';
@@ -19,13 +144,17 @@ const resizeBabylonCanvas = function () {
 
 const activateBabylon = async function () {
 
+    if (!canvas) {
+        return;
+    }
+
     // Wait for Babylon to load
     if (typeof BABYLON == 'undefined') {
         setTimeout(activateBabylon, 200);
         return;
     }
 
-    canvas = document.getElementById('3dcanvas');
+    //canvas = document.getElementById('3dcanvas');
     engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
     stage = world.children[0].children.find(c => c.name == 'Stage');
 
@@ -71,10 +200,10 @@ const activateBabylon = async function () {
             func(frameTime);
         }
 
-        stage = world.children[0].children.find(c => c.name == 'Stage');
-        if (stage.boundingBox().width() != canvas.width || stage.boundingBox().height() != canvas.height ) {
-            resizeBabylonCanvas();
-        }
+        // stage = world.children[0].children.find(c => c.name == 'Stage');
+        // if (stage.boundingBox().width() != canvas.width || stage.boundingBox().height() != canvas.height ) {
+        //     resizeBabylonCanvas();
+        // }
 
         // Limit camera
         const cameraMinY = 0.1;
@@ -82,8 +211,8 @@ const activateBabylon = async function () {
             camera.position.y = cameraMinY;
         }
 
-        canvas.style.left = stage.boundingBox().left() + 'px';
-        canvas.style.top = stage.boundingBox().top() + 'px';
+        // canvas.style.left = stage.boundingBox().left() + 'px';
+        // canvas.style.top = stage.boundingBox().top() + 'px';
 
         // Position VR helper button if it is initialized
         if (vrHelper && vrHelper._btnVR) {
@@ -154,7 +283,7 @@ const addBlock = async function (width, height) {
 
 window.addEventListener('load', () => {
     // Create 3D canvas
-    document.querySelector('#world').insertAdjacentHTML('afterend', '<canvas id="3dcanvas" style="position: absolute; width: 0;" ><\/canvas>');
+    //document.querySelector('#world').insertAdjacentHTML('afterend', '<canvas id="3dcanvas" style="position: absolute; width: 0;" ><\/canvas>');
 
     // Load Babylon
     var babylonScripts = ['https://preview.babylonjs.com/babylon.js','https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js','https://preview.babylonjs.com/ammo.js','https://preview.babylonjs.com/cannon.js','https://preview.babylonjs.com/Oimo.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
@@ -175,6 +304,11 @@ window.addEventListener('load', () => {
 
     // Wait for scripts to load
     Promise.all(scriptPromises).then(() => {
-        setTimeout(activateBabylon, 200);
+        setTimeout(() => {
+            if (!window.externalVariables.canvasInstance) {
+                (window.externalVariables.canvasInstance = new CanvasMorph()).popUp(world);
+                window.externalVariables.canvasInstance.hide();
+            }
+        }, 200);
     });
 });
