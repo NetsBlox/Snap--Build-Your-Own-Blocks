@@ -6,11 +6,16 @@
             super('BabylonBlocks');   
         }
 
-        // getMenu() {
-        //     return {
-        //         'hello!': function() {},
-        //     };
-        // }
+        getMenu() {
+            return {
+                'Open 3D View': function () {
+                    if (window.externalVariables.canvasInstance) {
+                        window.externalVariables.canvasInstance.show();
+                    }
+                    activateBabylon();
+                },
+            };
+        }
 
         getCategories() {
             return [
@@ -48,7 +53,15 @@
                     '3D',
                     'set shape to %3dshape',
                     ['sphere'],
-                    () => 'This is a test.'
+                    function(shape) {
+                        let sprite = this.receiver;
+
+                        if (!sprite.mesh) {
+                            console.log('Adding sprite to 3D scene');
+                        }
+
+                        sprite.mesh = shape;
+                    }
                 ).for(SpriteMorph),
                 new Extension.Block(
                     'setGravity',
