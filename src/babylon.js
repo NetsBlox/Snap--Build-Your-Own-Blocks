@@ -12,21 +12,20 @@ CanvasMorph.prototype = new DialogBoxMorph();
 CanvasMorph.uber = DialogBoxMorph.prototype;
 CanvasMorph.id = 0;
 
-function CanvasMorph(title, url) {
-    this.init(title, url);
+function CanvasMorph(title = 'Canvas') {
+    this.init(title);
 }
 
-CanvasMorph.prototype.init = function(title = 'Canvas') {
+CanvasMorph.prototype.init = function(title) {
     var myself = this;
 
     this.minWidth = 600;
     this.minHeight = 300;
-    this.handle = new HandleMorph(this, null, null, 8, 8);
-
+    
     this.canvas = document.createElement('canvas');
     this.canvas.style.position = 'relative';
     canvas = this.canvas;
-    
+
     this.loaded = false;
 
     this.background = new Morph();
@@ -79,7 +78,7 @@ CanvasMorph.prototype.fixLayout = function() {
     }
 
     this.fixCanvasLayout();
-    this.handle.rerender();
+    //this.handle.rerender();
 };
 
 CanvasMorph.prototype.fixCanvasLayout = function() {
@@ -93,23 +92,39 @@ CanvasMorph.prototype.fixCanvasLayout = function() {
     this.background.setExtent(new Point(width, height));
 };
 
+CanvasMorph.prototype.showCanvas = function () {
+    this.canvas.style.display = 'inline';
+    
+    if (vrHelper) {
+        vrHelper.vrButton.style.display = 'inline';
+    }  
+};
+
+CanvasMorph.prototype.hideCanvas = function () {
+    this.canvas.style.display = 'none';
+    
+    if (vrHelper) {
+        vrHelper.vrButton.style.display = 'none';
+    }  
+};
 
 CanvasMorph.prototype.show = function() {
     CanvasMorph.uber.show.call(this);
-    this.canvas.style.display = 'inline';
+    this.showCanvas();
+    this.setCanvasPosition();
 };
 
 CanvasMorph.prototype.hide = function() {
     CanvasMorph.uber.hide.call(this);
-    this.canvas.style.display = 'none';
+    this.hideCanvas();
 };
 
 CanvasMorph.prototype.prepareToBeGrabbed = function() {
-    this.canvas.style.display = 'none';
+    this.hideCanvas();
 };
 
 CanvasMorph.prototype.justDropped = function() {
-    this.canvas.style.display = 'inline';
+    this.showCanvas();
     this.setCanvasPosition();
 };
 
@@ -124,12 +139,45 @@ CanvasMorph.prototype.setCanvasPosition = function() {
     this.canvas.style.left = left + 'px';
     this.canvas.style.top = top + 'px';
     this.canvas.style.width = width + 'px';
+
+        
+    if (vrHelper) {
+        vrHelper.vrButton.style.left = left + 'px';
+        vrHelper.vrButton.style.top = top + 'px';
+    } 
 };
 
 CanvasMorph.prototype.popUp = function(world) {
     document.body.appendChild(this.canvas);
     CanvasMorph.uber.popUp.call(this, world);
     this.setCanvasPosition();
+
+    var myself = this;
+
+    // Resize handle
+    this.handle = new HandleMorph(
+        this,
+        280,
+        220,
+        this.corner,
+        this.corner
+    );
+
+    this.handle.mouseDownLeft = function (pos) {
+        myself.hideCanvas();
+        HandleMorph.prototype.mouseDownLeft.call(this, pos);
+        var stepFn = this.step;
+        this.step = function() {
+            stepFn.apply(this, arguments);
+            if (!this.root().hand.mouseButton) {
+                myself.showCanvas();
+
+                if (engine) {
+                    engine.resize();
+                }
+            }
+        };
+    };
 };
 
 CanvasMorph.prototype.destroy = function() {
@@ -143,7 +191,6 @@ const resizeBabylonCanvas = function () {
     canvas.style.height = stage.boundingBox().height() + 'px';
     canvas.style.left = stage.boundingBox().left() + 'px';
     canvas.style.top = stage.boundingBox().top() + 'px';
-    engine.resize();
 };
 
 const activateBabylon = async function () {
@@ -157,7 +204,7 @@ const activateBabylon = async function () {
         setTimeout(activateBabylon, 200);
         return;
     }
-
+    
     //canvas = document.getElementById('3dcanvas');
     engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
     stage = world.children[0].children.find(c => c.name == 'Stage');
