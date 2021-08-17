@@ -12,7 +12,10 @@
                     if (window.externalVariables.canvasInstance) {
                         window.externalVariables.canvasInstance.show();
                     }
-                    activateBabylon();
+
+                    if (!engine) {
+                        activateBabylon();
+                    }
                 },
             };
         }

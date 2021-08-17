@@ -78,7 +78,10 @@ CanvasMorph.prototype.fixLayout = function() {
     }
 
     this.fixCanvasLayout();
-    //this.handle.rerender();
+    
+    if (this.handle) {
+        this.handle.rerender();
+    }
 };
 
 CanvasMorph.prototype.fixCanvasLayout = function() {
@@ -90,9 +93,11 @@ CanvasMorph.prototype.fixCanvasLayout = function() {
     this.canvas.style.width = width + 'px';
     this.canvas.style.height = height + 'px';
     this.background.setExtent(new Point(width, height));
+    this.setCanvasPosition();
 };
 
 CanvasMorph.prototype.showCanvas = function () {
+    this.setCanvasPosition();
     this.canvas.style.display = 'inline';
     
     if (vrHelper) {
@@ -111,7 +116,6 @@ CanvasMorph.prototype.hideCanvas = function () {
 CanvasMorph.prototype.show = function() {
     CanvasMorph.uber.show.call(this);
     this.showCanvas();
-    this.setCanvasPosition();
 };
 
 CanvasMorph.prototype.hide = function() {
@@ -125,7 +129,6 @@ CanvasMorph.prototype.prepareToBeGrabbed = function() {
 
 CanvasMorph.prototype.justDropped = function() {
     this.showCanvas();
-    this.setCanvasPosition();
 };
 
 CanvasMorph.prototype.setCanvasPosition = function() {
@@ -139,8 +142,7 @@ CanvasMorph.prototype.setCanvasPosition = function() {
     this.canvas.style.left = left + 'px';
     this.canvas.style.top = top + 'px';
     this.canvas.style.width = width + 'px';
-
-        
+    
     if (vrHelper) {
         vrHelper.vrButton.style.left = left + 'px';
         vrHelper.vrButton.style.top = top + 'px';
@@ -264,13 +266,6 @@ const activateBabylon = async function () {
 
         // canvas.style.left = stage.boundingBox().left() + 'px';
         // canvas.style.top = stage.boundingBox().top() + 'px';
-
-        // Position VR helper button if it is initialized
-        if (vrHelper && vrHelper._btnVR) {
-            vrHelper._btnVR.style.position = 'absolute';
-            vrHelper._btnVR.style.left = (stage.boundingBox().left() + stage.boundingBox().width() - 85 ) + 'px';
-            vrHelper._btnVR.style.top = (stage.boundingBox().top() + 5 ) + 'px';
-        }
 
         scene.render();
     });
