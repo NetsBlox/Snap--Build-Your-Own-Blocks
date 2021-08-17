@@ -79,8 +79,6 @@
         {{ } }}
         </script>
         <script type="text/javascript" src="src/main.js"></script>
-        <script type="text/javascript" src="src/babylon.js"></script>
-        <script type="text/javascript" src="src/roboscapesim.js"></script>
 
     </head>
     <body style="margin: 0;">

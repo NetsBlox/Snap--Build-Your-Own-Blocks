@@ -117,4 +117,10 @@
     }
 
     NetsBloxExtensions.register(BabylonBlocks);
+
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'src/babylon.js';
+    script.async = false;
+    document.body.appendChild(script);
 })();

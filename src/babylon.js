@@ -82,7 +82,6 @@ CanvasMorph.prototype.fixLayout = function() {
     this.handle.rerender();
 };
 
-
 CanvasMorph.prototype.fixCanvasLayout = function() {
     var width = this.width() - 2 * this.padding,
         bh = this.buttons ? this.buttons.height() : 0,
@@ -113,8 +112,6 @@ CanvasMorph.prototype.justDropped = function() {
     this.canvas.style.display = 'inline';
     this.setCanvasPosition();
 };
-
-
 
 CanvasMorph.prototype.setCanvasPosition = function() {
     var titleHeight = Math.floor(
@@ -288,34 +285,29 @@ const addBlock = async function (width, height) {
     return await BABYLON.MeshBuilder.CreateBox('box', {width, depth: height, height: 1}, scene);
 };
 
-window.addEventListener('load', () => {
-    // Create 3D canvas
-    //document.querySelector('#world').insertAdjacentHTML('afterend', '<canvas id="3dcanvas" style="position: absolute; width: 0;" ><\/canvas>');
+// Load Babylon
+var babylonScripts = ['https://preview.babylonjs.com/babylon.js','https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js','https://preview.babylonjs.com/ammo.js','https://preview.babylonjs.com/cannon.js','https://preview.babylonjs.com/Oimo.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
+var scriptPromises = [];
 
-    // Load Babylon
-    var babylonScripts = ['https://preview.babylonjs.com/babylon.js','https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js','https://preview.babylonjs.com/ammo.js','https://preview.babylonjs.com/cannon.js','https://preview.babylonjs.com/Oimo.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
-    var scriptPromises = [];
+for (let file of babylonScripts) {
+    scriptPromises.push(new Promise((resolve, reject) => {
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = file;
+        script.async = false;
+        script.onload = resolve;
+        document.body.appendChild(script);
+    }));
+}
 
-    for (let file of babylonScripts) {
-        scriptPromises.push(new Promise((resolve, reject) => {
-            var script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = file;
-            script.async = false;
-            script.onload = resolve;
-            document.body.appendChild(script);
-        }));
-    }
+disableRetinaSupport(); // Need to find fix for this
 
-    disableRetinaSupport(); // Need to find fix for this
-
-    // Wait for scripts to load
-    Promise.all(scriptPromises).then(() => {
-        setTimeout(() => {
-            if (!window.externalVariables.canvasInstance) {
-                (window.externalVariables.canvasInstance = new CanvasMorph()).popUp(world);
-                window.externalVariables.canvasInstance.hide();
-            }
-        }, 200);
-    });
+// Wait for scripts to load
+Promise.all(scriptPromises).then(() => {
+    setTimeout(() => {
+        if (!window.externalVariables.canvasInstance) {
+            (window.externalVariables.canvasInstance = new CanvasMorph()).popUp(world);
+            window.externalVariables.canvasInstance.hide();
+        }
+    }, 200);
 });
