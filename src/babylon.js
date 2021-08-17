@@ -105,9 +105,16 @@ CanvasMorph.prototype.hide = function() {
     this.canvas.style.display = 'none';
 };
 
+CanvasMorph.prototype.prepareToBeGrabbed = function() {
+    this.canvas.style.display = 'none';
+};
+
 CanvasMorph.prototype.justDropped = function() {
+    this.canvas.style.display = 'inline';
     this.setCanvasPosition();
 };
+
+
 
 CanvasMorph.prototype.setCanvasPosition = function() {
     var titleHeight = Math.floor(
