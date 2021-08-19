@@ -95,13 +95,14 @@ const addRobot = async function () {
 };
 
 // Create update function for robots
-window.addEventListener('load', () => {
-    // Load geckos
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'src/geckos.io-client.1.7.2.min.js';
-    document.body.appendChild(script);
 
+// Load geckos
+var script = document.createElement('script');
+script.type = 'text/javascript';
+script.src = 'src/geckos.io-client.1.7.2.min.js';
+document.body.appendChild(script);
+
+setTimeout(() => {
     updateLoopFunctions.push((frameTime) => {
         if (bodies) {
             // Show robots
@@ -151,4 +152,4 @@ window.addEventListener('load', () => {
             }
         }
     });
-});
+}, 200);
