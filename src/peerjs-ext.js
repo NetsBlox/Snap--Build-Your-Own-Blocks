@@ -57,7 +57,16 @@
                     'connect to peer %peerid',
                     [],
                     function(dest) {
-                        peer.connect(dest);
+                        if(!seenPeers.includes(dest)){
+                            seenPeers.push(dest);
+                            
+                            let conn = peer.connect(dest);
+                            
+                            conn.on('data', function(data){
+                                console.log(data);
+                                ide.sockets.onMessageReceived('peerMessage', {id: conn.peer, data}, []);
+                            });
+                        }
                     }
                 ).for(SpriteMorph, SpriteMorph),
                 new Extension.Block(
@@ -113,21 +122,20 @@
     script.onload = () => {
         peer = new Peer("peer" + SnapCloud.clientId);
 
-        // Link up to NetsBlox messages
+        // Link up to NetsBlox message
         peer.on('connection', function(conn) {
             console.log(conn);
 
             if(!seenPeers.includes(conn.peer)){
-                peer.connect(conn.peer);
                 seenPeers.push(conn.peer);
             }
-
-            ide.sockets.onMessageReceived('peerConnected', {id: conn.peer}, []);
 
             conn.on('data', function(data){
                 console.log(data);
                 ide.sockets.onMessageReceived('peerMessage', {id: conn.peer, data}, []);
             });
+
+            ide.sockets.onMessageReceived('peerConnected', {id: conn.peer}, []);
         });
 
         peer.on('error', err => {
