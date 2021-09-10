@@ -130,6 +130,10 @@
             });
         });
 
+        peer.on('error', err => {
+            console.error(err);
+        });
+
           
     }
     document.body.appendChild(script);
