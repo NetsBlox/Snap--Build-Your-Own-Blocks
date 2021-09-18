@@ -1,15 +1,20 @@
 (function() {
-    const [ide] = world.children;
-    const stage = ide.stage;
+    var [ide] = world.children;
+    var stage = ide.stage;
     var peer;
     var seenPeers = [];
 
     class PeerJSBlocks extends Extension {
         constructor(ide) {  
             super('PeerJSBlocks');  
+            stage.addMessageType(new MessageType('peerConnected', ['id']));
+            stage.addMessageType(new MessageType('peerMessage', ['id', 'data']));
         }
         
         onOpenRole() {
+            [ide] = world.children;
+            stage = ide.stage;
+            
             // Add message types
             stage.addMessageType(new MessageType('peerConnected', ['id']));
             stage.addMessageType(new MessageType('peerMessage', ['id', 'data']));
