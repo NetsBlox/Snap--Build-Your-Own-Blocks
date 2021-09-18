@@ -71,7 +71,7 @@
         {{ } else { }}
         <script type="text/javascript" src="dist/app.min.js?v=1.29.1"></script>
         {{ } }}
-        
+
         <script type="text/javascript">
         {{ if (it.username) { }}
         SnapCloud.username = '{{= it.username }}';
@@ -79,7 +79,6 @@
         {{ } }}
         </script>
         <script type="text/javascript" src="src/main.js"></script>
-
     </head>
     <body style="margin: 0;">
         <canvas id="world" tabindex="1" style="position: absolute;" ></canvas>
