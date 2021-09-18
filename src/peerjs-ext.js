@@ -6,14 +6,17 @@
 
     class PeerJSBlocks extends Extension {
         constructor(ide) {  
-            super('PeerJSBlocks');   
-
+            super('PeerJSBlocks');  
+        }
+        
+        onOpenRole() {
             // Add message types
             stage.addMessageType(new MessageType('peerConnected', ['id']));
             stage.addMessageType(new MessageType('peerMessage', ['id', 'data']));
         }
 
         getPalette() {
+            // Blocks shared by both stage and sprite
             const commonBlocks = [
                 new Extension.Palette.Block('getPeerId'),
                 new Extension.Palette.Block('connectToPeer'),
