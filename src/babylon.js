@@ -23,6 +23,7 @@ CanvasMorph.prototype.init = function(title) {
     this.minHeight = 300;
     
     this.canvas = document.createElement('canvas');
+    this.canvas.id = 'main-canvas';
     this.canvas.style.position = 'relative';
     canvas = this.canvas;
 

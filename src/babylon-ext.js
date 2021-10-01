@@ -5,6 +5,10 @@
         constructor(ide) {  
             super('BabylonBlocks');   
         }
+        
+        onOpenRole() {
+
+        }
 
         getMenu() {
             return {
