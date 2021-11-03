@@ -127,7 +127,7 @@
 
     var script = document.createElement('script');
     script.type = 'text/javascript';
-    script.src = 'src/babylon.js';
+    script.src = 'http://localhost:8080/src/babylon.js';
     script.async = false;
     document.body.appendChild(script);
 })();

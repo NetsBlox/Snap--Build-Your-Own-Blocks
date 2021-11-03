@@ -231,13 +231,14 @@ const activateBabylon = async function () {
     light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), scene);
     
     // Make ground
-    let groundSize = 8;
-    var ground = BABYLON.Mesh.CreateGround('ground_floor', groundSize, groundSize, 2, scene);
-    ground.position.x = groundSize / 2;
-    ground.position.z = -groundSize / 2;
-    ground.position.y = 2;
+    // let groundSize = 8;
+    // var ground = BABYLON.Mesh.CreateGround('ground_floor', groundSize, groundSize, 2, scene);
+    // ground.position.x = groundSize / 2;
+    // ground.position.z = -groundSize / 2;
+    // ground.position.y = 2;
     
-    camera.setTarget(ground.position);
+    //camera.setTarget(ground.position);
+    camera.setTarget(new BABYLON.Vector3(0, 0, 0));
     
     scene.enablePhysics(null, new BABYLON.AmmoJSPlugin());
     // // scene.getPhysicsEngine().setTimeStep(.05);
@@ -324,7 +325,11 @@ const makePhysicsObject = (newMeshes, scene, scaling)=>{
     return physicsRoot;
 };
 
-const addBlock = async function (width, height) {
+const addBlock = async function (width, height, depth = -1) {
+    if(depth > 0){
+        return await BABYLON.MeshBuilder.CreateBox('box', {width, depth: depth, height: height}, scene);
+    } 
+
     return await BABYLON.MeshBuilder.CreateBox('box', {width, depth: height, height: 1}, scene);
 };
 

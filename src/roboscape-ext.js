@@ -9,7 +9,7 @@
         getMenu() {
             return {
                 'New Room': function () {
-                    if (!geckosSocket) {
+                    if (!socket) {
                         connectToRoboScapeSim();
                     }
 
@@ -19,7 +19,7 @@
                 },
                 'Join Room': function () {
                     
-                    if (!geckosSocket) {
+                    if (!socket) {
                         connectToRoboScapeSim();
                     }
 
@@ -74,16 +74,16 @@
 
     }
 
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'src/geckos.io-client.1.7.2.min.js';
-    script.async = false;
-    document.body.appendChild(script);
+    // var script = document.createElement('script');
+    // script.type = 'text/javascript';
+    // script.src = 'src/geckos.io-client.1.7.2.min.js';
+    // script.async = false;
+    // document.body.appendChild(script);
 
     if (typeof(BabylonBlocks) == 'undefined') {
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'src/babylon-ext.js';
+        script.src = 'http://localhost:8080/src/babylon-ext.js';
         script.async = false;
         document.body.appendChild(script);
     }
@@ -91,7 +91,7 @@
 
     script = document.createElement('script');
     script.type = 'text/javascript';
-    script.src = 'src/roboscapesim.js';
+    script.src = 'http://localhost:8080/src/roboscapesim3.js';
     script.async = false;
     document.body.appendChild(script);
 
