@@ -26,6 +26,7 @@
                     setTimeout(() => {
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph();
+                        const roomPasswordField = new InputFieldMorph();
                         const bdy = new AlignmentMorph('column', this.padding);
                     
                         roomIdField.setWidth(200);
@@ -33,7 +34,14 @@
                         dialog.labelString = `Join Room`;
                         dialog.createLabel();
 
+
+                        bdy.add(new TextMorph("Room ID:"));
                         bdy.add(roomIdField);
+                        bdy.fixLayout();
+                        dialog.addBody(bdy);
+
+                        bdy.add(new TextMorph("Room Password:"));
+                        bdy.add(roomPasswordField);
                         bdy.fixLayout();
                         dialog.addBody(bdy);
 
@@ -53,6 +61,15 @@
                         
                     }, 200);
                 },
+                'Open 3D view': function () {
+                    if (window.externalVariables.canvasInstance) {
+                        window.externalVariables.canvasInstance.show();
+                    }
+
+                    if (!engine) {
+                        activateBabylon();
+                    }
+                }
             };
         }
 
@@ -80,10 +97,18 @@
     // script.async = false;
     // document.body.appendChild(script);
 
-    if (typeof(BabylonBlocks) == 'undefined') {
+    // if (typeof(BabylonBlocks) == 'undefined') {
+    //     script = document.createElement('script');
+    //     script.type = 'text/javascript';
+    //     script.src = 'http://localhost:8080/src/babylon-ext.js';
+    //     script.async = false;
+    //     document.body.appendChild(script);
+    // }
+
+    if (typeof(CanvasMorph) == 'undefined') {
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'http://localhost:8080/src/babylon-ext.js';
+        script.src = 'http://localhost:8080/src/babylon.js';
         script.async = false;
         document.body.appendChild(script);
     }
