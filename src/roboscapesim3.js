@@ -57,6 +57,13 @@ const connectToRoboScapeSim = function(){
                 roomID = result;
 
                 // Start running
+                window.externalVariables.canvasInstance.labelString = "Room " + result;
+                window.externalVariables.canvasInstance.createLabel();
+                window.externalVariables.canvasInstance.rerender();
+                window.externalVariables.canvasInstance.fixLayout();
+                window.externalVariables.canvasInstance.rerender();
+                window.externalVariables.canvasInstance.handle.fixLayout();
+                window.externalVariables.canvasInstance.handle.rerender();
 
             } else {
                 // Failed to join room
@@ -82,7 +89,7 @@ function joinRoom(room, env = '') {
         throw 'Already in room.';
     }
 
-    socket.emit('joinRoom', { roomID: room, env });
+    socket.emit('joinRoom', { roomID: room, env, namespace: SnapCloud.username || SnapCloud.clientId });
 }
 
 /**
