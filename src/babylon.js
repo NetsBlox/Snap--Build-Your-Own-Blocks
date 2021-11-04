@@ -98,12 +98,14 @@ CanvasMorph.prototype.fixCanvasLayout = function() {
 };
 
 CanvasMorph.prototype.showCanvas = function () {
-    this.setCanvasPosition();
-    this.canvas.style.display = 'inline';
+    if (this.isVisible) {
+        this.setCanvasPosition();
+        this.canvas.style.display = 'inline';
     
-    if (vrHelper) {
-        vrHelper.vrButton.style.display = 'inline';
-    }  
+        if (vrHelper) {
+            vrHelper.vrButton.style.display = 'inline';
+        }
+    }
 };
 
 CanvasMorph.prototype.hideCanvas = function () {
@@ -215,7 +217,7 @@ const activateBabylon = async function () {
     scene = new BABYLON.Scene(engine);
     
     //enable Physics in the scene
-    await Ammo();
+    //await Ammo();
 
     // Parameters : name, position, scene
     camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(4, 10, -4), scene);
@@ -285,7 +287,7 @@ const activateBabylon = async function () {
         if ('getVRDisplays' in navigator || 'xr' in navigator){
             vrHelper = scene.createDefaultVRExperience({ createDeviceOrientationCamera: false, useXR: true });
         }
-    }, 1000);
+    }, 1500);
 };
 
 const makePhysicsObject = (newMeshes, scene, scaling)=>{

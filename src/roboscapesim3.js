@@ -41,7 +41,7 @@ const connectToRoboScapeSim = function(){
         });
 
         socket.on('error', error => {
-            console.log(error);
+            console.error(error);
         });
 
         // If we were previously connected, let server know we had an issue
@@ -53,11 +53,11 @@ const connectToRoboScapeSim = function(){
         // Room joined message
         socket.on('roomJoined', result => {
             if (result !== false) {
-                console.log(`Joined room ${result}`);
+                world.inform(`Joined room ${result}`);
                 roomID = result;
 
                 // Start running
-                window.externalVariables.canvasInstance.labelString = "Room " + result;
+                window.externalVariables.canvasInstance.labelString = result;
                 window.externalVariables.canvasInstance.createLabel();
                 window.externalVariables.canvasInstance.rerender();
                 window.externalVariables.canvasInstance.fixLayout();
@@ -67,15 +67,15 @@ const connectToRoboScapeSim = function(){
 
             } else {
                 // Failed to join room
-                console.log('Failed to join room');
+                world.inform('Failed to join room');
             }
         });
     });
 };
 
 
-function newRoom() {
-    joinRoom('create');
+function newRoom(environment = 'default', password = '') {
+    joinRoom('create', environment, password);
 }
 
 /**
@@ -83,13 +83,13 @@ function newRoom() {
  * @param {string} room
  * @param {string} env
  */
-function joinRoom(room, env = '') {
+function joinRoom(room, env = '', password = '') {
     // Prevent joining a second room
     if (roomID != null) {
         throw 'Already in room.';
     }
 
-    socket.emit('joinRoom', { roomID: room, env, namespace: SnapCloud.username || SnapCloud.clientId });
+    socket.emit('joinRoom', { roomID: room, env, password, namespace: SnapCloud.username || SnapCloud.clientId });
 }
 
 /**

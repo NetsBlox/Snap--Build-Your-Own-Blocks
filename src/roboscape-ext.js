@@ -14,7 +14,38 @@
                     }
 
                     setTimeout(() => {
-                        newRoom();
+                        window.externalVariables.canvasInstance.hideCanvas();
+                        const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
+                        const roomIdField = new InputFieldMorph();
+                        const roomPasswordField = new InputFieldMorph();
+                        const bdy = new AlignmentMorph('column', this.padding);
+                    
+                        roomIdField.setWidth(200);
+
+                        dialog.labelString = `New Room`;
+                        dialog.createLabel();
+
+                        bdy.add(new TextMorph("Room Password:"));
+                        bdy.add(roomPasswordField);
+                        bdy.fixLayout();
+                        dialog.addBody(bdy);
+
+                        dialog.addButton('submit', 'Create Room');
+                        dialog.submit = () => {                        
+                            newRoom('default', roomPasswordField.getValue());
+                            window.externalVariables.canvasInstance.showCanvas();
+                            dialog.destroy();
+                        };
+                        dialog.addButton('cancel', 'Close');
+                        dialog.ok = () => this.grade(this.currentAssignment);
+                        dialog.cancel = () => {
+                            DialogBoxMorph.prototype.cancel.call(dialog);
+                            window.externalVariables.canvasInstance.showCanvas();
+                        };
+
+                        dialog.fixLayout();
+                        dialog.popUp(world);
+                        
                     }, 200);
                 },
                 'Join Room': function () {
@@ -24,6 +55,7 @@
                     }
 
                     setTimeout(() => {
+                        window.externalVariables.canvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph();
                         const roomPasswordField = new InputFieldMorph();
@@ -47,13 +79,15 @@
 
                         dialog.addButton('submit', 'Join Room');
                         dialog.submit = () => {
-                            joinRoom(roomIdField.getValue());
+                            joinRoom(roomIdField.getValue(), '', roomPasswordField.getValue());
+                            window.externalVariables.canvasInstance.showCanvas();
                             dialog.destroy();
                         };
                         dialog.addButton('cancel', 'Close');
                         dialog.ok = () => this.grade(this.currentAssignment);
                         dialog.cancel = () => {
                             DialogBoxMorph.prototype.cancel.call(dialog);
+                            window.externalVariables.canvasInstance.showCanvas();
                         };
 
                         dialog.fixLayout();
