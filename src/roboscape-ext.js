@@ -18,6 +18,7 @@
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph();
                         const roomPasswordField = new InputFieldMorph();
+                        const environmentField = new InputFieldMorph(null, false, {'default':['default']}, true);
                         const bdy = new AlignmentMorph('column', this.padding);
                     
                         roomIdField.setWidth(200);
@@ -30,9 +31,14 @@
                         bdy.fixLayout();
                         dialog.addBody(bdy);
 
+                        bdy.add(new TextMorph("Environment:"));
+                        bdy.add(environmentField);
+                        bdy.fixLayout();
+                        dialog.addBody(bdy);
+
                         dialog.addButton('submit', 'Create Room');
                         dialog.submit = () => {                        
-                            newRoom('default', roomPasswordField.getValue());
+                            newRoom('default', roomPasswordField.getValue(), environmentField.getValue());
                             window.externalVariables.canvasInstance.showCanvas();
                             dialog.destroy();
                         };
