@@ -80,6 +80,7 @@
 
                         bdy.add(new TextMorph("Room Password:"));
                         bdy.add(roomPasswordField);
+                        roomPasswordField.contents().text.toggleIsPassword();
                         bdy.fixLayout();
                         dialog.addBody(bdy);
 
