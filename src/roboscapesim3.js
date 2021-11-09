@@ -111,29 +111,13 @@ script.src = 'https://cdn.socket.io/socket.io-2.3.1.slim.js';
 document.body.appendChild(script);
 
 var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
-
-    if (t - t2 > t2 - t1) return x2;
-
-    t = (t - t2) / Math.max(64, t2 - t1);
-
-    let a = dx2 - dx1;
-
-    dx1 = x2 - x1;
-
-    return x1 + t * dx1 + a / 2.0 * t * t; 
+    t = (t - t2) / Math.max(16, t2 - t1);
+    return BABYLON.Scalar.Lerp(x1, x2, t);
 }
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
-
     t = (t - t2) / Math.max(32, t2 - t1);
-
     return BABYLON.Quaternion.Slerp(q1, q2, t);
-
-    let a = dx2 - dx1;
-
-    dx1 = x2 - x1;
-
-    return x1 + t * dx1 + a / 2.0 * t * t; 
 }
 
 setTimeout(() => {
