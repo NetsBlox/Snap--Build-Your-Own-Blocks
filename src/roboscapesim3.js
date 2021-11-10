@@ -7,6 +7,7 @@ var nextUpdateTime;
 var roomInfo;
 var roomID;
 var bodyMeshes = {};
+var availableEnvironments = [];
 
 const connectToRoboScapeSim = function(){
     socket = io("//localhost:9001", { secure: true });
@@ -16,19 +17,21 @@ const connectToRoboScapeSim = function(){
 
         // Handle incremental updates
         socket.on('update', data => {
-            bodies = { ...nextBodies };
-            nextBodies = { ...bodies, ...data };
-            lastUpdateTime = nextUpdateTime;
-            nextUpdateTime = Date.now();
+            if (performance.now() - nextUpdateTime > 10) {
+                bodies = { ...nextBodies };
+                nextBodies = { ...bodies, ...data };
+                lastUpdateTime = nextUpdateTime;
+                nextUpdateTime = performance.now();
+            }
         });
 
         // Handle full updates
         socket.on('fullUpdate', data => {
-            bodiesInfo = data;
-            bodies = {...data, ...nextBodies};
-            nextBodies = data;
-            lastUpdateTime = nextUpdateTime || Date.now() - 50;
-            nextUpdateTime = Date.now();
+            bodiesInfo = { ...data };
+            bodies = {...data, ...bodies};
+            nextBodies = { ...data };
+            lastUpdateTime = lastUpdateTime || performance.now() - 50;
+            nextUpdateTime = performance.now();
         });
 
         // Handle room info
@@ -57,18 +60,22 @@ const connectToRoboScapeSim = function(){
                 roomID = result;
 
                 // Start running
-                window.externalVariables.canvasInstance.labelString = result;
-                window.externalVariables.canvasInstance.createLabel();
-                window.externalVariables.canvasInstance.rerender();
-                window.externalVariables.canvasInstance.fixLayout();
-                window.externalVariables.canvasInstance.rerender();
-                window.externalVariables.canvasInstance.handle.fixLayout();
-                window.externalVariables.canvasInstance.handle.rerender();
+                window.externalVariables.roboscapeSimCanvasInstance.labelString = result;
+                window.externalVariables.roboscapeSimCanvasInstance.createLabel();
+                window.externalVariables.roboscapeSimCanvasInstance.rerender();
+                window.externalVariables.roboscapeSimCanvasInstance.fixLayout();
+                window.externalVariables.roboscapeSimCanvasInstance.rerender();
+                window.externalVariables.roboscapeSimCanvasInstance.handle.fixLayout();
+                window.externalVariables.roboscapeSimCanvasInstance.handle.rerender();
 
             } else {
                 // Failed to join room
                 world.inform('Failed to join room');
             }
+        });
+
+        socket.on('availableEnvironments', list => {
+            availableEnvironments = list;
         });
     });
 };
@@ -196,3 +203,19 @@ setTimeout(() => {
         }
     });
 }, 200);
+
+// Mapping of robots to currently playing notes (so robots can only play one at a time)
+let roboNotes = {};
+
+const playNote = function(robot, pitch, duration){
+    // Stop an already playing note from this robot
+    if (roboNotes[robot]) {
+        roboNotes[robot].stop();
+        delete roboNotes[robot];
+    }
+
+    let n = new Note(pitch);
+    n.play();
+    setTimeout(() => { n.stop(); }, duration);
+    roboNotes[robot] = n;
+}

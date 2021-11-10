@@ -14,11 +14,15 @@
                     }
 
                     setTimeout(() => {
-                        window.externalVariables.canvasInstance.hideCanvas();
+                        window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph();
                         const roomPasswordField = new InputFieldMorph();
-                        const environmentField = new InputFieldMorph(null, false, {'default':['default']}, true);
+                        const environmentField = new InputFieldMorph(null, false, availableEnvironments.reduce((p, c) => {
+                            console.log(c);
+                            p[c.Name] = c.ID;
+                            return p;
+                        }, {}), true);
                         const bdy = new AlignmentMorph('column', this.padding);
                     
                         roomIdField.setWidth(200);
@@ -39,14 +43,14 @@
                         dialog.addButton('submit', 'Create Room');
                         dialog.submit = () => {                        
                             newRoom('default', roomPasswordField.getValue(), environmentField.getValue());
-                            window.externalVariables.canvasInstance.showCanvas();
+                            window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                             dialog.destroy();
                         };
                         dialog.addButton('cancel', 'Close');
                         dialog.ok = () => this.grade(this.currentAssignment);
                         dialog.cancel = () => {
                             DialogBoxMorph.prototype.cancel.call(dialog);
-                            window.externalVariables.canvasInstance.showCanvas();
+                            window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                         };
 
                         dialog.fixLayout();
@@ -61,7 +65,7 @@
                     }
 
                     setTimeout(() => {
-                        window.externalVariables.canvasInstance.hideCanvas();
+                        window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph();
                         const roomPasswordField = new InputFieldMorph();
@@ -87,14 +91,14 @@
                         dialog.addButton('submit', 'Join Room');
                         dialog.submit = () => {
                             joinRoom(roomIdField.getValue(), '', roomPasswordField.getValue());
-                            window.externalVariables.canvasInstance.showCanvas();
+                            window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                             dialog.destroy();
                         };
                         dialog.addButton('cancel', 'Close');
                         dialog.ok = () => this.grade(this.currentAssignment);
                         dialog.cancel = () => {
                             DialogBoxMorph.prototype.cancel.call(dialog);
-                            window.externalVariables.canvasInstance.showCanvas();
+                            window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                         };
 
                         dialog.fixLayout();
@@ -103,8 +107,8 @@
                     }, 200);
                 },
                 'Open 3D view': function () {
-                    if (window.externalVariables.canvasInstance) {
-                        window.externalVariables.canvasInstance.show();
+                    if (window.externalVariables.roboscapeSimCanvasInstance) {
+                        window.externalVariables.roboscapeSimCanvasInstance.show();
                     }
 
                     if (!engine) {
@@ -132,27 +136,11 @@
 
     }
 
-    // var script = document.createElement('script');
-    // script.type = 'text/javascript';
-    // script.src = 'src/geckos.io-client.1.7.2.min.js';
-    // script.async = false;
-    // document.body.appendChild(script);
-
-    // if (typeof(BabylonBlocks) == 'undefined') {
-    //     script = document.createElement('script');
-    //     script.type = 'text/javascript';
-    //     script.src = 'http://localhost:8080/src/babylon-ext.js';
-    //     script.async = false;
-    //     document.body.appendChild(script);
-    // }
-
-    if (typeof(CanvasMorph) == 'undefined') {
-        script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = 'http://localhost:8080/src/babylon.js';
-        script.async = false;
-        document.body.appendChild(script);
-    }
+    script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'http://localhost:8080/src/babylon-roboscapesim.js';
+    script.async = false;
+    document.body.appendChild(script);
 
 
     script = document.createElement('script');
