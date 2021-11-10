@@ -207,15 +207,21 @@ setTimeout(() => {
 // Mapping of robots to currently playing notes (so robots can only play one at a time)
 let roboNotes = {};
 
-const playNote = function(robot, pitch, duration){
+
+const playNote = function(robot, frequency, duration){
     // Stop an already playing note from this robot
     if (roboNotes[robot]) {
         roboNotes[robot].stop();
         delete roboNotes[robot];
     }
 
-    let n = new Note(pitch);
-    n.play();
+    let n = new Note(69);
+    n.frequency = frequency;
+
+    let gainNode = n.audioContext.createGain();
+    gainNode.gain.value = 0.1;
+
+    n.play(2, gainNode);
     setTimeout(() => { n.stop(); }, duration);
     roboNotes[robot] = n;
 }
