@@ -15,7 +15,7 @@
 
                     setTimeout(() => {
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
-                        const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
+                        const dialog = new DialogBoxMorph().withKey('NewRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph();
                         const roomPasswordField = new InputFieldMorph();
                         const environmentField = new InputFieldMorph(null, false, availableEnvironments.reduce((p, c) => {

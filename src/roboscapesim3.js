@@ -77,6 +77,12 @@ const connectToRoboScapeSim = function(){
         socket.on('availableEnvironments', list => {
             availableEnvironments = list;
         });
+
+        socket.on('beep', args => {
+            beepData = args[0];
+            console.log(`beep ${beepData.Robot} ${beepData.Frequency} hz, ${beepData.Duration} ms `);
+            playNote(beepData.Robot, beepData.Frequency, beepData.Duration);
+        })
     });
 };
 
@@ -207,7 +213,6 @@ setTimeout(() => {
 // Mapping of robots to currently playing notes (so robots can only play one at a time)
 let roboNotes = {};
 
-
 const playNote = function(robot, frequency, duration){
     // Stop an already playing note from this robot
     if (roboNotes[robot]) {
@@ -219,7 +224,7 @@ const playNote = function(robot, frequency, duration){
     n.frequency = frequency;
 
     let gainNode = n.audioContext.createGain();
-    gainNode.gain.value = 0.1;
+    gainNode.gain.value = 0.05;
 
     n.play(2, gainNode);
     setTimeout(() => { n.stop(); }, duration);
