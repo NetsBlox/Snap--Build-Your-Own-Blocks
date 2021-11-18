@@ -149,5 +149,19 @@
     script.async = false;
     document.body.appendChild(script);
 
+
+    // script = document.createElement('script');
+    // script.type = 'text/javascript';
+    // script.src = 'https://netsblox.org/babylon-roboscapesim.js';
+    // script.async = false;
+    // document.body.appendChild(script);
+
+
+    // script = document.createElement('script');
+    // script.type = 'text/javascript';
+    // script.src = 'https://netsblox.org/roboscapesim3.js';
+    // script.async = false;
+    // document.body.appendChild(script);
+
     NetsBloxExtensions.register(RoboScapeSim);
 })();

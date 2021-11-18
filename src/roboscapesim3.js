@@ -111,6 +111,7 @@ function joinRoom(room, env = '', password = '') {
  */
 const addRobot = async function () {
     let imported = await BABYLON.SceneLoader.ImportMeshAsync('', 'http://localhost:8080/src/', 'parallax_robot.gltf');
+    //let imported = await BABYLON.SceneLoader.ImportMeshAsync('', 'https://netsblox.org/', 'parallax_robot.gltf');
     imported.meshes[0].scaling.scaleInPlace(2);
     return imported.meshes[0];
 };
