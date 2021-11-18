@@ -32,6 +32,14 @@ const connectToRoboScapeSim = function(){
             nextBodies = { ...data };
             lastUpdateTime = lastUpdateTime || performance.now() - 50;
             nextUpdateTime = performance.now();
+
+            // Create entries in dropdown
+            window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
+                Object.values(bodiesInfo).filter(info => info.image == 'parallax_robot')
+                    .reduce((prev, info) => {
+                        prev[info.label.replace('robot_', '')] = info.label.replace('robot_', '');
+                        return prev;
+                    }, {});
         });
 
         // Handle room info
