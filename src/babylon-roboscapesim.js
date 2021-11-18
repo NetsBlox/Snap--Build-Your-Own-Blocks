@@ -36,6 +36,49 @@ RoboScapeSimCanvasMorph.prototype.init = function(title) {
     this.add(this.background);
     this.key = 'canvas' + RoboScapeSimCanvasMorph.id++;
 
+
+    let spacerMorph = new Morph();
+    spacerMorph.setWidth(10);
+    spacerMorph.alpha = 0;
+
+    let dividerMorph = new Morph();
+    dividerMorph.setWidth(1);
+    dividerMorph.setHeight(18);
+
+    this.robotRow = new AlignmentMorph('row');
+    this.robotRow.add(new TextMorph('Robot ID:'));
+
+    this.robotsList = new InputFieldMorph(null, false, {}, true);
+    this.robotRow.add(this.robotsList);
+    
+    this.robotRow.add(spacerMorph);
+    this.robotRow.add(dividerMorph);
+
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(10);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+
+    this.robotRow.add(new PushButtonMorph(null, () => { console.log('reset') }, 'Reset'));
+    
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(10);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+    
+    this.robotRow.add(new PushButtonMorph(null, () => { console.log('Button') }, 'Button'));
+    
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(10);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+
+    this.robotRow.add(new PushButtonMorph(null, () => { console.log('Chase')}, 'Chase Cam'));
+    this.add(this.robotRow);
+
     this.labelString = title;
     this.createLabel();
     this.addButton('hide', 'Close');
@@ -60,6 +103,17 @@ RoboScapeSimCanvasMorph.prototype.fixLayout = function() {
         this.label.setTop(this.top() + (th - this.label.height()) / 2);
     }
 
+    this.fixCanvasLayout();
+
+    // Robot info row
+    if (this.robotRow) {
+        this.robotRow.setCenter(this.center());
+        this.robotRow.setBottom(this.bottom() - this.padding);
+        this.robotRow.setLeft(this.left() + this.padding);
+        this.robotRow.fixLayout();
+    }
+
+    // Buttons at bottom of panel
     if (this.buttons && (this.buttons.children.length > 0)) {
         this.buttons.fixLayout();
         this.bounds.setHeight(
@@ -78,8 +132,6 @@ RoboScapeSimCanvasMorph.prototype.fixLayout = function() {
         this.buttons.setBottom(this.bottom() - this.padding);
     }
 
-    this.fixCanvasLayout();
-    
     if (this.handle) {
         this.handle.rerender();
     }

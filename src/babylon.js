@@ -251,7 +251,7 @@ const activateBabylon = async function () {
     
     engine.runRenderLoop(function () {
 
-        let frameTime = Date.now();
+        let frameTime = performance.now();
         
         for (let func of updateLoopFunctions) {
             func(frameTime);
