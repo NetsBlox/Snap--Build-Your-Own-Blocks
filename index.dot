@@ -39,7 +39,6 @@
         <script type="text/javascript" src="src/paint.js"></script>
         <script type="text/javascript" src="src/cloud.js"></script>
         <script type="text/javascript" src="src/gui.js"></script>
-        <script type="text/javascript" src="src/paint.js"></script>
         <script type="text/javascript" src="src/video.js"></script>
         <script type="text/javascript" src="src/sketch.js"></script>
         <script type="text/javascript" src="src/lists.js"></script>
@@ -69,7 +68,7 @@
         <script type="text/javascript" src="src/store-ext.js"></script>
         <script type="text/javascript" src="src/actions-ext.js"></script>
         {{ } else { }}
-        <script type="text/javascript" src="dist/app.min.js?v=1.29.1"></script>
+        <script type="text/javascript" src="dist/app.min.js?v=1.30.0"></script>
         {{ } }}
 
         <script type="text/javascript">
