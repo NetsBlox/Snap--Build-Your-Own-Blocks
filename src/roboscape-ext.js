@@ -1,9 +1,13 @@
 (function() {
-    const [ide] = world.children;
-
     class RoboScapeSim extends Extension {
         constructor(ide) {  
             super('RoboScape Simulator');   
+        }
+
+        onOpenRole() {
+            console.log('onOpenRole');
+            roboscapeSimCanvasInstance.popUp(world);
+            roboscapeSimCanvasInstance.hide();
         }
 
         getMenu() {

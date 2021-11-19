@@ -6,6 +6,7 @@ var camera;
 var followCam;
 var ui;
 var vrHelper;
+var roboscapeSimCanvasInstance;
 
 var updateLoopFunctions = [];
 
@@ -61,7 +62,13 @@ RoboScapeSimCanvasMorph.prototype.init = function(title) {
 
     this.robotRow.add(spacerMorph);
 
-    this.robotRow.add(new PushButtonMorph(null, () => { console.log('reset') }, 'Reset'));
+
+    this.robotRow.add(new PushButtonMorph(null, () => {
+        if (this.robotsList.getValue() != '') {
+            console.log('reset');
+            socket.emit('resetRobot', this.robotsList.getValue());
+        }
+    }, 'Reset'));
     
     spacerMorph = new Morph();
     spacerMorph.setWidth(10);
@@ -69,7 +76,12 @@ RoboScapeSimCanvasMorph.prototype.init = function(title) {
 
     this.robotRow.add(spacerMorph);
     
-    this.robotRow.add(new PushButtonMorph(null, () => { console.log('Button') }, 'Button'));
+    this.robotRow.add(new PushButtonMorph(null, () => {
+        if (this.robotsList.getValue() != '') {
+            console.log('button');
+            socket.emit('robotButton', this.robotsList.getValue());
+        }
+    }, 'Button'));
     
     spacerMorph = new Morph();
     spacerMorph.setWidth(10);
@@ -79,13 +91,15 @@ RoboScapeSimCanvasMorph.prototype.init = function(title) {
 
     this.robotRow.add(new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            console.log('Chase'); console.log(bodiesInfo['robot_' + this.robotsList.getValue()]);
+            // Activate chase cam for robot
             followCam.lockedTarget = bodyMeshes['robot_' + this.robotsList.getValue()];
             scene.activeCamera = followCam;
         } else {
+            // Reset to free camera
             scene.activeCamera = camera;
         }
     }, 'Chase Cam'));
+
     this.add(this.robotRow);
 
     this.labelString = title;
@@ -358,7 +372,10 @@ disableRetinaSupport(); // Need to find fix for this
 Promise.all(scriptPromises).then(() => {
     setTimeout(() => {
         if (!window.externalVariables.roboscapeSimCanvasInstance) {
-            (window.externalVariables.roboscapeSimCanvasInstance = new RoboScapeSimCanvasMorph()).popUp(world);
+            if (!roboscapeSimCanvasInstance) {
+                roboscapeSimCanvasInstance = new RoboScapeSimCanvasMorph();
+            }
+            (window.externalVariables.roboscapeSimCanvasInstance = roboscapeSimCanvasInstance).popUp(world);
             window.externalVariables.roboscapeSimCanvasInstance.hide();
         }
     }, 200);
