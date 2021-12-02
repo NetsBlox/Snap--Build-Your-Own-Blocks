@@ -104,13 +104,37 @@ function newRoom(environment = 'default', password = '') {
  * @param {string} room
  * @param {string} env
  */
-function joinRoom(room, env = '', password = '') {
+ function joinRoom(room, env = '', password = '') {
     // Prevent joining a second room
     if (roomID != null) {
-        throw 'Already in room.';
+        leaveRoom();
     }
 
     socket.emit('joinRoom', { roomID: room, env, password, namespace: SnapCloud.username || SnapCloud.clientId });
+ }
+
+ /**
+  * Leave current room and clean up contents
+  */
+function leaveRoom() {
+    if (roomID == null) {
+        console.warn("Not in a room to leave");
+    }
+    
+    // Not actually required, as server enforces one-room policy
+    socket.emit('leaveRoom');
+
+    // Reset data
+    bodies = {};
+    nextBodies = {};
+    roomInfo = null;
+    roomID = null;
+
+    // Clean up meshes
+    for (let mesh of Object.values(bodyMeshes)) {
+        mesh.dispose();
+    }
+    bodyMeshes = {};
 }
 
 /**
