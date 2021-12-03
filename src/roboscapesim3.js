@@ -68,13 +68,7 @@ const connectToRoboScapeSim = function(){
                 roomID = result;
 
                 // Start running
-                window.externalVariables.roboscapeSimCanvasInstance.labelString = result;
-                window.externalVariables.roboscapeSimCanvasInstance.createLabel();
-                window.externalVariables.roboscapeSimCanvasInstance.rerender();
-                window.externalVariables.roboscapeSimCanvasInstance.fixLayout();
-                window.externalVariables.roboscapeSimCanvasInstance.rerender();
-                window.externalVariables.roboscapeSimCanvasInstance.handle.fixLayout();
-                window.externalVariables.roboscapeSimCanvasInstance.handle.rerender();
+                updateCanvasTitle(result);
 
             } else {
                 // Failed to join room
@@ -82,18 +76,40 @@ const connectToRoboScapeSim = function(){
             }
         });
 
+        // Update list of available environments
         socket.on('availableEnvironments', list => {
             availableEnvironments = list;
         });
 
+        // Robot beeped
         socket.on('beep', args => {
             beepData = args[0];
             console.log(`beep ${beepData.Robot} ${beepData.Frequency} hz, ${beepData.Duration} ms `);
             playNote(beepData.Robot, beepData.Frequency, beepData.Duration);
-        })
+        });
+
+        // Kicked from room
+        socket.on('roomLeft', args => {
+            leaveRoom();
+        });
+    });
+
+    // Lost connection
+    socket.on('disconnect', () => {
+        leaveRoom();
     });
 };
 
+
+function updateCanvasTitle(result) {
+    window.externalVariables.roboscapeSimCanvasInstance.labelString = result;
+    window.externalVariables.roboscapeSimCanvasInstance.createLabel();
+    window.externalVariables.roboscapeSimCanvasInstance.rerender();
+    window.externalVariables.roboscapeSimCanvasInstance.fixLayout();
+    window.externalVariables.roboscapeSimCanvasInstance.rerender();
+    window.externalVariables.roboscapeSimCanvasInstance.handle.fixLayout();
+    window.externalVariables.roboscapeSimCanvasInstance.handle.rerender();
+}
 
 function newRoom(environment = 'default', password = '') {
     joinRoom('create', environment, password);
@@ -135,6 +151,7 @@ function leaveRoom() {
         mesh.dispose();
     }
     bodyMeshes = {};
+    updateCanvasTitle("Not connected");
 }
 
 /**
