@@ -6573,19 +6573,21 @@ IDE_Morph.prototype.resetCloudPassword = function () {
 
     new DialogBoxMorph(
         null,
-        user => this.cloud.resetPassword(
-            user.username,
-            (txt, title) => new DialogBoxMorph().inform(
-                title,
-                txt +
-                    '\n\nAn e-mail with a link to\n' +
+        user => async () => {
+            try {
+                await this.cloud.resetPassword(user.username);
+                const title = 'Account Created!';
+                new DialogBoxMorph().inform(
+                    title,
+                    '\nAn e-mail with a link to\n' +
                     'reset your password\n' +
                     'has been sent to the address provided',
-                world,
-                this.cloudIcon(null, new Color(0, 180, 0))
-            ),
-            this.cloudError()
-        )
+                    world,
+                    this.cloudIcon(null, new Color(0, 180, 0))
+                )
+            } catch (err) {
+                this.cloudError()(err.message);
+            }
     ).withKey('cloudresetpassword').promptCredentials(
         'Reset password',
         'resetPassword',
@@ -8087,6 +8089,7 @@ CloudProjectsSource.prototype.publish = function(proj, unpublish = false) {
     const myself = this;
     const cloud = this.ide.cloud;
 
+    // TODO: update this
     cloud.reconnect(
         () => {
             cloud.callService(
@@ -8181,20 +8184,7 @@ CloudProjectsSource.prototype.save = function(newProject) {
 };
 
 CloudProjectsSource.prototype.delete = function(project) {
-    SnapCloud.reconnect(
-        () => {
-            SnapCloud.callService(
-                'deleteProject',
-                () => {
-                    SnapCloud.disconnect();
-                    this.ide.hasChangedMedia = true;
-                },
-                this.ide.cloudError(),
-                [project.name]
-            );
-        },
-        this.ide.cloudError()
-    );
+    await SnapCloud.deleteProject(project.ID);
 };
 
 // SharedCloudProjectsSource ////////////////////////////////////////////////////

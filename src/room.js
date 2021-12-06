@@ -537,14 +537,9 @@ RoomMorph.prototype.createNewRole = function () {
     var myself = this;
 
     this.ide.prompt('New Role Name', function (roleName) {
-        myself.validateRoleName(roleName, function() {
-            SnapCloud.addRole(
-                roleName,
-                function(state) {
-                    myself.onRoomStateUpdate(state);
-                },
-                myself.ide.cloudError()
-            );
+        myself.validateRoleName(roleName, async function() {
+            const state = await SnapCloud.addRole(roleName);
+            myself.onRoomStateUpdate(state);
         });
     }, null, 'createNewRole');
 };
@@ -613,18 +608,12 @@ RoomMorph.prototype.moveToRole = function(role) {
     );
 };
 
-RoomMorph.prototype.deleteRole = function(role) {
-    var myself = this;
-    SnapCloud.deleteRole(
-        role.id,
-        function(state) {
-            myself.onRoomStateUpdate(state);
-            myself.ide.showMessage('deleted ' + role.name + '!');
-        },
-        function (err, lbl) {
-            myself.ide.cloudError().call(null, err, lbl);
-        }
-    );
+RoomMorph.prototype.deleteRole = async function(role) {
+    try {
+        await SnapCloud.deleteRole(role.id);
+    } catch (err) {
+        this.ide.cloudError().call(null, err.message);
+    }
 };
 
 RoomMorph.prototype.createRoleClone = function(roleId) {
@@ -657,16 +646,7 @@ RoomMorph.prototype.setRoleName = function(roleId, name) {
         return;
     }
 
-    myself.validateRoleName(name, function() {
-        SnapCloud.renameRole(
-            roleId,
-            name,
-            function(state) {
-                myself.onRoomStateUpdate(state);
-            },
-            myself.ide.cloudError()
-        );
-    });
+    myself.validateRoleName(name, () => SnapCloud.renameRole(roleId, name));
 };
 
 RoomMorph.prototype.evictUser = function (user) {
@@ -683,32 +663,28 @@ RoomMorph.prototype.evictUser = function (user) {
     );
 };
 
-RoomMorph.prototype.inviteUser = function (role) {
+RoomMorph.prototype.inviteUser = async function (role) {
     var myself = this,
-        callback;
-
-    callback = friends => {
-        friends.unshift('myself');
-        const world = this.world();
-        const dialog = new UserDialogMorph(this, user => {
-            if (user) {
-                this.inviteGuest(user, role.id);
-            }
-        }, friends);
-        dialog.popUp(world);
-        dialog.setCenter(world.center());
-        dialog.filterField.edit();
-    };
+        friends = [];
 
     if (this.isOwner() || this.isCollaborator()) {
-        SnapCloud.getFriendList(callback,
-            function (err, lbl) {
-                myself.ide.cloudError().call(null, err, lbl);
-            }
-        );
-    } else {
-        callback([]);
+        try {
+            friends = await SnapCloud.getFriendList();
+        } catch (err) {
+            myself.ide.cloudError().call(null, err.message);
+        }
     }
+
+    friends.unshift('myself');
+    const world = this.world();
+    const dialog = new UserDialogMorph(this, user => {
+        if (user) {
+            this.inviteGuest(user, role.id);
+        }
+    }, friends);
+    dialog.popUp(world);
+    dialog.setCenter(world.center());
+    dialog.filterField.edit();
 };
 
 // Accessed from right-clicking the TextMorph
@@ -793,6 +769,7 @@ RoomMorph.prototype.promptInvite = function (id, role, roomName, inviter) {
 };
 
 RoomMorph.prototype.respondToInvitation = function (id, role, accepted) {
+    // TODO: join the role (use the token?)
     SnapCloud.respondToInvitation(
         id,
         accepted,
@@ -1639,15 +1616,14 @@ EditRoleMorph.prototype.moveToRole = function() {
         dialog = new DialogBoxMorph(null);
 
         // Prompt the user about saving the role...
-        dialog.accept = function() {
-            SnapCloud.saveProject(
-                ide,
-                function () {
-                    ide.showMessage('Saved ' + currentRole + ' to cloud!', 2);
-                    callback();
-                },
-                ide.cloudError()
-            );
+        dialog.accept = async function() {
+            try {
+                const roleData = ide.sockets.getSerializedProject();
+                await SnapCloud.saveProject(roleData);
+                ide.showMessage('Saved ' + currentRole + ' to cloud!', 2);
+            } catch (err) {
+                ide.cloudError()(err.message);
+            }
             dialog.destroy();
         };
 

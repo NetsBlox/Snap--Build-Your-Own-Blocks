@@ -655,19 +655,18 @@ NetsBloxMorph.prototype.openProject = function (name) {
     }
 };
 
-NetsBloxMorph.prototype.saveACopy = function () {
+NetsBloxMorph.prototype.saveACopy = async function () {
     var myself = this;
     if (this.isPreviousVersion()) {
         return this.showMessage('Please exit replay mode before saving');
     }
 
     // Save the project!
-    SnapCloud.saveProjectCopy(function(result) {
-        if (result.name) {
-            myself.room.silentSetRoomName(result.name);
-        }
-        myself.showMessage('Made your own copy and saved it to the cloud!', 2);
-    }, this.cloudError());
+    const name = await SnapCloud.saveProjectCopy();  // TODO: handle errors
+    if (name) {
+        this.room.silentSetRoomName(name);
+    }
+    this.showMessage('Made your own copy and saved it to the cloud!', 2);
 };
 
 NetsBloxMorph.prototype.cloudSaveError = function () {
@@ -694,7 +693,7 @@ NetsBloxMorph.prototype.cloudSaveError = function () {
     };
 };
 
-NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
+NetsBloxMorph.prototype.saveProjectToCloud = async function (name) {
     var myself = this,
         overwriteExisting;
 
@@ -707,6 +706,7 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
             myself.room.getCurrentRoleName() : myself.room.name;
         if (name) {
             myself.showMessage('Saving ' + contentName + '\nto the cloud...');
+            // TODO: rename the colliding name?
             SnapCloud.saveProject(
                 myself,
                 function (result) {
@@ -729,31 +729,29 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     // Check if it will overwrite the current one
     // We can check this by just using the project IDs now...
     // TODO
-    SnapCloud.hasConflictingStoredProject(
-        name,
-        function(hasConflicting) {
-            if (!hasConflicting) {
-                myself.updateUrlQueryString();
-                return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
-            } else {  // doesn't match the stored version!
-                var dialog = new DialogBoxMorph(null, function() {
-                    overwriteExisting(true);
-                });
+    // TODO: Or we could try to save and see if it fails... This might be more performant
+    // Use 409 status code (conflict)
+    const projects = await SnapCloud.getProjectList();
+    const hasConflicting= projects.find(project => project.name === name);
+    if (!hasConflicting) {
+        myself.updateUrlQueryString();
+        return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
+    } else {  // doesn't match the stored version!
+        var dialog = new DialogBoxMorph(null, function() {
+            overwriteExisting(true);
+        });
 
-                dialog.cancel = function() {  // don't overwrite
-                    overwriteExisting();
-                    dialog.destroy();
-                };
-                dialog.askYesNo(
-                    localize('Overwrite Existing Project'),
-                    localize('A project with the given name already exists.\n' +
-                        'Would you like to overwrite it?'),
-                    myself.world()
-                );
-            }
-        },
-        this.cloudSaveError()
-    );
+        dialog.cancel = function() {  // don't overwrite
+            overwriteExisting();
+            dialog.destroy();
+        };
+        dialog.askYesNo(
+            localize('Overwrite Existing Project'),
+            localize('A project with the given name already exists.\n' +
+                'Would you like to overwrite it?'),
+            myself.world()
+        );
+    }
 };
 
 // RPC import support (both custom blocks and message types)
@@ -1169,31 +1167,30 @@ NetsBloxMorph.prototype.loadBugReport = function () {
 };
 
 // Collaboration
-NetsBloxMorph.prototype.manageCollaborators = function () {
+NetsBloxMorph.prototype.manageCollaborators = async function () {
     var myself = this,
         ownerId = this.room.ownerId,
         name = this.room.name;
 
-    SnapCloud.getCollaboratorList(
-        function(friends) {
-            friends.sort(function(a, b) {
-                return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
-            });
-            new CollaboratorDialogMorph(
-                myself,
-                function(user) {
-                    if (user) {
-                        SnapCloud.inviteToCollaborate(
-                            SnapCloud.clientId,
-                            user.username,
-                            ownerId,
-                            name
-                        );
-                    }
-                },
-                friends,
-                'Invite a Collaborator to the Project'
-            ).popUp();
+    const friends = await SnapCloud.getCollaboratorList();
+    friends.sort(function(a, b) {
+        return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
+    });
+    new CollaboratorDialogMorph(
+        myself,
+        function(user) {
+            if (user) {
+                SnapCloud.inviteToCollaborate(
+                    SnapCloud.clientId,
+                    user.username,
+                    ownerId,
+                    name
+                );
+            }
+        },
+        friends,
+        'Invite a Collaborator to the Project'
+    ).popUp();
         },
         function (err, lbl) {
             myself.cloudError().call(null, err, lbl);
@@ -1242,45 +1239,36 @@ NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, r
     );
 };
 
-NetsBloxMorph.prototype.collabResponse = function (invite, response) {
+NetsBloxMorph.prototype.collabResponse = async function (invite, response) {
     var myself = this;
 
-    SnapCloud.collabResponse(
-        invite.id,
-        response,
-        function() {
-            var dialog,
-                msg;
+    try {
+        await SnapCloud.respondToCollaborationInvite(invite.id, response);
+        var dialog,
+            msg;
 
-            if (response) {
-                dialog = new DialogBoxMorph(null, function() {
-                    // Open the given project
-                    SnapCloud.reconnect(
-                        function () {
-                            SnapCloud.joinActiveProject(
-                                invite.projectId,
-                                function (xml) {
-                                    myself.rawLoadCloudProject(xml);
-                                },
-                                myself.cloudError()
-                            );
-                        },
-                        myself.cloudError()
-                    );
-                    dialog.destroy();
-                });
-                msg = 'Would you like to open the shared project now?';
-                dialog.askYesNo(
-                    localize('Open Shared Project?'),
-                    localize(msg),
-                    myself.world()
+        if (response) {
+            dialog = new DialogBoxMorph(null, () => {
+                // Open the given project
+                SnapCloud.joinActiveProject(
+                    invite.projectId,
+                    function (xml) {
+                        myself.rawLoadCloudProject(xml);
+                    },
+                    myself.cloudError()
                 );
-            }
-        },
-        function(err){
-            myself.showMessage(err, 2);
+                dialog.destroy();
+            });
+            msg = 'Would you like to open the shared project now?';
+            dialog.askYesNo(
+                localize('Open Shared Project?'),
+                localize(msg),
+                this.world()
+            );
         }
-    );
+    } catch (err) {
+        this.showMessage(err.message, 2);
+    }
 };
 
 NetsBloxMorph.prototype.logout = function () {

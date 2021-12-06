@@ -122,264 +122,50 @@ Cloud.prototype.getPublicProject = async function (
     return deferred.promise;
 };
 
-Cloud.prototype.resetPassword = function (
-    username,
-    callBack,
-    errorCall
-) {
-    // both callBack and errorCall are two-argument functions
-    var request = new XMLHttpRequest(),
-        myself = this;
-    try {
-        request.open(
-            "GET",
-            (this.hasProtocol() ? '' : 'http://')
-                + this.url + 'ResetPW'
-                + '?Username='
-                + encodeURIComponent(username),
-            true
-        );
-        request.setRequestHeader(
-            "Content-Type",
-            "application/x-www-form-urlencoded"
-        );
-        request.withCredentials = true;
-        request.onreadystatechange = function () {
-            if (request.readyState === 4) {
-                if (request.responseText) {
-                    if (request.responseText.indexOf('ERROR') === 0) {
-                        errorCall.call(
-                            this,
-                            request.responseText,
-                            'Reset Password'
-                        );
-                    } else {
-                        callBack.call(
-                            null,
-                            request.responseText,
-                            'Reset Password'
-                        );
-                    }
-                } else {
-                    errorCall.call(
-                        null,
-                        myself.url + 'ResetPW',
-                        localize('could not connect to:')
-                    );
-                }
-            }
-        };
-        request.send(null);
-    } catch (err) {
-        errorCall.call(this, err.toString(), 'Snap!Cloud');
-    }
+Cloud.prototype.resetPassword = async function (username) {
+    const response = await fetch(`/api/users/${username}/password`, {method: 'POST'});
+    return await response.text();
 };
 
-Cloud.prototype.login = function (
+Cloud.prototype.login = async function (
     username,
     password,
     remember,
     strategy,
 ) {
-    const deferred = utils.defer();
-    var request = new XMLHttpRequest(),
-        usr = JSON.stringify({
-            projectId: this.projectId,
-            __h: password,
-            __u: username,
-            remember: remember,
-            clientId: SnapCloud.clientId
-        });
-
-    this.setRoute(username);
-    try {
-        let url = (this.hasProtocol() ? '' : 'http://') +
-            this.url +
-            '?SESSIONGLUE=' +
-            this.route;
-
-        if (strategy) {
-            url += `&strategy=${strategy}`;
-        }
-        request.open(
-            'POST',
-            url,
-            true
-        );
-        request.setRequestHeader(
-            'Content-Type',
-            'application/json; charset=utf-8'
-        );
-        // glue this session to a route:
-        request.setRequestHeader('SESSIONGLUE', this.route);
-        request.withCredentials = true;
-        request.onreadystatechange = async () => {
-            if (request.readyState === 4) {
-                if (request.status === 200) {
-                    const user = await this.getUserData();
-                    this.username = user.username;
-                    this.credentials = {username, password, strategy};
-                    return deferred.resolve(user);
-                } else if (request.status === 403) {
-                    return deferred.reject(
-                        new Error(localize(request.responseText || 'wrong username or password'))
-                    );
-                } else {
-                    return deferred.reject(
-                        new Error(localize('could not connect to cloud.'))
-                    );
-                }
-            }
-        };
-        request.send(usr);
-    } catch (err) {
-        deferred.reject(err);
-    }
-    return deferred.promise;
+    const body = JSON.stringify({
+        username: username,
+        password_hash: hex_sha512(password),
+    });
+    const response = await fetch(`/api/users/login`, {method: 'POST', body});
+    // TODO: handle other strategies?
+    // TODO: handle "remember" argument?
+    return await response.text();
 };
 
-Cloud.prototype.getProjectList = function (callBack, errorCall) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'getProjectList',
-                function (response, url) {
-                    callBack.call(null, response, url);
-                    myself.disconnect();
-                },
-                errorCall
-            );
-        },
-        errorCall
-    );
+Cloud.prototype.getProjectList = async function () {
+    const response = await fetch(`/api/users/${this.username}/projects`);
+    return await response.json();
 };
 
-Cloud.prototype.getSharedProjectList = function(callBack, errorCall) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'getSharedProjectList',
-                function (response, url) {
-                    callBack.call(null, response, url);
-                    myself.disconnect();
-                },
-                errorCall
-            );
-        },
-        errorCall
-    );
+Cloud.prototype.getSharedProjectList = async function() {
+    const response = await fetch(`/api/users/${this.username}/projects/shared`);
+    return await response.json();
 };
 
-Cloud.prototype.changePassword = function (
+Cloud.prototype.changePassword = async function (
     oldPW,
     newPW,
-    callBack,
-    errorCall
 ) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'changePassword',
-                function (response, url) {
-                    callBack.call(null, response, url);
-                    myself.disconnect();
-                },
-                errorCall,
-                [hex_sha512(oldPW), hex_sha512(newPW)]
-            );
-        },
-        errorCall
-    );
-};
-
-// Cloud: backend communication
-
-Cloud.prototype.callURL = function (url, callBack, errorCall) {
-    // both callBack and errorCall are optional two-argument functions
-    var request = new XMLHttpRequest(),
-        stickyUrl,
-        myself = this;
-    try {
-        // set the Limo. Also set the glue as a query paramter for backup.
-        stickyUrl = url +
-            '&SESSIONGLUE=' +
-            this.route +
-            '&_Limo=' +
-            this.limo;
-        request.open('GET', stickyUrl, true);
-        request.withCredentials = true;
-        request.setRequestHeader(
-            "Content-Type",
-            "application/x-www-form-urlencoded"
-        );
-        request.setRequestHeader('MioCracker', this.session);
-        // Set the glue as a request header.
-        request.setRequestHeader('SESSIONGLUE', this.route);
-        request.onreadystatechange = function () {
-            if (request.readyState === 4) {
-                if (request.responseText) {
-                    var responseList = myself.parseResponse(request);
-                    callBack.call(null, responseList, url);
-                } else {
-                    errorCall.call(
-                        null,
-                        url,
-                        'no response from:'
-                    );
-                }
-            }
-        };
-        request.send(null);
-    } catch (err) {
-        errorCall.call(this, err.toString(), url);
-    }
-};
-
-Cloud.prototype.supportsService = function (serviceName) {
-    return !!this.api[serviceName];
-};
-
-// Cloud: payload transformation
-
-Cloud.prototype.parseAPI = function (src) {
-    var api = {},
-        services;
-    services = src.split(" ");
-    services.forEach(function (service) {
-        var entries = service.split("&"),
-            serviceDescription = {},
-            parms;
-        entries.forEach(function (entry) {
-            var pair = entry.split("="),
-                key = decodeURIComponent(pair[0]).toLowerCase(),
-                val = decodeURIComponent(pair[1]);
-            if (key === "service") {
-                api[val] = serviceDescription;
-            } else if (key === "parameters") {
-                parms = val.split(",");
-                if (!(parms.length === 1 && !parms[0])) {
-                    serviceDescription.parameters = parms;
-                }
-            } else {
-                serviceDescription[key] = val;
-            }
-        });
+    const body = JSON.stringify({
+        username: this.username,
+        password_hash: hex_sha512(newPW),
     });
-    return api;
-};
-
-Cloud.prototype.parseResponse = function (request) {
-    var src = request.responseText;
-    if (request.getResponseHeader('content-type').indexOf('application/json') > -1) {
-        return JSON.parse(src);
-    } else if (request.getResponseHeader('content-type').indexOf('xml') > -1) {
-        return src;
-    } else {
-        return this.parseSnapResponse(src);
-    }
+    const response = await fetch(
+        `/api/users/${this.username}/password`,
+        {method: 'PATCH', body}
+    );
+    return await response.text();
 };
 
 Cloud.prototype.parseSnapResponse = function (src) {
@@ -433,206 +219,114 @@ Cloud.prototype.encodeDict = function (dict) {
 };
 
 Cloud.prototype.getUserData = async function() {
-    const url = (this.hasProtocol() ? '' : 'http://') +
-        this.url;
-    const request = new XMLHttpRequest();
-    request.open(
-        'GET',
-        url,
-        true
-    );
-    request.setRequestHeader(
-        'Content-Type',
-        'application/json; charset=utf-8'
-    );
-    request.withCredentials = true;
-    try {
-        await utils.requestPromise(request);
-        return JSON.parse(request.responseText);
-    } catch (err) {
-        console.warn('Unable to fetch user data:', err);
-    }
+    const response = await fetch(`/api/users/${this.username}`);
+    return await response.json();
 };
 
-Cloud.prototype.addRole = function(name, onSuccess, onFail) {
-    var myself = this;
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'addRole',
-                onSuccess,
-                onFail,
-                [name, myself.clientId, myself.projectId]
-            );
-        },
-        onFail
-    );
+Cloud.prototype.addRole = async function(name) {
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({name})
+    };
+    const response = await fetch(`/api/projects/${this.projectId}/`, options);
+    // TODO: should I request the new project state, too?
+    // I shouldn't have to since we should be subscribed to changes...
+    return await response.json();
 };
 
-Cloud.prototype.renameRole = function(roleId, name, onSuccess, onFail) {
-    var myself = this;
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'renameRole',
-                onSuccess,
-                onFail,
-                [roleId, name, myself.projectId]
-            );
-        },
-        onFail
-    );
+Cloud.prototype.renameRole = async function(roleId, name) {
+    const options = {
+        method: 'PATCH',
+        body: JSON.stringify({name})
+    };
+    const response = await fetch(`/api/projects/${this.projectId}/${roleId}`, options);
+    return await response.json();
 };
 
-Cloud.prototype.cloneRole = function(roleName, onSuccess, onFail) {
-    var myself = this;
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'cloneRole',
-                onSuccess,
-                onFail,
-                [roleName, myself.projectId]
-            );
-        },
-        onFail
-    );
+Cloud.prototype.cloneRole = async function(roleId) {
+    const xmlResponse = await fetch(`/api/projects/${this.projectId}/${roleId}/latest`);
+    const data = await xmlResponse.text();
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({name, data})
+    };
+    const response = await fetch(`/api/projects/${this.projectId}/${roleId}`, options);
+    // TODO: check response code
+    return await response.json();
 };
 
-Cloud.prototype.respondToInvitation = function (id, accepted, onSuccess, onFail) {
-    var myself = this,
-        args = [id, accepted, SnapCloud.clientId];
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'invitationResponse',
-                function(response) {
-                    var project = response[0];
-                    if (accepted) {
-                        myself.setLocalState(project.ProjectID, project.RoleID);
-                    }
-                    onSuccess(project);
-                },
-                onFail,
-                args
-            );
-        },
-        function(err) {
-            myself.ide.showMessage(err, 2);
-        }
-    );
+Cloud.prototype.inviteGuest = async function (username, roleId) {
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({username, roleId})
+    };
+    const response = await fetch(`/api/projects/${this.projectId}/occupants/invite`, options);
+    return await response.json();
 };
 
-Cloud.prototype.inviteGuest = function (userId, roleId) {
-    var myself = this;
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'inviteGuest',
-                nop,
-                nop,
-                [SnapCloud.clientId, userId, roleId, myself.projectId]
-            );
-        },
-        nop
-    );
+Cloud.prototype.inviteToCollaborate = async function (username) {
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({
+            sender: this.username,
+            projectId: this.projectId,
+        })
+    };
+    const response = await fetch(`/api/collaboration-invites/${username}`, options);
+    return await response.json();
 };
 
-Cloud.prototype.inviteToCollaborate = function () {
-    var myself = this,
-        args = Array.prototype.slice.call(arguments);
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'inviteToCollaborate',
-                nop,
-                nop,
-                args.concat(myself.projectId)
-            );
-        },
-        nop
-    );
+Cloud.prototype.respondToCollaborationInvite = async function (id, accepted) {
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({
+            response: accepted
+        })
+    };
+    const response = await fetch(`/api/collaboration-invites/${this.username}/${id}`, options);
+    return await response.json();
 };
 
-Cloud.prototype.joinActiveProject = function (id, callback, onError) {
-    var myself = this;
-    this.callService(
-        'joinActiveProject',
-        function(response) {
-            // Update the projectID
-            var projectInfo = response[0];
-            myself.setLocalState(projectInfo.ProjectID, projectInfo.RoleID);
-            callback(projectInfo);
-        },
-        onError,
-        [id]
-    );
+Cloud.prototype.addCollaborator = async function (projectId, username) {
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({
+            username
+        })
+    };
+    const response = await fetch(`/api/projects/${projectId}/collaborators/`, options);
+    return await response.json();
 };
 
-Cloud.prototype.evictCollaborator = function (id, projectId) {
-    var myself = this;
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'evictCollaborator',
-                nop,
-                nop,
-                [id, projectId || myself.projectId]
-            );
-        },
-        nop
-    );
+Cloud.prototype.joinActiveProject = async function (projectId) {
+    const response = await fetch(`/api/projects/${projectId}/occupants`);
+    const state = await response.json();
+    // TODO: get the least occupied role ID
+    // TODO: open that role
 };
 
-Cloud.prototype.collabResponse = function (id, accepted, onSuccess, onFail) {
-    var myself = this,
-        args = [id, accepted, SnapCloud.clientId];
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'inviteCollaboratorResponse',
-                onSuccess,
-                onFail,
-                args
-            );
-        },
-        function(err) {
-            myself.ide.showMessage(err, 2);
-        }
-    );
+Cloud.prototype.evictCollaborator = async function (id, projectId) {
+    const options = {
+        method: 'DELETE',
+    };
+    const response = await fetch(`/api/projects/${projectId}/${id}`, options);
+    return await response.json();
 };
 
-Cloud.prototype.getFriendList = function (callBack, errorCall) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'getFriendList',
-                function (usernames) {
-                    callBack(usernames);
-                },
-                errorCall
-            );
-        },
-        errorCall
-    );
+Cloud.prototype.getFriendList = async function () {
+    const response = await fetch(`/api/friends/${this.username}/online`);
+    return await response.json();
 };
 
-Cloud.prototype.getProject = function (id, callBack, errorCall, roleId) {
+Cloud.prototype.getProject = function (projectId, roleId) {
     var myself = this,
         args = [id];
 
     if (roleId) {
         args.push(roleId);
     }
+    // TODO: retrieve the given project/role metadata and source code.
+    // if no role is provided, default to the most recently edited one
 
     this.reconnect(
         function () {
@@ -653,6 +347,7 @@ Cloud.prototype.getProject = function (id, callBack, errorCall, roleId) {
 
 Cloud.prototype.getProjectByName = function (owner, name, callBack, errorCall) {
     var myself = this;
+    // TODO
 
     this.reconnect(
         function () {
@@ -671,145 +366,76 @@ Cloud.prototype.getProjectByName = function (owner, name, callBack, errorCall) {
     );
 };
 
-Cloud.prototype.getCollaboratorList = function (callBack, errorCall) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'getCollaborators',
-                callBack,
-                errorCall,
-                [myself.projectId]
-            );
-        },
-        errorCall
+Cloud.prototype.getCollaboratorList = async function () {
+    const [friends, collaborators] = Promise.all(
+        [
+            fetch(`/api/friends/${this.username}/`),
+            fetch(`/api/projects/${this.projectId}/collaborators`)
+        ]
+        .map(responseP => responseP.then(response => response.json()))
     );
+    return friends.map(username => ({
+        username,
+        collaborating: collaborators.includes(username),
+    }));
 };
 
-Cloud.prototype.deleteRole = function(roleId, onSuccess, onFail) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'deleteRole',
-                onSuccess,
-                onFail,
-                [roleId, myself.projectId]
-            );
-        },
-        onFail
-    );
+Cloud.prototype.deleteRole = async function(roleId) {
+    const method = 'DELETE';
+    const response = await fetch(`/api/projects/${this.projectdId}/${roleId}`, {method});
+    return response.status === 200;
 };
 
-Cloud.prototype.evictUser = function(userId, onSuccess, onFail) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'evictUser',
-                onSuccess,
-                onFail,
-                [userId, myself.projectId]
-            );
-        },
-        onFail
-    );
+Cloud.prototype.evictUser = async function(clientID) {
+    const method = 'DELETE';
+    const response = await fetch(`/api/projects/${this.projectdId}/occupants/${clientID}`, {method});
+    return response.status === 200;
 };
 
-Cloud.prototype.saveProject = function (ide, callBack, errorCall, overwrite, name) {
-    var myself = this,
-        serialized = ide.sockets.getSerializedProject();
+Cloud.prototype.saveProject = async function (roleData) {
 
-    myself.reconnect(
-        function () {
-            myself.callService(
-                'saveProject',
-                function (response, url) {
-                    myself.setLocalState(response.projectId, response.roleId);
-                    callBack.call(null, response, url);
-                },
-                errorCall,
-                [
-                    myself.roleId,
-                    ide.projectName,
-                    name || ide.room.name,
-                    SnapCloud.projectId,
-                    ide.room.ownerId,
-                    overwrite === true,
-                    serialized.SourceCode,
-                    serialized.Media
-                ]
-            );
-        },
-        errorCall
-    );
+    const url = `/api/projects/${this.projectId}/${this.roleId}`;
+    const options = {
+        method: 'POST',
+        body: JSON.stringify(roleData),
+    };
+    const response = await fetch(url, options);
+    return response.status === 200;
+    //myself.reconnect(
+        //function () {
+            //myself.callService(
+                //'saveProject',
+                //function (response, url) {
+                    //myself.setLocalState(response.projectId, response.roleId);
+                    //callBack.call(null, response, url);
+                //},
+                //errorCall,
+                //[
+                    //myself.roleId,
+                    //ide.projectName,
+                    //name || ide.room.name,
+                    //SnapCloud.projectId,
+                    //ide.room.ownerId,
+                    //overwrite === true,
+                    //serialized.SourceCode,
+                    //serialized.Media
+                //]
+            //);
+        //},
+        //errorCall
+    //);
 };
 
-Cloud.prototype.callService = function (
-    serviceName,
-    callBack,
-    errorCall,
-    args
-) {
-    // both callBack and errorCall are optional two-argument functions
-    var request = new XMLHttpRequest(),
-        service = this.api[serviceName],
-        myself = this,
-        stickyUrl,
-        postDict;
+Cloud.prototype.deleteProject = async function (projectId) {
+    const method = 'DELETE';
+    const response = await fetch(`/api/projects/${projectId}`, {method});
+    return response.status == 200;
+};
 
-    if (!this.api) {
-        errorCall.call(null, 'You are not connected', 'Cloud');
-        return;
-    }
-    if (!service) {
-        errorCall.call(
-            null,
-            'service ' + serviceName + ' is not available',
-            'API'
-        );
-        return;
-    }
-    if (args && args.length > 0) {
-        postDict = {};
-        service.parameters.forEach(function (parm, idx) {
-            if (args[idx] !== undefined) {
-                postDict[parm] = args[idx];
-            }
-        });
-    }
-    try {
-        stickyUrl = this.url + '/' + service.url;
-
-        request.open(service.method, stickyUrl, true);
-        request.withCredentials = true;
-        request.setRequestHeader(
-            'Content-Type',
-            'application/x-www-form-urlencoded'
-        );
-        //request.setRequestHeader('SESSIONGLUE', this.route);
-        request.onreadystatechange = function () {
-            if (request.readyState === 4) {
-                var responseList = [];
-                var hasErrorContent = request.responseText &&
-                        request.responseText.indexOf('ERROR') === 0;
-                var isErrorStatus = request.status < 200 || request.status > 399;
-                if (isErrorStatus || hasErrorContent) {
-                    errorCall.call(
-                        this,
-                        request.responseText,
-                        localize('Service:') + ' ' + localize(serviceName)
-                    );
-                    return;
-                }
-                responseList = myself.parseResponse(request);
-                callBack.call(null, responseList, service.url);
-            }
-        };
-        request.send(this.encodeDict(postDict));
-    } catch (err) {
-        errorCall.call(this, err.toString(), service.url);
-    }
+Cloud.prototype.publishProject = async function (projectId) {
+    const method = 'DELETE';
+    const response = await fetch(`/api/projects/${projectId}`, {method});
+    return response.status == 200;
 };
 
 Cloud.prototype.reconnect = function (callback, errorCall) {
@@ -829,19 +455,14 @@ Cloud.prototype.reconnect = function (callback, errorCall) {
 
 Cloud.prototype.disconnect = nop;
 
-Cloud.prototype.logout = function (callBack, errorCall) {
-    this.reconnect(
-        () => {
-            this.callService(
-                'logout',
-                callBack,
-                errorCall,
-                [this.clientId]
-            );
-            this.clear();
-        },
-        errorCall
-    );
+Cloud.prototype.logout = async function () {
+    const method = 'POST';
+    const response = await fetch('/api/users/logout', {method});
+    if (response.status == 200) {
+        this.clear();
+        return true;
+    }
+    return false;
 };
 
 Cloud.prototype.signup = function (
@@ -898,70 +519,19 @@ Cloud.prototype.signup = function (
     }
 };
 
-Cloud.prototype.isProjectActive = function (projectId, callBack, errorCall) {
-    var myself = this;
+Cloud.prototype.saveProjectCopy = async function() {
+    const response = await fetch(`/api/projects/${this.projectId}/latest`);
+    const xml = await response.text();
+    const options = {
+        method: 'POST',
+        body: xml,  // TODO: add options for allow rename?
+    };
+    const saveResponse = await fetch(`/api/projects/?allow_rename=true`, options);
 
-    this.reconnect(
-        function () {
-            myself.callService(
-                'isProjectActive',
-                function(response) {
-                    return callBack(response.active);
-                },
-                errorCall,
-                [
-                    myself.clientId,
-                    projectId
-                ]
-            );
-        },
-        errorCall
-    );
-};
+    // TODO: set the state with the network overlay
+    //this.setLocalState(response.projectId, this.roleId);
 
-Cloud.prototype.hasConflictingStoredProject = function (name, callBack, errorCall) {
-    var myself = this;
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'hasConflictingStoredProject',
-                function(response) {
-                    var hasConflicting = response[0].hasConflicting === 'true';
-
-                    return callBack(hasConflicting);
-                },
-                errorCall,
-                [
-                    myself.projectId,
-                    name
-                ]
-            );
-        },
-        errorCall
-    );
-};
-
-Cloud.prototype.saveProjectCopy = function(callBack, errorCall) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'saveProjectCopy',
-                function (response, url) {
-                    myself.setLocalState(response.projectId, myself.roleId);
-                    callBack.call(null, response, url);
-                    myself.disconnect();
-                },
-                errorCall,
-                [
-                    myself.clientId,
-                    myself.projectId
-                ]
-            );
-        },
-        errorCall
-    );
+    return saveResponse.status == 200;
 };
 
 Cloud.prototype.request = function (url, dict) {
@@ -1010,14 +580,13 @@ Cloud.prototype.resetLocalState = function () {
 };
 
 Cloud.prototype.newProject = function (name) {
-    var myself = this,
-        data = {
-            clientId: SnapCloud.clientId,
-            name: name || ''
-        };
+    var myself = this;
 
     if (!this.newProjectRequest) {
-        this.newProjectRequest = this.request('/api/newProject', data)
+        // TODO: use the name argument
+        const saveResponse = fetch(`/api/projects/?allow_rename=true`, {method: 'POST'});
+        this.newProjectRequest = saveResponse
+            .then(response => response.json())
             .then(function(result) {
                 myself.setLocalState(result.projectId, result.roleId);
                 myself.newProjectRequest = null;
@@ -1139,11 +708,11 @@ Cloud.prototype.getEntireProject = function(projectId, callback, errorCall) {
 };
 
 Cloud.prototype.linkAccount = async function(username, password, type) {
-    await this.request(`/api/linkAccount/${type}`, {username, password});
+    await this.request(`/api/v2/link/${this.username}/${type}`, {username, password});
 };
 
 Cloud.prototype.unlinkAccount = async function(account) {
-    await this.request('/api/unlinkAccount', account);
+    await this.request(`/api/v2/unlink/${this.username}`, account);
 };
 
 Cloud.prototype.exportProject = async function(projectId=this.projectId) {

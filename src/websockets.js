@@ -112,11 +112,7 @@ WebSocketManager.MessageHandlers = {
             localize(' a collaborator?'),
             'Collaboration Request',
             function() {
-                myself.sendMessage({
-                    type: 'elevate-permissions',
-                    projectId: msg.projectId,
-                    username: username
-                });
+                this.ide.cloud.addCollaborator(msg.projectId, username);
             }
         );
     },
