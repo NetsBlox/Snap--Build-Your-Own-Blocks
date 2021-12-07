@@ -9,7 +9,11 @@ var roomID;
 var bodyMeshes = {};
 var availableEnvironments = [];
 
-const connectToRoboScapeSim = function(){
+const connectToRoboScapeSim = function () {
+    if (socket && socket.connected) {
+        return;
+    }
+
     socket = io("//localhost:9001", { secure: true });
     //socket = io("//3-222-232-255.nip.io", { secure: true });
     socket.on('connect', e => {

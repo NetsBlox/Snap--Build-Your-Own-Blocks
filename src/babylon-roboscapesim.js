@@ -19,16 +19,20 @@ function RoboScapeSimCanvasMorph(title = 'Canvas') {
     this.init(title);
 }
 
-RoboScapeSimCanvasMorph.prototype.init = function(title) {
-    var myself = this;
-
+RoboScapeSimCanvasMorph.prototype.init = function (title) {
     this.minWidth = 600;
     this.minHeight = 300;
     
-    this.canvas = document.createElement('canvas');
-    this.canvas.id = 'main-canvas';
-    this.canvas.style.position = 'relative';
-    canvas = this.canvas;
+    if (!canvas)
+    {
+        canvas = document.createElement('canvas');
+        canvas.id = 'main-canvas';
+        canvas.style.position = 'relative';
+    } else {
+        document.body.appendChild(canvas);
+    }
+
+    this.canvas = canvas;
 
     this.loaded = false;
 
@@ -63,10 +67,8 @@ RoboScapeSimCanvasMorph.prototype.init = function(title) {
 
     this.robotRow.add(spacerMorph);
 
-
     this.robotRow.add(new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            console.log('reset');
             socket.emit('resetRobot', this.robotsList.getValue());
         }
     }, 'Reset'));
@@ -79,7 +81,6 @@ RoboScapeSimCanvasMorph.prototype.init = function(title) {
     
     this.robotRow.add(new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            console.log('button');
             socket.emit('robotButton', this.robotsList.getValue(), true);
             
             // Set unpress to happen automatically
@@ -247,6 +248,12 @@ RoboScapeSimCanvasMorph.prototype.setCanvasPosition = function() {
 RoboScapeSimCanvasMorph.prototype.popUp = function(world) {
     document.body.appendChild(this.canvas);
     RoboScapeSimCanvasMorph.uber.popUp.call(this, world);
+
+    // Re-add canvas if missing
+    if (canvas.parentNode == null){
+        document.body.appendChild(canvas);
+    }
+
     this.setCanvasPosition();
 
     var myself = this;
@@ -399,4 +406,21 @@ Promise.all(scriptPromises).then(() => {
             window.externalVariables.roboscapeSimCanvasInstance.hide();
         }
     }, 200);
+});
+
+let tempCanvasVisibility = false;
+updateLoopFunctions.push(() => {
+    if (window.externalVariables.roboscapeSimCanvasInstance.overlappedMorphs().filter(morph => morph.parent == world).length > 1) {
+        if (!tempCanvasVisibility) {
+            // Hide canvas due to overlap
+            tempCanvasVisibility = window.externalVariables.roboscapeSimCanvasInstance.canvas.style.display;
+            window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
+        }
+    } else {
+        // Restore canvas state
+        if (tempCanvasVisibility) {
+            window.externalVariables.roboscapeSimCanvasInstance.canvas.style.display = tempCanvasVisibility;
+            tempCanvasVisibility = false;
+        }
+    }
 });
