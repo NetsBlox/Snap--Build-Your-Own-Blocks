@@ -79,9 +79,14 @@ RoboScapeSimCanvasMorph.prototype.init = function(title) {
     this.robotRow.add(new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             console.log('button');
-            socket.emit('robotButton', this.robotsList.getValue());
+            socket.emit('robotButton', this.robotsList.getValue(), true);
+            
+            // Set unpress to happen automatically
+            setTimeout(() => {
+                socket.emit('robotButton', this.robotsList.getValue(), false);
+            }, 250);
         }
-    }, 'Button'));
+    }, 'Encrypt'));
     
     spacerMorph = new Morph();
     spacerMorph.setWidth(10);
