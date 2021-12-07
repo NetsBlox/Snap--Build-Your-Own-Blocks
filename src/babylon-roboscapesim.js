@@ -4,6 +4,7 @@ var stage;
 var scene;
 var camera;
 var followCam;
+var firstPersonCam;
 var ui;
 var vrHelper;
 var roboscapeSimCanvasInstance;
@@ -104,6 +105,17 @@ RoboScapeSimCanvasMorph.prototype.init = function(title) {
             scene.activeCamera = camera;
         }
     }, 'Chase Cam'));
+
+    this.robotRow.add(new PushButtonMorph(null, () => {
+        if (this.robotsList.getValue() != '') {
+            // Activate chase cam for robot
+            firstPersonCam.targetRobot = this.robotsList.getValue();
+            scene.activeCamera = firstPersonCam;
+        } else {
+            // Reset to free camera
+            scene.activeCamera = camera;
+        }
+    }, 'First Person Cam'));
 
     this.add(this.robotRow);
 
@@ -305,12 +317,15 @@ const activateBabylon = async function () {
     camera.attachControl(canvas, true);
     camera.setTarget(new BABYLON.Vector3(0, 0, 0));
     
-    followCam = new BABYLON.FollowCamera("followcam", new BABYLON.Vector3(5, 5, 5), scene);
+    followCam = new BABYLON.FollowCamera('followcam', new BABYLON.Vector3(5, 5, 5), scene);
     followCam.heightOffset = 2;
     followCam.radius = 3;
     followCam.rotationOffset = 0;
     followCam.cameraAcceleration = 0.25;
     followCam.maxCameraSpeed = 100;
+
+    firstPersonCam = new BABYLON.UniversalCamera('firstPersonCam', new BABYLON.Vector3(5, 5, 5), scene, false);
+    firstPersonCam.minZ = 0.01;
 
     light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), scene);
     

@@ -258,6 +258,21 @@ setTimeout(() => {
             }
         }
     });
+
+    updateLoopFunctions.push(() => {
+        if (firstPersonCam && scene.activeCamera == firstPersonCam) {
+            if (firstPersonCam.targetRobot && bodyMeshes['robot_' + firstPersonCam.targetRobot]) {
+                let body = bodyMeshes['robot_' + firstPersonCam.targetRobot];
+                let offset = new BABYLON.Vector3();
+
+                BABYLON.Vector3.Forward().scale(0.11).rotateByQuaternionToRef(body.rotationQuaternion, offset);
+                offset = offset.add(new BABYLON.Vector3(0, 0.05, 0));
+
+                firstPersonCam.position = body.position.add(offset);
+                firstPersonCam.rotationQuaternion = body.rotationQuaternion;
+            }
+        }
+    });
 }, 200);
 
 // Mapping of robots to currently playing notes (so robots can only play one at a time)
