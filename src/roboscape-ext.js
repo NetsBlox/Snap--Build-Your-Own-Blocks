@@ -140,32 +140,33 @@
 
     }
 
-    script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'http://localhost:8080/src/babylon-roboscapesim.js';
-    script.async = false;
-    document.body.appendChild(script);
+    if (window.origin.includes("localhost")) {
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'http://localhost:8080/src/babylon-roboscapesim.js';
+        script.async = false;
+        document.body.appendChild(script);
 
 
-    script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'http://localhost:8080/src/roboscapesim3.js';
-    script.async = false;
-    document.body.appendChild(script);
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'http://localhost:8080/src/roboscapesim.js';
+        script.async = false;
+        document.body.appendChild(script);
+    } else {
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://extensions.netsblox.org/RoboScapeOnline/js/babylon-roboscapesim.js';
+        script.async = false;
+        document.body.appendChild(script);
 
 
-    // script = document.createElement('script');
-    // script.type = 'text/javascript';
-    // script.src = 'https://netsblox.org/babylon-roboscapesim.js';
-    // script.async = false;
-    // document.body.appendChild(script);
-
-
-    // script = document.createElement('script');
-    // script.type = 'text/javascript';
-    // script.src = 'https://netsblox.org/roboscapesim3.js';
-    // script.async = false;
-    // document.body.appendChild(script);
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://extensions.netsblox.org/RoboScapeOnline/js/roboscapesim.js';
+        script.async = false;
+        document.body.appendChild(script);
+    }
 
     NetsBloxExtensions.register(RoboScapeSim);
 })();
