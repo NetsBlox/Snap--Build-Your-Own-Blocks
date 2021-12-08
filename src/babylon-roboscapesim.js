@@ -15,7 +15,7 @@ RoboScapeSimCanvasMorph.prototype = new DialogBoxMorph();
 RoboScapeSimCanvasMorph.uber = DialogBoxMorph.prototype;
 RoboScapeSimCanvasMorph.id = 0;
 
-function RoboScapeSimCanvasMorph(title = 'Canvas') {
+function RoboScapeSimCanvasMorph(title = 'Not connected') {
     this.init(title);
 }
 
