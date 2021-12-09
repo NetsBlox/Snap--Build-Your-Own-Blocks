@@ -23,7 +23,10 @@ const connectToRoboScapeSim = function () {
         }
 
         socket.on('connect', e => {
-        
+            
+            // Tell server who we are
+            socket.emit('getRooms', SnapCloud.username || SnapCloud.clientId);
+
             // Handle incremental updates
             socket.on('update', data => {
                 if (performance.now() - nextUpdateTime > 10) {
