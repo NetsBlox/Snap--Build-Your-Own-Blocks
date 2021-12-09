@@ -11,107 +11,112 @@ var availableEnvironments = [];
 var availableRooms = [];
 
 const connectToRoboScapeSim = function () {
-    if (socket && socket.connected) {
-        return;
-    }
+    return new Promise((resolve, reject) => {
+        if (socket && socket.connected) {
+            resolve(socket);
+        }
 
-    if (window.origin.includes("localhost")) {
-        socket = io("//localhost:9001", { secure: true });
-    } else {
-        socket = io("//3-222-232-255.nip.io", { secure: true });
-    }
+        if (window.origin.includes("localhost")) {
+            socket = io("//localhost:9001", { secure: true });
+        } else {
+            socket = io("//3-222-232-255.nip.io", { secure: true });
+        }
 
-    socket.on('connect', e => {
+        socket.on('connect', e => {
         
+            // Handle incremental updates
+            socket.on('update', data => {
+                if (performance.now() - nextUpdateTime > 10) {
+                    bodies = { ...nextBodies };
+                    nextBodies = { ...bodies, ...data };
+                    lastUpdateTime = nextUpdateTime;
+                    nextUpdateTime = performance.now();
+                }
+            });
 
-        // Handle incremental updates
-        socket.on('update', data => {
-            if (performance.now() - nextUpdateTime > 10) {
-                bodies = { ...nextBodies };
-                nextBodies = { ...bodies, ...data };
-                lastUpdateTime = nextUpdateTime;
+            // Handle full updates
+            socket.on('fullUpdate', data => {
+                bodiesInfo = { ...data };
+                bodies = { ...data, ...bodies };
+                nextBodies = { ...data };
+                lastUpdateTime = lastUpdateTime || performance.now() - 50;
                 nextUpdateTime = performance.now();
-            }
+
+                // Create entries in dropdown
+                window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
+                    Object.values(bodiesInfo).filter(info => info.image == 'parallax_robot')
+                        .reduce((prev, info) => {
+                            prev[info.label.replace('robot_', '')] = info.label.replace('robot_', '');
+                            return prev;
+                        }, {});
+            });
+
+            // Handle room info
+            socket.on('roomInfo', info => {
+                roomInfo = info;
+
+                if (info.background != '') {
+                    roomBG.src = `/img/backgrounds/${info.background}.png`;
+                }
+            });
+
+            socket.on('error', error => {
+                console.error(error);
+                world.inform(error);
+            });
+
+            // If we were previously connected, let server know we had an issue
+            socket.on('reconnect', attempt => {
+                console.log(`Reconnected after ${attempt} attempts!`);
+                socket.emit('postReconnect', roomID);
+            });
+
+            // Room joined message
+            socket.on('roomJoined', result => {
+                if (result !== false) {
+                    world.inform(`Joined room ${result}`);
+                    roomID = result;
+
+                    // Start running
+                    updateCanvasTitle(result);
+
+                } else {
+                    // Failed to join room
+                    world.inform('Failed to join room');
+                }
+            });
+
+            // Update list of available environments
+            socket.on('availableEnvironments', list => {
+                availableEnvironments = list;
+                resolve(socket);
+            });
+
+            // Update list of quick-join rooms
+            socket.on('availableRooms', info => {
+                ({ availableRooms } = info);
+            });
+
+            // Robot beeped
+            socket.on('beep', args => {
+                beepData = args[0];
+                console.log(`beep ${beepData.Robot} ${beepData.Frequency} hz, ${beepData.Duration} ms `);
+                playNote(beepData.Robot, beepData.Frequency, beepData.Duration);
+            });
+
+            // Kicked from room
+            socket.on('roomLeft', args => {
+                leaveRoom();
+            });
+
         });
 
-        // Handle full updates
-        socket.on('fullUpdate', data => {
-            bodiesInfo = { ...data };
-            bodies = {...data, ...bodies};
-            nextBodies = { ...data };
-            lastUpdateTime = lastUpdateTime || performance.now() - 50;
-            nextUpdateTime = performance.now();
-
-            // Create entries in dropdown
-            window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
-                Object.values(bodiesInfo).filter(info => info.image == 'parallax_robot')
-                    .reduce((prev, info) => {
-                        prev[info.label.replace('robot_', '')] = info.label.replace('robot_', '');
-                        return prev;
-                    }, {});
-        });
-
-        // Handle room info
-        socket.on('roomInfo', info => {
-            roomInfo = info;
-
-            if (info.background != '') {
-                roomBG.src = `/img/backgrounds/${info.background}.png`;
-            }
-        });
-
-        socket.on('error', error => {
-            console.error(error);
-            world.inform(error);
-        });
-
-        // If we were previously connected, let server know we had an issue
-        socket.on('reconnect', attempt => {
-            console.log(`Reconnected after ${attempt} attempts!`);
-            socket.emit('postReconnect', roomID);
-        });
-
-        // Room joined message
-        socket.on('roomJoined', result => {
-            if (result !== false) {
-                world.inform(`Joined room ${result}`);
-                roomID = result;
-
-                // Start running
-                updateCanvasTitle(result);
-
-            } else {
-                // Failed to join room
-                world.inform('Failed to join room');
-            }
-        });
-
-        // Update list of available environments
-        socket.on('availableEnvironments', list => {
-            availableEnvironments = list;
-        });
-
-        // Update list of quick-join rooms
-        socket.on('availableRooms', info => {
-            ({ availableRooms } = info);
-        });
-
-        // Robot beeped
-        socket.on('beep', args => {
-            beepData = args[0];
-            console.log(`beep ${beepData.Robot} ${beepData.Frequency} hz, ${beepData.Duration} ms `);
-            playNote(beepData.Robot, beepData.Frequency, beepData.Duration);
-        });
-
-        // Kicked from room
-        socket.on('roomLeft', args => {
+        // Lost connection
+        socket.on('disconnect', () => {
             leaveRoom();
         });
-    });
 
-    // Lost connection
-    socket.on('disconnect', () => {
-        leaveRoom();
+        setTimeout(reject, 3500);
     });
 };
 

@@ -13,11 +13,7 @@
         getMenu() {
             return {
                 'New Room': function () {
-                    if (!socket) {
-                        connectToRoboScapeSim();
-                    }
-
-                    setTimeout(() => {
+                    connectToRoboScapeSim().then(() => {
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('NewRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph();
@@ -60,15 +56,10 @@
                         dialog.fixLayout();
                         dialog.popUp(world);
                         
-                    }, 250);
+                    });
                 },
                 'Join Room': function () {
-                    
-                    if (!socket) {
-                        connectToRoboScapeSim();
-                    }
-
-                    setTimeout(() => {
+                    connectToRoboScapeSim().then(() => {
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph(null, false, availableRooms.reduce((p, r) => {
@@ -112,7 +103,7 @@
                         dialog.fixLayout();
                         dialog.popUp(world);
                         
-                    }, 250);
+                    });
                 },
                 'Open 3D view': function () {
                     if (window.externalVariables.roboscapeSimCanvasInstance) {
