@@ -8,6 +8,7 @@ var roomInfo;
 var roomID;
 var bodyMeshes = {};
 var availableEnvironments = [];
+var availableRooms = [];
 
 const connectToRoboScapeSim = function () {
     if (socket && socket.connected) {
@@ -61,6 +62,7 @@ const connectToRoboScapeSim = function () {
 
         socket.on('error', error => {
             console.error(error);
+            world.inform(error);
         });
 
         // If we were previously connected, let server know we had an issue
@@ -87,6 +89,11 @@ const connectToRoboScapeSim = function () {
         // Update list of available environments
         socket.on('availableEnvironments', list => {
             availableEnvironments = list;
+        });
+
+        // Update list of quick-join rooms
+        socket.on('availableRooms', info => {
+            ({ availableRooms } = info);
         });
 
         // Robot beeped
