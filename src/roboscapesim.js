@@ -92,7 +92,10 @@ const connectToRoboScapeSim = function () {
             // Update list of available environments
             socket.on('availableEnvironments', list => {
                 availableEnvironments = list;
-                resolve(socket);
+                
+                setTimeout(() => {
+                    resolve(socket);
+                }, 50);
             });
 
             // Update list of quick-join rooms
