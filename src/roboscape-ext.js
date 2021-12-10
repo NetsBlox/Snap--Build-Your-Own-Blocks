@@ -42,7 +42,7 @@
 
                         dialog.addButton('submit', 'Create Room');
                         dialog.submit = () => {                        
-                            newRoom('default', roomPasswordField.getValue(), environmentField.getValue());
+                            newRoom(environmentField.getValue(), roomPasswordField.getValue());
                             window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                             dialog.destroy();
                         };
