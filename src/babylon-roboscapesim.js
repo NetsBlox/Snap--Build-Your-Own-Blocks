@@ -415,13 +415,13 @@ updateLoopFunctions.push(() => {
     if (window.externalVariables.roboscapeSimCanvasInstance.overlappedMorphs().filter(morph => morph.parent == world).length > 1) {
         if (!tempCanvasVisibility) {
             // Hide canvas due to overlap
-            tempCanvasVisibility = window.externalVariables.roboscapeSimCanvasInstance.canvas.style.display;
+            tempCanvasVisibility = true;
             window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
         }
     } else {
         // Restore canvas state
         if (tempCanvasVisibility) {
-            window.externalVariables.roboscapeSimCanvasInstance.canvas.style.display = tempCanvasVisibility;
+            window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
             tempCanvasVisibility = false;
         }
     }
