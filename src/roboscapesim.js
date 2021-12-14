@@ -4,6 +4,9 @@ var bodies = {};
 var nextBodies = {};
 var lastUpdateTime;
 var nextUpdateTime;
+var startServerTime = 0;
+var lastUpdateServerTime = 0;
+var nextUpdateServerTime = 0;
 var roomInfo;
 var roomID;
 var bodyMeshes = {};
@@ -61,6 +64,8 @@ const connectToRoboScapeSim = function () {
                 if (info.background != '') {
                     roomBG.src = `/img/backgrounds/${info.background}.png`;
                 }
+
+                startServerTime = info.Time;
             });
 
             socket.on('error', error => {
@@ -222,7 +227,12 @@ setTimeout(() => {
             for (let label of Object.keys(bodies)) {
                 // create if new
                 if (!Object.keys(bodyMeshes).includes(label)) {
-                    if(Object.keys(bodiesInfo).includes(label)){
+                    if (Object.keys(bodiesInfo).includes(label)) {
+                        
+                        if (!bodiesInfo[label].width) {
+                            continue;
+                        }
+
                         if (bodiesInfo[label].image == 'parallax_robot') {
                             bodyMeshes[label] = addRobot().then(result => {
                                 //result.setPivotMatrix(BABYLON.Matrix.Translation(0, 1, 0), false);
@@ -253,6 +263,11 @@ setTimeout(() => {
 
                     // Update position
                     let body = bodies[label];
+                    
+                    if (!body.pos) {
+                        continue;
+                    }
+
                     let { x, y, z } = body.pos;
                     
                     let angle = {...body.angle};
