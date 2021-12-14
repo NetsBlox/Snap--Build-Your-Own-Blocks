@@ -5,6 +5,8 @@ var nextBodies = {};
 var lastUpdateTime;
 var nextUpdateTime;
 var startServerTime = 0;
+var startClientTime = 0;
+var serverTimeOffset = 0;
 var lastUpdateServerTime = 0;
 var nextUpdateServerTime = 0;
 var roomInfo;
@@ -37,6 +39,8 @@ const connectToRoboScapeSim = function () {
                     nextBodies = { ...bodies, ...data };
                     lastUpdateTime = nextUpdateTime;
                     nextUpdateTime = performance.now();
+                    lastUpdateServerTime = nextUpdateServerTime;
+                    nextUpdateServerTime = data.time * 1000;
                 }
             });
 
@@ -47,6 +51,11 @@ const connectToRoboScapeSim = function () {
                 nextBodies = { ...data };
                 lastUpdateTime = lastUpdateTime || performance.now() - 50;
                 nextUpdateTime = performance.now();
+                lastUpdateServerTime = data.time * 1000;
+                nextUpdateServerTime = data.time * 1000;
+                startClientTime = nextUpdateTime;
+                startServerTime = data.time * 1000;
+                serverTimeOffset = startClientTime - startServerTime;
 
                 // Create entries in dropdown
                 window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
@@ -65,7 +74,9 @@ const connectToRoboScapeSim = function () {
                     roomBG.src = `/img/backgrounds/${info.background}.png`;
                 }
 
-                startServerTime = info.Time;
+                startServerTime = info.time * 1000;
+                startClientTime = performance.now();
+                serverTimeOffset = startClientTime - startServerTime;
             });
 
             socket.on('error', error => {
@@ -211,17 +222,20 @@ script.src = 'https://cdn.socket.io/socket.io-2.3.1.slim.js';
 document.body.appendChild(script);
 
 var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
-    t = (t - t2) / Math.max(16, t2 - t1);
+    t = (t - t2) / Math.max(1, t2 - t1);
     return BABYLON.Scalar.Lerp(x1, x2, t);
 }
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
-    t = (t - t2) / Math.max(32, t2 - t1);
+    t = (t - t2) / Math.max(1, t2 - t1);
     return BABYLON.Quaternion.Slerp(q1, q2, t);
 }
 
 setTimeout(() => {
     updateLoopFunctions.push((frameTime) => {
+        
+        let tempNextTime = lastUpdateTime + (nextUpdateServerTime - lastUpdateServerTime);
+
         if (bodies) {
             // Show robots
             for (let label of Object.keys(bodies)) {
@@ -277,14 +291,10 @@ setTimeout(() => {
                     // y += ((nextBodies[label].pos.y - y) * (frameTime - lastUpdateTime)) / Math.max(1, nextUpdateTime - lastUpdateTime);
                     // z += ((nextBodies[label].pos.z - z) * (frameTime - lastUpdateTime)) / Math.max(1, nextUpdateTime - lastUpdateTime);
 
-                    x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, nextUpdateTime, frameTime);
-                    y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, nextUpdateTime, frameTime);
-                    z = interpolate(z, nextBody.pos.z, body.vel.z || 0, nextBody.vel.z || 0, lastUpdateTime, nextUpdateTime, frameTime);
+                    x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
+                    y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
+                    z = interpolate(z, nextBody.pos.z, body.vel.z || 0, nextBody.vel.z || 0, lastUpdateTime, tempNextTime, frameTime);
 
-                    
-                    // angle.x += ((nextBodies[label].angle.x - angle.x) * (frameTime - lastUpdateTime)) / Math.max(1, nextUpdateTime - lastUpdateTime);
-                    // angle.y += ((nextBodies[label].angle.y - angle.y) * (frameTime - lastUpdateTime)) / Math.max(1, nextUpdateTime - lastUpdateTime);
-                    // angle.z += ((nextBodies[label].angle.z - angle.z) * (frameTime - lastUpdateTime)) / Math.max(1, nextUpdateTime - lastUpdateTime);
                     angle = new BABYLON.Quaternion(
                         angle.X, angle.Y, angle.Z, angle.W
                     );
@@ -297,10 +307,7 @@ setTimeout(() => {
                     bodyMeshes[label].position.y = y;
                     bodyMeshes[label].position.z = z;
 
-                    bodyMeshes[label].rotationQuaternion = interpolateRotation(angle, nextAngle, null, null, lastUpdateTime, nextUpdateTime, frameTime);
-                    // bodyMeshes[label].rotationQuaternion = new BABYLON.Quaternion(
-                    //     angle.X, angle.Y, angle.Z, angle.W
-                    // );
+                    bodyMeshes[label].rotationQuaternion = interpolateRotation(angle, nextAngle, null, null, lastUpdateTime, tempNextTime, frameTime);
                 }
             }
         }
