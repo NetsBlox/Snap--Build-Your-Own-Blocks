@@ -117,6 +117,9 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
             scene.activeCamera = camera;
         }
     }, 'First Person Cam'));
+    this.robotRow.add(new PushButtonMorph(null, () => {
+        scene.activeCamera = camera;
+    }, 'Free Cam'));
 
     this.add(this.robotRow);
 
