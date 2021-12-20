@@ -196,26 +196,25 @@ function leaveRoom() {
     updateCanvasTitle("Not connected");
 }
 
+var modelsDir;
+
+if (window.origin.includes("localhost")) {
+    modelsDir = 'http://localhost:8080/src/';
+} else {
+    modelsDir = 'https://extensions.netsblox.org/RoboScapeOnline/assets/';
+}
+
 /**
  * Import robot mesh and add it to scene
  * @returns Robot mesh object
  */
 const addRobot = async function () {
-    let imported;
-
-    if (window.origin.includes("localhost")) {
-        imported = await BABYLON.SceneLoader.ImportMeshAsync('', 'http://localhost:8080/src/', 'parallax_robot.gltf');
-    } else {
-        imported = await BABYLON.SceneLoader.ImportMeshAsync('', 'https://extensions.netsblox.org/RoboScapeOnline/assets/', 'parallax_robot.gltf');
-    }
-
+    imported = await BABYLON.SceneLoader.ImportMeshAsync('', modelsDir, 'parallax_robot.gltf');
     imported.meshes[0].scaling.scaleInPlace(2);
     return imported.meshes[0];
 };
 
-// Create update function for robots
-
-// Load geckos
+// Load socket.io
 var script = document.createElement('script');
 script.type = 'text/javascript';
 script.src = 'https://cdn.socket.io/socket.io-2.3.1.slim.js';
@@ -249,16 +248,10 @@ setTimeout(() => {
 
                         if (bodiesInfo[label].image == 'parallax_robot') {
                             bodyMeshes[label] = addRobot().then(result => {
-                                //result.setPivotMatrix(BABYLON.Matrix.Translation(0, 1, 0), false);
-                                //result.position.y = 0.15;
                                 bodyMeshes[label] = result;
                             });
                         } else {
                             bodyMeshes[label] = addBlock(bodiesInfo[label].width, bodiesInfo[label].height, bodiesInfo[label].depth).then(result => {
-                                //result.setPivotMatrix(BABYLON.Matrix.Translation(0, 1, 0), false);
-                                //result.position.y = 1;
-
-                                
                                 if(label == "ground"){
                                     var groundMaterial = new BABYLON.StandardMaterial("groundMaterial");
                                     groundMaterial.diffuseColor = new BABYLON.Color3(0.35, 0.35, 0.35);
@@ -287,10 +280,6 @@ setTimeout(() => {
                     let angle = {...body.angle};
                     const nextBody = nextBodies[label];
                     // Extrapolate/Interpolate position and rotation
-                    // x += ((nextBodies[label].pos.x - x) * (frameTime - lastUpdateTime)) / Math.max(1, nextUpdateTime - lastUpdateTime);
-                    // y += ((nextBodies[label].pos.y - y) * (frameTime - lastUpdateTime)) / Math.max(1, nextUpdateTime - lastUpdateTime);
-                    // z += ((nextBodies[label].pos.z - z) * (frameTime - lastUpdateTime)) / Math.max(1, nextUpdateTime - lastUpdateTime);
-
                     x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
                     y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
                     z = interpolate(z, nextBody.pos.z, body.vel.z || 0, nextBody.vel.z || 0, lastUpdateTime, tempNextTime, frameTime);
