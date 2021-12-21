@@ -228,7 +228,7 @@ Cloud.prototype.addRole = async function(name) {
         method: 'POST',
         body: JSON.stringify({name})
     };
-    const response = await fetch(`/api/projects/${this.projectId}/`, options);
+    const response = await fetch(`/api/projects/id/${this.projectId}/`, options);
     // TODO: should I request the new project state, too?
     // I shouldn't have to since we should be subscribed to changes...
     return await response.json();
@@ -239,12 +239,12 @@ Cloud.prototype.renameRole = async function(roleId, name) {
         method: 'PATCH',
         body: JSON.stringify({name})
     };
-    const response = await fetch(`/api/projects/${this.projectId}/${roleId}`, options);
+    const response = await fetch(`/api/projects/id/${this.projectId}/${roleId}`, options);
     return await response.json();
 };
 
 Cloud.prototype.cloneRole = async function(roleId) {
-    const xmlResponse = await fetch(`/api/projects/${this.projectId}/${roleId}/latest`);
+    const xmlResponse = await fetch(`/api/projects/id/${this.projectId}/${roleId}/latest`);
     const data = await xmlResponse.text();
     const options = {
         method: 'POST',
