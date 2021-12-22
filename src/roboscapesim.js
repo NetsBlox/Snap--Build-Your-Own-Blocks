@@ -14,6 +14,7 @@ var roomID;
 var bodyMeshes = {};
 var availableEnvironments = [];
 var availableRooms = [];
+var material_count = 0;
 
 const connectToRoboScapeSim = function () {
     return new Promise((resolve, reject) => {
@@ -230,6 +231,25 @@ var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
     return BABYLON.Quaternion.Slerp(q1, q2, t);
 }
 
+var hex2rgb = function (hexstring) {
+    if (hexstring[0] != '#') {
+        hexstring = '#' + hexstring;
+    }
+
+    if(hexstring.length == 4){
+        r = parseInt(hexstring.charAt(1) + "" + hexstring.charAt(1), 16) / 255;
+        g = parseInt(hexstring.charAt(2) + "" + hexstring.charAt(2), 16) / 255;
+        b = parseInt(hexstring.charAt(3) + "" + hexstring.charAt(3), 16) / 255;
+    }
+    else{
+        r  = parseInt(hexstring.charAt(1) + "" + hexstring.charAt(2), 16) / 255;
+        g  = parseInt(hexstring.charAt(3) + "" + hexstring.charAt(4), 16) / 255;
+        b  = parseInt(hexstring.charAt(5) + "" + hexstring.charAt(6), 16) / 255;
+    }
+
+    return { r, g, b };
+}
+
 setTimeout(() => {
     updateLoopFunctions.push((frameTime) => {
         
@@ -252,10 +272,13 @@ setTimeout(() => {
                             });
                         } else {
                             bodyMeshes[label] = addBlock(bodiesInfo[label].width, bodiesInfo[label].height, bodiesInfo[label].depth).then(result => {
-                                if(label == "ground"){
-                                    var groundMaterial = new BABYLON.StandardMaterial("groundMaterial");
-                                    groundMaterial.diffuseColor = new BABYLON.Color3(0.35, 0.35, 0.35);
-                                    result.material = groundMaterial;    
+                                if(bodiesInfo[label].image && bodiesInfo[label].image[0] == "#"){
+                                    var material = new BABYLON.StandardMaterial("material" + material_count++);
+
+                                    let color = hex2rgb(bodiesInfo[label].image);
+
+                                    material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
+                                    result.material = material;    
                                 }
 
                                 bodyMeshes[label] = result;
