@@ -318,52 +318,19 @@ Cloud.prototype.getFriendList = async function () {
     return await response.json();
 };
 
-Cloud.prototype.getProject = function (projectId, roleId) {
-    var myself = this,
-        args = [id];
-
-    if (roleId) {
-        args.push(roleId);
-    }
-    // TODO: retrieve the given project/role metadata and source code.
-    // if no role is provided, default to the most recently edited one
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'getProject',
-                function (response) {
-                    var xml = response[0];
-                    myself.setLocalState(xml.ProjectID, xml.RoleID);
-                    callBack(xml);
-                },
-                errorCall,
-                args
-            );
-        },
-        errorCall
-    );
+Cloud.prototype.getProject = async function (projectId, roleId) {
+    const response = await fetch(`/api/projects/id/${projectId}/${roleId}`);
+    const project = await response.json();
+    this.setLocalState(projectId, roleId);
+    return project;
 };
 
-Cloud.prototype.getProjectByName = function (owner, name, callBack, errorCall) {
-    var myself = this;
-    // TODO
-
-    this.reconnect(
-        function () {
-            myself.callService(
-                'getProjectByName',
-                function (response) {
-                    var xml = response[0];
-                    myself.setLocalState(xml.ProjectID, xml.RoleID);
-                    callBack(xml);
-                },
-                errorCall,
-                [owner, name]
-            );
-        },
-        errorCall
-    );
+Cloud.prototype.getProjectByName = async function (owner, name) {
+    const response = await fetch(`/api/projects/user/${owner}/${name}`);
+    const project = await response.json();
+    this.setLocalState(project.ProjectID, project.RoleID);
+    console.assert(project.ProjectID, 'Response does not have a project ID');
+    return project;
 };
 
 Cloud.prototype.getCollaboratorList = async function () {
@@ -382,12 +349,13 @@ Cloud.prototype.getCollaboratorList = async function () {
 
 Cloud.prototype.deleteRole = async function(roleId) {
     const method = 'DELETE';
-    const response = await fetch(`/api/projects/${this.projectdId}/${roleId}`, {method});
+    const response = await fetch(`/api/projects/id/${this.projectId}/${roleId}`, {method});
     return response.status === 200;
 };
 
 Cloud.prototype.evictUser = async function(clientID) {
     const method = 'DELETE';
+    // FIXME: This has changed
     const response = await fetch(`/api/projects/${this.projectdId}/occupants/${clientID}`, {method});
     return response.status === 200;
 };
@@ -401,29 +369,6 @@ Cloud.prototype.saveProject = async function (roleData) {
     };
     const response = await fetch(url, options);
     return response.status === 200;
-    //myself.reconnect(
-        //function () {
-            //myself.callService(
-                //'saveProject',
-                //function (response, url) {
-                    //myself.setLocalState(response.projectId, response.roleId);
-                    //callBack.call(null, response, url);
-                //},
-                //errorCall,
-                //[
-                    //myself.roleId,
-                    //ide.projectName,
-                    //name || ide.room.name,
-                    //SnapCloud.projectId,
-                    //ide.room.ownerId,
-                    //overwrite === true,
-                    //serialized.SourceCode,
-                    //serialized.Media
-                //]
-            //);
-        //},
-        //errorCall
-    //);
 };
 
 Cloud.prototype.deleteProject = async function (projectId) {
@@ -433,8 +378,15 @@ Cloud.prototype.deleteProject = async function (projectId) {
 };
 
 Cloud.prototype.publishProject = async function (projectId) {
-    const method = 'DELETE';
-    const response = await fetch(`/api/projects/${projectId}`, {method});
+    const method = 'POST';
+    const response = await fetch(`/api/projects/${projectId}/publish`, {method});
+    return response.status == 200;
+};
+
+Cloud.prototype.unpublishProject = async function (projectId) {
+    const method = 'POST';
+    const response = await fetch(`/api/projects/${projectId}/unpublish`, {method});
+    // TODO: Show an error?
     return response.status == 200;
 };
 
@@ -465,58 +417,11 @@ Cloud.prototype.logout = async function () {
     return false;
 };
 
-Cloud.prototype.signup = function (
+Cloud.prototype.signup = async function (
     username,
     email,
-    callBack,
-    errorCall
 ) {
-    // both callBack and errorCall are two-argument functions
-    var request = new XMLHttpRequest(),
-        myself = this,
-        data = 'Username=' + encodeURIComponent(username) + '&Email=' +
-            encodeURIComponent(email);
-    try {
-        request.open(
-            'POST',
-            (this.hasProtocol() ? '' : 'http://')
-                + this.url + 'SignUp',
-            true
-        );
-        request.setRequestHeader(
-            'Content-Type',
-            'application/x-www-form-urlencoded'
-        );
-        request.withCredentials = true;
-        request.onreadystatechange = function () {
-            if (request.readyState === 4) {
-                if (request.responseText) {
-                    if (request.responseText.indexOf('ERROR') === 0) {
-                        errorCall.call(
-                            this,
-                            request.responseText,
-                            'Signup'
-                        );
-                    } else {
-                        callBack.call(
-                            null,
-                            request.responseText,
-                            'Signup'
-                        );
-                    }
-                } else {
-                    errorCall.call(
-                        null,
-                        myself.url + 'SignUp',
-                        localize('could not connect to:')
-                    );
-                }
-            }
-        };
-        request.send(data);
-    } catch (err) {
-        errorCall.call(this, err.toString(), 'NetsBlox Cloud');
-    }
+    // TODO:
 };
 
 Cloud.prototype.saveProjectCopy = async function() {
@@ -526,45 +431,12 @@ Cloud.prototype.saveProjectCopy = async function() {
         method: 'POST',
         body: xml,  // TODO: add options for allow rename?
     };
-    const saveResponse = await fetch(`/api/projects/?allow_rename=true`, options);
+    const saveResponse = await fetch(`/api/projects/`, options);
 
     // TODO: set the state with the network overlay
     //this.setLocalState(response.projectId, this.roleId);
 
     return saveResponse.status == 200;
-};
-
-Cloud.prototype.request = function (url, dict) {
-    var resolve,
-        reject,
-        promise = new Promise(function(res, rej) {
-            resolve = res;
-            reject = rej;
-        }),
-        data = JSON.stringify(dict);
-
-    url = SERVER_URL + url;
-    var request = new XMLHttpRequest();
-
-    request.open('POST', url, true);
-    request.setRequestHeader(
-        'Content-Type',
-        'application/json'
-    );
-    request.withCredentials = true;
-    request.onreadystatechange = function () {
-        if (request.readyState === 4) {
-            var badStatusCode = request.status > 299 || request.status < 200;
-            if (badStatusCode || request.responseText &&
-                    request.responseText.indexOf('ERROR') === 0) {
-                return reject(request);
-            }
-            resolve(JSON.parse(request.responseText));
-        }
-    };
-
-    request.send(data);
-    return promise;
 };
 
 Cloud.prototype.setLocalState = function (projectId, roleId) {
@@ -582,9 +454,12 @@ Cloud.prototype.resetLocalState = function () {
 Cloud.prototype.newProject = function (name) {
     var myself = this;
 
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({name})
+    };
     if (!this.newProjectRequest) {
-        // TODO: use the name argument
-        const saveResponse = fetch(`/api/projects/?allow_rename=true`, {method: 'POST'});
+        const saveResponse = fetch(`/api/projects/`, options);
         this.newProjectRequest = saveResponse
             .then(response => response.json())
             .then(function(result) {
@@ -666,45 +541,17 @@ Cloud.prototype.setProjectName = function(name) {
         });
 };
 
-Cloud.prototype.importProject = function (name, role, roles) {
-    var myself = this,
-        data = {
-            projectId: this.projectId,
-            clientId: this.clientId,
+Cloud.prototype.importProject = async function (name, role, roles) {
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({
             name: name,
-            role: role,
             roles: roles
-        };
+        }),
+    };
 
-    return this.request('/api/importProject', data)
-        .then(function(result) {
-            myself.setLocalState(result.projectId, result.roleId);
-            return result.state;
-        })
-        .catch(function(req) {
-            myself.resetLocalState();
-            throw new Error(req.responseText);
-        });
-};
-
-Cloud.prototype.getEntireProject = function(projectId, callback, errorCall) {
-    var myself = this;
-    this.reconnect(
-        function () {
-            myself.callService(
-                'getEntireProject',
-                function (response) {
-                    callback(response);
-                    myself.disconnect();
-                },
-                errorCall,
-                [
-                    projectId
-                ]
-            );
-        },
-        errorCall
-    );
+    const response = await fetch('/api/projects/', options);
+    return await response.json();
 };
 
 Cloud.prototype.linkAccount = async function(username, password, type) {

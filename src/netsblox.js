@@ -592,6 +592,7 @@ NetsBloxMorph.prototype.openRoomString = async function (str) {
     const msg = this.showMessage(localize('Opening project...'));
     const {name} = room.attributes;
     const state = await SnapCloud.importProject(name, roleName, roles);
+    // TODO: open the new project
     this.room.onRoomStateUpdate(state);
     const [role] = room.children;
     await this.openRoleString(role, true);
