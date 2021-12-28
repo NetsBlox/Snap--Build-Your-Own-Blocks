@@ -211,7 +211,7 @@ if (window.origin.includes("localhost")) {
  */
 const addRobot = async function () {
     imported = await BABYLON.SceneLoader.ImportMeshAsync('', modelsDir, 'parallax_robot.gltf');
-    imported.meshes[0].scaling.scaleInPlace(2);
+    //imported.meshes[0].scaling.scaleInPlace(2);
     return imported.meshes[0];
 };
 
