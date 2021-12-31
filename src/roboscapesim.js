@@ -146,12 +146,24 @@ const connectToRoboScapeSim = function () {
 
 function updateCanvasTitle(result) {
     window.externalVariables.roboscapeSimCanvasInstance.labelString = result;
-    window.externalVariables.roboscapeSimCanvasInstance.createLabel();
-    window.externalVariables.roboscapeSimCanvasInstance.rerender();
-    window.externalVariables.roboscapeSimCanvasInstance.fixLayout();
-    window.externalVariables.roboscapeSimCanvasInstance.rerender();
-    window.externalVariables.roboscapeSimCanvasInstance.handle.fixLayout();
-    window.externalVariables.roboscapeSimCanvasInstance.handle.rerender();
+    window.externalVariables.roboscapeSimCanvasInstance.label.text = result;
+
+    // Hack to update label text without causing fixLayout to change the dialog size
+    let th = fontHeight(window.externalVariables.roboscapeSimCanvasInstance.titleFontSize) + window.externalVariables.roboscapeSimCanvasInstance.titlePadding * 2;
+    window.externalVariables.roboscapeSimCanvasInstance.label.measureCtx.font = window.externalVariables.roboscapeSimCanvasInstance.label.font();
+    let width = Math.max(
+        window.externalVariables.roboscapeSimCanvasInstance.label.measureCtx.measureText(result).width + Math.abs(window.externalVariables.roboscapeSimCanvasInstance.label.shadowOffset.x),
+        1
+    );
+
+    // Set label to be wide enough
+    window.externalVariables.roboscapeSimCanvasInstance.label.bounds.setWidth(width);
+    window.externalVariables.roboscapeSimCanvasInstance.label.fixLayout(true);
+
+    // Fix label position
+    window.externalVariables.roboscapeSimCanvasInstance.label.setCenter(window.externalVariables.roboscapeSimCanvasInstance.center());
+    window.externalVariables.roboscapeSimCanvasInstance.label.setTop(window.externalVariables.roboscapeSimCanvasInstance.top() + (th - window.externalVariables.roboscapeSimCanvasInstance.label.height()) / 2);
+    window.externalVariables.roboscapeSimCanvasInstance.label.fixLayout(true);
 }
 
 function newRoom(environment = 'default', password = '') {
@@ -222,15 +234,16 @@ script.src = 'https://cdn.socket.io/socket.io-2.3.1.slim.js';
 document.body.appendChild(script);
 
 var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
-    t = (t - t2) / Math.max(1, t2 - t1);
+    t = (t - t2) / Math.max(2, t2 - t1);
     return BABYLON.Scalar.Lerp(x1, x2, t);
 }
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
-    t = (t - t2) / Math.max(1, t2 - t1);
+    t = (t - t2) / Math.max(2, t2 - t1);
     return BABYLON.Quaternion.Slerp(q1, q2, t);
 }
 
+// Converts a color hex string to an RGB color object 
 var hex2rgb = function (hexstring) {
     if (hexstring[0] != '#') {
         hexstring = '#' + hexstring;

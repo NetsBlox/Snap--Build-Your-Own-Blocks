@@ -126,7 +126,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
     this.labelString = title;
     this.createLabel();
     this.addButton('hide', 'Close');
-    this.rerender();
+    
     this.fixLayout();
     this.rerender();
 };
@@ -147,14 +147,12 @@ RoboScapeSimCanvasMorph.prototype.fixLayout = function() {
         this.label.setTop(this.top() + (th - this.label.height()) / 2);
     }
 
-    this.fixCanvasLayout();
-
     // Robot info row
     if (this.robotRow) {
         this.robotRow.setCenter(this.center());
         this.robotRow.setBottom(this.bottom() - this.padding);
         this.robotRow.setLeft(this.left() + this.padding);
-        this.robotRow.fixLayout();
+        this.robotRow.fixLayout(false);
     }
 
     // Buttons at bottom of panel
@@ -176,6 +174,8 @@ RoboScapeSimCanvasMorph.prototype.fixLayout = function() {
         this.buttons.setBottom(this.bottom() - this.padding);
     }
 
+    this.fixCanvasLayout();
+
     if (this.handle) {
         this.handle.rerender();
     }
@@ -185,7 +185,8 @@ RoboScapeSimCanvasMorph.prototype.fixCanvasLayout = function() {
     var width = this.width() - 2 * this.padding,
         bh = this.buttons ? this.buttons.height() : 0,
         lh = this.label ? this.label.height() : 0,
-        height = this.height() - 4 * this.padding - bh - lh;
+        rh = this.robotRow ? this.robotRow.height() : 0
+        height = this.height() - 4 * this.padding - bh - lh - rh;
 
     this.canvas.style.width = width + 'px';
     this.canvas.style.height = height + 'px';
@@ -259,6 +260,9 @@ RoboScapeSimCanvasMorph.prototype.popUp = function(world) {
 
     this.setCanvasPosition();
 
+    this.fixLayout();
+    this.rerender();
+    
     var myself = this;
 
     // Create handle
