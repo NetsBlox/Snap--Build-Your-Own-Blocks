@@ -65,6 +65,11 @@ const connectToRoboScapeSim = function () {
                             prev[info.label.replace('robot_', '')] = info.label.replace('robot_', '');
                             return prev;
                         }, {});
+                
+                // Validate choice (if selected robot no longer exists, reset dropdown choice)
+                if (window.externalVariables.roboscapeSimCanvasInstance.robotsList.getValue() in window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices) {
+                    window.externalVariables.roboscapeSimCanvasInstance.robotsList.setChoice('');
+                }
             });
 
             // Handle room info
@@ -164,6 +169,7 @@ function updateCanvasTitle(result) {
     window.externalVariables.roboscapeSimCanvasInstance.label.setCenter(window.externalVariables.roboscapeSimCanvasInstance.center());
     window.externalVariables.roboscapeSimCanvasInstance.label.setTop(window.externalVariables.roboscapeSimCanvasInstance.top() + (th - window.externalVariables.roboscapeSimCanvasInstance.label.height()) / 2);
     window.externalVariables.roboscapeSimCanvasInstance.label.fixLayout(true);
+    window.externalVariables.roboscapeSimCanvasInstance.rerender();
 }
 
 function newRoom(environment = 'default', password = '') {
@@ -206,6 +212,7 @@ function leaveRoom() {
         mesh.dispose();
     }
     bodyMeshes = {};
+
     updateCanvasTitle("Not connected");
 }
 
