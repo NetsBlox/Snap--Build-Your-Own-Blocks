@@ -15,12 +15,25 @@
 {{ } }}
         {{ if (it.url) { }} <meta property="og:url" content="{{= encodeURI(it.url) }}"/> {{ } }}
         <script type="text/javascript">
-            var SERVER_URL = "{{= it.baseUrl}}" || window.location.origin,
-                SERVER_ADDRESS = SERVER_URL.replace(/^.*\/\//, ''),
-                CLIENT_ID = '{{= it.clientId }}',
-                DEFAULT_SERVICES_HOST = {url: SERVER_URL + '/services', categories: []},
-                SERVICES_HOSTS = {{= JSON.stringify(it.servicesHosts) }};
-            {{ var defaultHost = it.servicesHosts.find(host => host.categories.length === 0); if (!defaultHost) { }} SERVICES_HOSTS.push(DEFAULT_SERVICES_HOST); {{ } }}
+            const SERVER_URL = (function() {
+                const qsParams = Object.fromEntries(
+                    window.location.href.split('?').map(chunk => chunk.split('=').map(decodeURIComponent))
+                )
+                return qsParams.server || window.location.origin;
+            };
+            const SERVER_ADDRESS = SERVER_URL.replace(/^.*\/\//, '');
+            const DEFAULT_SERVICES_HOST = {url: SERVER_URL + '/services', categories: []};
+
+            const Config = await (await fetch(SERVER_URL + '/config')).json();
+            // TODO: Fetch the username?
+            const CLIENT_ID = Config.clientId;
+            const SERVICES_HOSTS = Config.servicesHosts;
+
+            if (!SERVICES_HOSTS.find(host => host.categories.length === 0)) {
+                SERVICES_HOSTS.push(DEFAULT_SERVICES_HOST);
+            }
+            SnapCloud.username = Config.username;
+
         </script>
         {{ if (it.isDevMode) { }}
         <script type="text/javascript" src="src/logo.js"></script>
@@ -71,12 +84,6 @@
         <script type="text/javascript" src="dist/app.min.js?v=1.29.1"></script>
         {{ } }}
 
-        <script type="text/javascript">
-        {{ if (it.username) { }}
-        SnapCloud.username = '{{= it.username }}';
-        SnapCloud.password = true;
-        {{ } }}
-        </script>
         <script type="text/javascript" src="src/main.js"></script>
     </head>
     <body style="margin: 0;">
