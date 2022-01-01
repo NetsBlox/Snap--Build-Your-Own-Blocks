@@ -1,4 +1,4 @@
-/* globals SERVER_URL, NetsBloxMorph, WorldMorph, utils */
+/* globals NetsBloxMorph, WorldMorph, */
 
 var world;
 var CLIENT_ID;

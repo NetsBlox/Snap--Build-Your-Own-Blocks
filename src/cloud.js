@@ -420,7 +420,15 @@ Cloud.prototype.signup = async function (
     username,
     email,
 ) {
-    // TODO:
+    const opts = {
+        method: 'POST',
+        body: JSON.stringify({
+            username,
+            email,
+        }),
+    };
+    const response = await fetch(`${this.url}/users/create`, opts);
+    console.assert(response.status === 200);  // TODO
 };
 
 Cloud.prototype.saveProjectCopy = async function() {
@@ -438,6 +446,20 @@ Cloud.prototype.saveProjectCopy = async function() {
     return saveResponse.status == 200;
 };
 
+Cloud.prototype.post = async function(url, body) {
+    const opts = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    };
+    if (body !== undefined) {
+        opts.body = JSON.stringify(body);
+    }
+    return await fetch(`${this.url}${url}`, opts);
+    
+};
+
 Cloud.prototype.setLocalState = function (projectId, roleId) {
     this.projectId = projectId;
     this.roleId = roleId;
@@ -450,15 +472,18 @@ Cloud.prototype.resetLocalState = function () {
     this.setLocalState(projectId, roleId);
 };
 
-Cloud.prototype.newProject = function (name) {
+Cloud.prototype.newProject = function (name=localize('untitled')) {
     var myself = this;
 
     const options = {
         method: 'POST',
-        body: JSON.stringify({name})
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({name, clientId: this.clientId})
     };
     if (!this.newProjectRequest) {
-        const saveResponse = fetch(`/api/projects/`, options);
+        const saveResponse = fetch(`${this.url}/projects/`, options);
         this.newProjectRequest = saveResponse
             .then(response => response.json())
             .then(function(result) {
@@ -490,19 +515,12 @@ Cloud.prototype.setClientState = function (room, role, actionId) {
         newProjectRequest = this.newProjectRequest || Promise.resolve();
 
     return newProjectRequest
-        .then(function() {
-            var data = {
-                __u: myself.username,
-                __h: myself.password,
-                clientId: myself.clientId,
-                socketId: myself.clientId,
-                projectId: myself.projectId,
-                roleId: myself.roleId,
-                roomName: room,
-                roleName: role,
-                actionId: actionId
+        .then(() => {
+            const body = {
+                projectId: this.projectId,
+                roleId: this.roleId,
             };
-            return myself.request('/api/setClientState', data);
+            return this.post(`/network/${this.clientId}/state`, body);
         })
         .then(function(result) {
             // Only change the project ID if no other moves/newProjects/etc have occurred
@@ -545,11 +563,12 @@ Cloud.prototype.importProject = async function (name, role, roles) {
         method: 'POST',
         body: JSON.stringify({
             name: name,
-            roles: roles
+            roles: roles,
+            clientId: this.clientId,
         }),
     };
 
-    const response = await fetch('/api/projects/', options);
+    const response = await fetch(`${this.url}/projects/`, options);
     return await response.json();
 };
 
