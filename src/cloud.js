@@ -27,14 +27,13 @@
 
 // Global settings /////////////////////////////////////////////////////
 
-/*global modules, hex_sha512, nop, localize, CLIENT_ID, SERVER_URL, utils*/
+/*global modules, hex_sha512, nop, localize, utils*/
 
 modules.cloud = '2020-September-1';
 
 // Global stuff
 
 var Cloud;
-var SnapCloud = new Cloud(CLIENT_ID, SERVER_URL + '/api/');
 
 // Cloud /////////////////////////////////////////////////////////////
 

@@ -1,11 +1,11 @@
-/*globals nop, SnapCloud, SERVER_URL, SERVER_ADDRESS,
+/*globals nop, SERVER_URL, SERVER_ADDRESS,
   StageMorph, SnapActions, DialogBoxMorph, IDE_Morph, isObject, NetsBloxSerializer,
   localize, VariableFrame, isSnapObject*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
     this.ide = ide;
-    this.uuid = SnapCloud.clientId;
+    this.uuid = ide.cloud.clientId;
     this.websocket = null;
     this.messages = [];
     this.msgHandlerQueues = [];
@@ -251,7 +251,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
         self.sendMessage({
             type: 'set-uuid',
-            clientId: SnapCloud.clientId
+            clientId: self.ide.cloud.clientId
         });
         self.hasConnected = true;
     };
@@ -312,7 +312,7 @@ WebSocketManager.prototype.send = function(message) {
 };
 
 WebSocketManager.prototype.sendMessage = function(message) {
-    message.projectId = SnapCloud.projectId;
+    message.projectId = this.ide.cloud.projectId;
     message = this.serializeMessage(message);
     this.send(message);
 };
@@ -414,7 +414,7 @@ WebSocketManager.prototype.updateRoomInfo = function() {
     var myself = this,
         state = this.getClientState();
 
-    return SnapCloud.setClientState(state.room, state.role, state.actionId)
+    return this.ide.cloud.setClientState(state.room, state.role, state.actionId)
         .catch(function() {
             myself.ide.cloudError().apply(null, arguments);
         });

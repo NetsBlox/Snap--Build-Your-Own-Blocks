@@ -1,26 +1,28 @@
-/* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
+/* global RoomMorph, IDE_Morph, StageMorph, List, VariableFrame,
    WebSocketManager, SpriteMorph, Point, RoomEditorMorph, localize, Process,
    StringMorph, Color, TabMorph, InputFieldMorph, MorphicPreferences, MenuMorph,
    TextMorph, NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512,
    SnapUndo, ScrollFrameMorph, SnapUndo, CollaboratorDialogMorph,
-   SnapSerializer, newCanvas, detect, WatcherMorph, Services, utils */
+   SnapSerializer, newCanvas, detect, WatcherMorph, utils */
 // Netsblox IDE (subclass of IDE_Morph)
 
 NetsBloxMorph.prototype = Object.create(IDE_Morph.prototype);
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
 NetsBloxMorph.uber = IDE_Morph.prototype;
 
-function NetsBloxMorph(isAutoFill) {
-    this.init(isAutoFill);
+function NetsBloxMorph(isAutoFill, config) {
+    this.init(isAutoFill, config);
 }
 
-NetsBloxMorph.prototype.init = function (isAutoFill) {
+NetsBloxMorph.prototype.init = function (isAutoFill, config) {
+    NetsBloxMorph.uber.init.call(this, isAutoFill, config);
+
     this.sockets = new WebSocketManager(this);
-    Services.onInvalidHosts = this.onInvalidHosts.bind(this);
+    this.services = new ServicesRegistry(config.servicesHosts);
+    this.services.onInvalidHosts = this.onInvalidHosts.bind(this);
     this.room = null;
 
     // initialize inherited properties:
-    NetsBloxMorph.uber.init.call(this, isAutoFill);
     this.serializer = new NetsBloxSerializer();
 
     var myself = this;
@@ -56,7 +58,7 @@ NetsBloxMorph.prototype.buildPanes = function () {
 };
 
 NetsBloxMorph.prototype.clearProject = function () {
-    this.source = SnapCloud.username ? 'cloud' : 'local';
+    this.source = this.cloud.username ? 'cloud' : 'local';
     if (this.stage) {
         this.stage.destroy();
     }
@@ -131,7 +133,7 @@ NetsBloxMorph.prototype.settingsMenu = function () {
 NetsBloxMorph.prototype.newProject = async function (projectName) {
     let projectInfo;
     try {
-        projectInfo = await SnapCloud.newProject(projectName);
+        projectInfo = await this.cloud.newProject(projectName);
     } catch (err) {
         projectInfo = {
             name: projectName || 'untitled',
@@ -408,7 +410,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
     }
 
     var isSavingToCloud = this.source.indexOf('cloud') > -1;
-    if (SnapCloud.username && !this.room.isOwner()) {
+    if (this.cloud.username && !this.room.isOwner()) {
         item = ['Save a Copy', 'saveACopy'];
         var itemIndex = menu.items.map(function(item) {
             return item[1];
@@ -462,7 +464,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
 
 NetsBloxMorph.prototype.serviceURL = function() {
     var path = Array.prototype.slice.call(arguments, 0);
-    const {url} = Services.defaultHost;
+    const {url} = this.services.defaultHost;
     return url + '/' + path.join('/');
 };
 
@@ -591,7 +593,7 @@ NetsBloxMorph.prototype.openRoomString = async function (str) {
 
     const msg = this.showMessage(localize('Opening project...'));
     const {name} = room.attributes;
-    const state = await SnapCloud.importProject(name, roleName, roles);
+    const state = await this.cloud.importProject(name, roleName, roles);
     // TODO: open the new project
     this.room.onRoomStateUpdate(state);
     const [role] = room.children;
@@ -663,7 +665,7 @@ NetsBloxMorph.prototype.saveACopy = async function () {
     }
 
     // Save the project!
-    const name = await SnapCloud.saveProjectCopy();  // TODO: handle errors
+    const name = await this.cloud.saveProjectCopy();  // TODO: handle errors
     if (name) {
         this.room.silentSetRoomName(name);
     }
@@ -698,7 +700,7 @@ NetsBloxMorph.prototype.saveProjectToCloud = async function (name) {
     var myself = this,
         overwriteExisting;
 
-    if (SnapCloud.username !== this.room.ownerId) {
+    if (this.cloud.username !== this.room.ownerId) {
         return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
     }
 
@@ -708,7 +710,7 @@ NetsBloxMorph.prototype.saveProjectToCloud = async function (name) {
         if (name) {
             myself.showMessage('Saving ' + contentName + '\nto the cloud...');
             // TODO: rename the colliding name?
-            SnapCloud.saveProject(
+            this.cloud.saveProject(
                 myself,
                 function (result) {
                     if (result.name) {
@@ -732,7 +734,7 @@ NetsBloxMorph.prototype.saveProjectToCloud = async function (name) {
     // TODO
     // TODO: Or we could try to save and see if it fails... This might be more performant
     // Use 409 status code (conflict)
-    const projects = await SnapCloud.getProjectList();
+    const projects = await this.cloud.getProjectList();
     const hasConflicting= projects.find(project => project.name === name);
     if (!hasConflicting) {
         myself.updateUrlQueryString();
@@ -836,13 +838,13 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
         projectId = project.ProjectID;  // src proj name
 
     this.source = 'cloud';
-    project.Owner = project.Owner || SnapCloud.username;
+    project.Owner = project.Owner || this.cloud.username;
     this.updateUrlQueryString(newRoom, isPublic);
 
     var msg = this.showMessage('Opening project...');
     return SnapActions.openProject(project.SourceCode)
-        .then(function() {
-            SnapCloud.projectId = projectId;
+        .then(() => {
+            this.cloud.projectId = projectId;
             myself.room.silentSetRoomName(newRoom);
             myself.room.ownerId = project.Owner;
             myself.silentSetProjectName(roleName);
@@ -865,7 +867,7 @@ NetsBloxMorph.prototype.updateUrlQueryString = function (room, isPublic, isExamp
     if (isExample) {
         url += 'action=example&ProjectName=' + encodeURIComponent(room) + '&';
     } else if (isPublic) {
-        url += 'action=present&Username=' + encodeURIComponent(SnapCloud.username) +
+        url += 'action=present&Username=' + encodeURIComponent(this.cloud.username) +
             '&ProjectName=' + encodeURIComponent(room) + '&';
     }
     if (dict.extensions) {
@@ -983,7 +985,7 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     report.undoState = SnapUndo;
 
     // Add username (if logged in)
-    report.user = SnapCloud.username;
+    report.user = this.cloud.username;
     report.isAutoReport = !!error;
 
     if (report.isAutoReport) {
@@ -1002,7 +1004,7 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
 
     // Report to the server
     var request = new XMLHttpRequest(),
-        url = SnapCloud.url + '/BugReport';
+        url = this.cloud.url + '/BugReport';
 
     request.open('post', url);
     request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
@@ -1173,16 +1175,16 @@ NetsBloxMorph.prototype.manageCollaborators = async function () {
         ownerId = this.room.ownerId,
         name = this.room.name;
 
-    const friends = await SnapCloud.getCollaboratorList();
+    const friends = await this.cloud.getCollaboratorList();
     friends.sort(function(a, b) {
         return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
     });
     new CollaboratorDialogMorph(
         myself,
-        function(user) {
+        user => {
             if (user) {
-                SnapCloud.inviteToCollaborate(
-                    SnapCloud.clientId,
+                this.cloud.inviteToCollaborate(
+                    this.cloud.clientId,
                     user.username,
                     ownerId,
                     name
@@ -1192,11 +1194,6 @@ NetsBloxMorph.prototype.manageCollaborators = async function () {
         friends,
         'Invite a Collaborator to the Project'
     ).popUp();
-        },
-        function (err, lbl) {
-            myself.cloudError().call(null, err, lbl);
-        }
-    );
 };
 
 NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, roomName, role
@@ -1213,7 +1210,7 @@ NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, r
         enabled = true;
     }
 
-    if (params.inviter === SnapCloud.username) {
+    if (params.inviter === this.cloud.username) {
         msg = 'Would you like to collaborate at "' + roomName + '"?';
     } else {
         msg = params.inviter + ' has invited you to collaborate with\nhim/her at "' + roomName +
@@ -1244,14 +1241,14 @@ NetsBloxMorph.prototype.collabResponse = async function (invite, response) {
     var myself = this;
 
     try {
-        await SnapCloud.respondToCollaborationInvite(invite.id, response);
+        await this.cloud.respondToCollaborationInvite(invite.id, response);
         var dialog,
             msg;
 
         if (response) {
             dialog = new DialogBoxMorph(null, () => {
                 // Open the given project
-                SnapCloud.joinActiveProject(
+                this.cloud.joinActiveProject(
                     invite.projectId,
                     function (xml) {
                         myself.rawLoadCloudProject(xml);
@@ -1274,16 +1271,16 @@ NetsBloxMorph.prototype.collabResponse = async function (invite, response) {
 
 NetsBloxMorph.prototype.logout = function () {
     delete localStorage['-snap-user'];
-    SnapCloud.logout(
+    this.cloud.logout(
         () => {
-            Services.reset();
-            SnapCloud.clear();
+            this.services.reset();
+            this.cloud.clear();
             this.controlBar.cloudButton.refresh();
             this.showMessage('disconnected.', 2);
             this.newProject();
         },
         () => {
-            SnapCloud.clear();
+            this.cloud.clear();
             this.controlBar.cloudButton.refresh();
             this.showMessage('disconnected.', 2);
             this.newProject();
@@ -1297,12 +1294,12 @@ NetsBloxMorph.prototype.createCloudAccount = function () {
     /*
     // force-logout, commented out for now:
     delete localStorage['-snap-user'];
-    SnapCloud.clear();
+    this.cloud.clear();
 */
     new DialogBoxMorph(
         null,
         function (user) {
-            SnapCloud.signup(
+            myself.cloud.signup(
                 user.username,
                 user.email,
                 function (txt, title) {

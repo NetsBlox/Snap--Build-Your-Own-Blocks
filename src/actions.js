@@ -1,5 +1,5 @@
 /* globals CommentMorph, CLIENT_ID, SnapSerializer, SnapUndo, isNil,
- SnapCloud, SyntaxElementMorph, BlockEditorMorph, Point, ArgMorph,
+ SyntaxElementMorph, BlockEditorMorph, Point, ArgMorph,
  ScriptsMorph, StageMorph, CommandBlockMorph, ReporterBlockMorph,
  PrototypeHatBlockMorph, BlockMorph, RingMorph, TemplateSlotMorph,
  SERVER_URL, detect, WorldMorph, ColorSlotMorph, JukeboxMorph,
@@ -402,7 +402,7 @@ Action.prototype.equals = function(data) {
 
 ActionManager.prototype.applyEvent = function(event) {
     event.user = this.id;
-    event.username = SnapCloud.username;
+    event.username = this.ide().cloud.username;
     event.id = this.lastSeen + 1;
     event.time = event.time || Date.now();
 
@@ -2702,7 +2702,7 @@ ActionManager.prototype.onOpenProject = async function(str) {
         var roomName = this.ide().room.name,
             roleName = this.ide().projectName;
 
-        await SnapCloud.setClientState(roomName, roleName, this.lastSeen);
+        await this.ide().cloud.setClientState(roomName, roleName, this.lastSeen);
         this.requestMissingActions();
     }
 };

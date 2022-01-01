@@ -1,5 +1,5 @@
 /* globals UndoManager, SERVER_ADDRESS, ActionManager, SnapActions, NetsBloxSerializer,
-   HintInputSlotMorph, SnapCloud, Action, copy*/
+   HintInputSlotMorph, Action, copy*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -160,8 +160,8 @@ SnapActions.submitIfAllowed = function(event) {
             function () {
                 ide.sockets.sendMessage({
                     type: 'permission-elevation-request',
-                    projectId: SnapCloud.projectId,
-                    guest: SnapCloud.username
+                    projectId: ide.cloud.projectId,
+                    guest: ide.cloud.username
                 });
             }
         );

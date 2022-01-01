@@ -1,4 +1,4 @@
-/* global SnapCloud, StringMorph, DialogBoxMorph, localize, Point, Morph,
+/* global StringMorph, DialogBoxMorph, localize, Point, Morph,
  Color, nop, InputFieldMorph, ListMorph, IDE_Morph, TurtleIconMorph, SnapActions,
  TextMorph, MorphicPreferences, ScrollFrameMorph, ReporterBlockMorph,
  MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
@@ -122,7 +122,8 @@ RoomMorph.prototype.setRoomName = function(name) {
         changed = this.name !== name;
 
     if (changed) {
-        return SnapCloud.setProjectName(name)
+        const cloud = this.ide.cloud;
+        return cloud.setProjectName(name)
             .then(function(state) {
                 return myself.onRoomStateUpdate(state);
             })
@@ -137,7 +138,7 @@ RoomMorph.prototype.getDefaultRoles = function() {
         name = this.getCurrentRoleName(),
         occupant = {
             uuid: this.myUuid(),
-            username: SnapCloud.username || 'me'
+            username: this.ide.cloud.username || 'me'
         };
 
     roleInfo[name] = {
@@ -189,7 +190,7 @@ RoomMorph.prototype.myUuid = function() {
 };
 
 RoomMorph.prototype.myUserId = function() {
-    return SnapCloud.username || localize('guest');
+    return this.ide.cloud.username || localize('guest');
 };
 
 RoomMorph.prototype.isOwner = function(user) {
@@ -199,12 +200,12 @@ RoomMorph.prototype.isOwner = function(user) {
 
     if (!user && this.ownerId === null) return true;
 
-    user = user || SnapCloud.username;
+    user = user || this.ide.cloud.username;
     return this.ownerId && this.ownerId === user;
 };
 
 RoomMorph.prototype.isCollaborator = function(user) {
-    user = user || SnapCloud.username;
+    user = user || this.ide.cloud.username;
     return this.collaborators.indexOf(user) > -1;
 };
 
@@ -474,7 +475,7 @@ RoomMorph.prototype.setCollaborators = function(collaborators) {
 RoomMorph.prototype.mouseClickLeft = function() {
     if (!this.isEditable() && !this.isReadOnly) {
         // If logged in, prompt about leaving the room
-        if (SnapCloud.username) {
+        if (this.ide.cloud.username) {
             this.ide.confirm(
                 localize('would you like to leave "' + this.name + '"?'),
                 localize('Leave Room'),
@@ -538,7 +539,7 @@ RoomMorph.prototype.createNewRole = function () {
 
     this.ide.prompt('New Role Name', function (roleName) {
         myself.validateRoleName(roleName, async function() {
-            const state = await SnapCloud.addRole(roleName);
+            const state = await this.ide.cloud.addRole(roleName);
             myself.onRoomStateUpdate(state);
         });
     }, null, 'createNewRole');
@@ -574,8 +575,8 @@ RoomMorph.prototype.moveToRole = function(role) {
     var myself = this;
 
     myself.ide.showMessage('moving to ' + role.name);
-    SnapCloud.getProject(
-        SnapCloud.projectId,
+    this.ide.cloud.getProject(
+        this.ide.cloud.projectId,
         async project => {
             this.ide.showMessage('moved to ' + role.name + '!');
             this.ide.silentSetProjectName(role.name);
@@ -585,7 +586,7 @@ RoomMorph.prototype.moveToRole = function(role) {
             if (project) {
                 if (project.Public === 'true') {
                     location.hash = '#present:Username=' +
-                        encodeURIComponent(SnapCloud.username) +
+                        encodeURIComponent(this.ide.cloud.username) +
                         '&ProjectName=' +
                         encodeURIComponent(project.ProjectName);
                 }
@@ -610,7 +611,7 @@ RoomMorph.prototype.moveToRole = function(role) {
 
 RoomMorph.prototype.deleteRole = async function(role) {
     try {
-        await SnapCloud.deleteRole(role.id);
+        await this.ide.cloud.deleteRole(role.id);
     } catch (err) {
         this.ide.cloudError().call(null, err.message);
     }
@@ -622,7 +623,7 @@ RoomMorph.prototype.createRoleClone = function(roleId) {
         return role.id === roleId;
     }).name;
 
-    SnapCloud.cloneRole(
+    this.ide.cloud.cloneRole(
         roleId,
         function(state) {
             myself.onRoomStateUpdate(state);
@@ -646,12 +647,12 @@ RoomMorph.prototype.setRoleName = function(roleId, name) {
         return;
     }
 
-    myself.validateRoleName(name, () => SnapCloud.renameRole(roleId, name));
+    myself.validateRoleName(name, () => this.ide.cloud.renameRole(roleId, name));
 };
 
 RoomMorph.prototype.evictUser = function (user) {
     var myself = this;
-    SnapCloud.evictUser(
+    this.ide.cloud.evictUser(
         user.uuid,
         function(state) {
             myself.onRoomStateUpdate(state);
@@ -669,7 +670,7 @@ RoomMorph.prototype.inviteUser = async function (role) {
 
     if (this.isOwner() || this.isCollaborator()) {
         try {
-            friends = await SnapCloud.getFriendList();
+            friends = await this.ide.cloud.getFriendList();
         } catch (err) {
             myself.ide.cloudError().call(null, err.message);
         }
@@ -737,9 +738,9 @@ RoomMorph.prototype.promptShare = function(name) {
 RoomMorph.prototype.inviteGuest = function (friend, role) {
     // Use inviteGuest service
     if (friend === 'myself') {
-        friend = SnapCloud.username;
+        friend = this.ide.cloud.username;
     }
-    SnapCloud.inviteGuest(friend, role);
+    this.ide.cloud.inviteGuest(friend, role);
 };
 
 RoomMorph.prototype.promptInvite = function (id, role, roomName, inviter) {
@@ -748,7 +749,7 @@ RoomMorph.prototype.promptInvite = function (id, role, roomName, inviter) {
         null,
         () => this.respondToInvitation(id, role, true)
     ).withKey(id);
-    const msg = inviter === SnapCloud.username ?
+    const msg = inviter === this.ide.cloud.username ?
         'Would you like to move to "' + roomName + '"?' :
         inviter + ' has invited you to join\nhim/her at "' + roomName + '"';
 
@@ -770,7 +771,8 @@ RoomMorph.prototype.promptInvite = function (id, role, roomName, inviter) {
 
 RoomMorph.prototype.respondToInvitation = function (id, role, accepted) {
     // TODO: join the role (use the token?)
-    SnapCloud.respondToInvitation(
+    const cloud = this.ide.cloud;
+    cloud.respondToInvitation(
         id,
         accepted,
         async project => {
@@ -780,7 +782,7 @@ RoomMorph.prototype.respondToInvitation = function (id, role, accepted) {
             this.ide.source = 'cloud';
             if (project.Public === 'true') {
                 location.hash = '#present:Username=' +
-                    encodeURIComponent(SnapCloud.username) +
+                    encodeURIComponent(cloud.username) +
                     '&ProjectName=' +
                     encodeURIComponent(project.ProjectName);
             }
@@ -794,7 +796,7 @@ RoomMorph.prototype.respondToInvitation = function (id, role, accepted) {
             }
             msg.destroy();
             this.ide.silentSetProjectName(role);
-            SnapCloud.disconnect();
+            cloud.disconnect();
         },
         err => this.ide.showMessage(err, 2)
     );
@@ -966,7 +968,7 @@ RoomMorph.prototype.resetTrace = function() {
 
 RoomMorph.prototype.startTrace = function() {
     var ide = this.ide,
-        url = ide.resourceURL('api', 'trace', 'start', SnapCloud.projectId, SnapCloud.clientId),
+        url = ide.resourceURL('api', 'trace', 'start', ide.cloud.projectId, ide.cloud.clientId),
         startTime = +ide.getURL(url);
 
     this.trace = {startTime: startTime};
@@ -984,7 +986,7 @@ RoomMorph.prototype.endTrace = function() {
 
 RoomMorph.prototype.getMessagesForTrace = function() {
     var ide = this.ide;
-    var url = ide.resourceURL('api', 'trace', 'end', SnapCloud.projectId, SnapCloud.clientId);
+    var url = ide.resourceURL('api', 'trace', 'end', ide.cloud.projectId, ide.cloud.clientId);
     var messages = [];
 
     // Update this to request start/end times
@@ -1519,6 +1521,7 @@ function EditRoleMorph(room, role) {
 
 EditRoleMorph.prototype.init = function(room, role) {
     const {name} = role;
+    const cloud = room.ide.cloud;
     EditRoleMorph.uber.init.call(this);
     this.room = room;
     this.role = role;
@@ -1553,7 +1556,7 @@ EditRoleMorph.prototype.init = function(room, role) {
         this.addButton('inviteUser', 'Invite User');
 
         const hasEvictableUsers = this.role.users
-            .filter(user => user.uuid !== SnapCloud.clientId)
+            .filter(user => user.uuid !== cloud.clientId)
             .length;
         if (this.room.isOwner() && hasEvictableUsers) {
             this.addButton('evictUser', 'Evict User');
@@ -1619,7 +1622,7 @@ EditRoleMorph.prototype.moveToRole = function() {
         dialog.accept = async function() {
             try {
                 const roleData = ide.sockets.getSerializedProject();
-                await SnapCloud.saveProject(roleData);
+                await ide.cloud.saveProject(roleData);
                 ide.showMessage('Saved ' + currentRole + ' to cloud!', 2);
             } catch (err) {
                 ide.cloudError()(err.message);
@@ -1643,7 +1646,8 @@ EditRoleMorph.prototype.moveToRole = function() {
 };
 
 EditRoleMorph.prototype.evictUser = function() {
-    const user = this.role.users.find(user => user.uuid !== SnapCloud.clientId);
+    const cloud = this.room.ide.cloud;
+    const user = this.role.users.find(user => user.uuid !== cloud.clientId);
     this.room.evictUser(user);
     this.destroy();
 };
@@ -2243,7 +2247,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
     this.uncollaborateButton = this.addButton(function() {
-        SnapCloud.evictCollaborator(myself.listField.selected.username);
+        this.cloud.evictCollaborator(myself.listField.selected.username);
         myself.destroy();
     }, 'Remove');
     this.collaborateButton = this.addButton('ok', 'Invite');

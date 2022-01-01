@@ -1,5 +1,5 @@
 /* global Process, IDE_Morph, Costume, StageMorph, List, SnapActions,
- isObject, newCanvas, Point, SnapCloud, Services, localize */
+ isObject, newCanvas, Point, localize */
 
 // Additional Process Capabilities
 Process.prototype.doSocketMessage = function (msgInfo) {
@@ -204,14 +204,14 @@ Process.prototype.receiveSocketMessage = function (fields) {
 Process.prototype.createRPCUrl = function (url) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         uuid = ide.sockets.uuid,
-        projectId = encodeURIComponent(SnapCloud.projectId),
-        roleId = encodeURIComponent(SnapCloud.roleId);
+        projectId = encodeURIComponent(ide.cloud.projectId),
+        roleId = encodeURIComponent(ide.cloud.roleId);
 
     url += '?uuid=' + uuid + '&projectId=' +
         projectId + '&roleId=' + roleId;
 
-    if (SnapCloud.username) {
-        url += '&username=' + SnapCloud.username;
+    if (ide.cloud.username) {
+        url += '&username=' + ide.cloud.username;
     }
     return url;
 };
@@ -397,10 +397,13 @@ Process.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
 };
 
 Process.prototype.getJSFromRPCDropdown = function (service, rpc, params) {
-    if (service && rpc) {
+    const ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
+
+    if (service && rpc && ide) {
+        const services = ide.services;
         const isServiceURL = service instanceof Array;
-        const serviceURL = isServiceURL ? service[0] : Services.defaultHost.url + '/' + service;
-        if (!Services.isRegisteredServiceURL(serviceURL)) {
+        const serviceURL = isServiceURL ? service[0] : services.defaultHost.url + '/' + service;
+        if (!services.isRegisteredServiceURL(serviceURL)) {
             const serviceName = serviceURL.split('/').pop();
             const msg = 'Service "' + serviceName + '" is not available';
             throw new Error(msg);

@@ -136,6 +136,3 @@ ServicesRegistry.prototype.getServicesMetadata = async function () {
 ServicesRegistry.prototype.isRegisteredServiceURL = function (url) {
     return !!this.allHosts().find(host => url.startsWith(host.url));
 };
-
-/* eslint-disable-next-line no-unused-vars */
-const Services = new ServicesRegistry(SERVICES_HOSTS);

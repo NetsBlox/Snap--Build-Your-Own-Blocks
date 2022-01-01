@@ -1,4 +1,4 @@
-/* globals ensureFullUrl, localize, nop, Point, IDE_Morph, Process, SnapCloud,
+/* globals ensureFullUrl, localize, nop, Point, IDE_Morph, Process, 
    SaveOpenDialogMorph, SaveOpenDialogMorphSource, Morph, utils, MenuMorph,
    SERVER_URL, SnapActions, fontHeight, TextMorph, ScrollFrameMorph, SpriteMorph,
    InputFieldMorph,
@@ -416,7 +416,7 @@ IDE_Morph.prototype.initializeEmbeddedAPI = function () {
         case 'get-username':
         {
             const {id} = data;
-            const {username} = SnapCloud;
+            const {username} = this.cloud;
             const type = 'reply';
             event.source.postMessage({id, type, username}, event.origin);
             break;
@@ -603,7 +603,7 @@ function CloudLibrarySource(ide) {
 }
 
 CloudLibrarySource.prototype.list = function() {
-    const isLoggedIn = !!SnapCloud.username;
+    const isLoggedIn = !!this.ide.cloud.username;
     if (!isLoggedIn) {
         this.ide.showMessage(localize('You are not logged in'));
     }
@@ -626,7 +626,7 @@ CloudLibrarySource.prototype.list = function() {
 CloudLibrarySource.prototype.save = async function(item) {
     const {name, blocks, notes} = item;
     const request = new XMLHttpRequest();
-    const username = SnapCloud.username;
+    const username = this.ide.cloud.username;
     request.open('POST', `${SERVER_URL}/api/v2/libraries/user/${username}/${name}`, true);
     request.withCredentials = true;
 
@@ -657,7 +657,7 @@ CloudLibrarySource.prototype.getContent = async function(item) {
 CloudLibrarySource.prototype.delete = async function(item) {
     const {name} = item;
     const request = new XMLHttpRequest();
-    const username = SnapCloud.username;
+    const username = this.ide.cloud.username;
     request.open('DELETE', `${SERVER_URL}/api/v2/libraries/user/${username}/${name}`, true);
     request.withCredentials = true;
 
@@ -666,7 +666,7 @@ CloudLibrarySource.prototype.delete = async function(item) {
 
 CloudLibrarySource.prototype.publish = async function(item, unpublish) {
     const action = unpublish ? 'unpublish' : 'publish';
-    const username = SnapCloud.username;
+    const username = this.ide.cloud.username;
     const {name} = item;
     const url = `${SERVER_URL}/api/v2/libraries/user/${username}/${name}/${action}`;
     const request = new XMLHttpRequest();
