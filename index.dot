@@ -35,8 +35,11 @@
                     config.servicesHosts.push(DEFAULT_SERVICES_HOST);
                 }
 
-                console.log({config});
-                startEnvironment(config);
+                if (document.readyState === 'complete') {
+                    startEnvironment(config);
+                } else {
+                    window.onload = () => startEnvironment(config);
+                }
             })();
 
         </script>

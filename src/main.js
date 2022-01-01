@@ -8,7 +8,7 @@ function startEnvironment(config) {
 
     world = new WorldMorph(document.getElementById('world'));
     world.worldCanvas.focus();
-    new NetsBloxMorph(false, config).openIn(world);
+    new NetsBloxMorph(true, config).openIn(world);
     loop();
 }
 
