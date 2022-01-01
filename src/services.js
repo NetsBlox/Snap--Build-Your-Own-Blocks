@@ -1,6 +1,9 @@
 /* globals utils, DEFAULT_SERVICES_HOST, SERVICES_HOSTS, SERVER_URL */
-function ServicesRegistry(servicesHosts) {
-    this.setServicesHosts(servicesHosts);
+function ServicesRegistry(config) {
+    // TODO: 
+    this.DEFAULT_SERVICES_HOST = config.defaultHost;
+    this.cloudUrl = config.cloudUrl;
+    this.setServicesHosts(config.servicesHosts);
 }
 
 ServicesRegistry.prototype.reset = function () {
@@ -12,8 +15,8 @@ ServicesRegistry.prototype.onInvalidHosts = function (invalidHosts) {
     console.error('Invalid services hosts detected:', invalidHosts);
 };
 
-ServicesRegistry.prototype.fetchHosts = function () {
-    const url = SERVER_URL + '/api/v2/services-hosts/all/';
+ServicesRegistry.prototype.fetchHosts = function (username) {
+    const url = this.cloudUrl + '/services-hosts/all/' + encodeURIComponent(username);
     return fetch(url)
         .then(response => response.json())
         .then(hosts => this.setServicesHosts(hosts))

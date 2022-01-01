@@ -129,17 +129,21 @@ Cloud.prototype.resetPassword = async function (username) {
 Cloud.prototype.login = async function (
     username,
     password,
-    remember,
+    remember,  // TODO: use this...
     strategy,
 ) {
-    const body = JSON.stringify({
-        username: username,
-        password_hash: hex_sha512(password),
-    });
-    const response = await fetch(`/api/users/login`, {method: 'POST', body});
-    // TODO: handle other strategies?
-    // TODO: handle "remember" argument?
-    return await response.text();
+    if (!strategy) {
+        password = hex_sha512(password);
+    }
+    const body = {
+        username,
+        password,
+        strategy,
+    };
+    const response = await this.post('/users/login', body);
+    if (response.status < 300) {
+        this.username = await response.text();
+    }
 };
 
 Cloud.prototype.getProjectList = async function () {
@@ -218,16 +222,12 @@ Cloud.prototype.encodeDict = function (dict) {
 };
 
 Cloud.prototype.getUserData = async function() {
-    const response = await fetch(`/api/users/${this.username}`);
+    const response = await this.fetch(`/users/${this.username}`);
     return await response.json();
 };
 
 Cloud.prototype.addRole = async function(name) {
-    const options = {
-        method: 'POST',
-        body: JSON.stringify({name})
-    };
-    const response = await fetch(`/api/projects/id/${this.projectId}/`, options);
+    const response = await this.post(`/projects/id/${this.projectId}/`, {name});
     // TODO: should I request the new project state, too?
     // I shouldn't have to since we should be subscribed to changes...
     return await response.json();
@@ -238,7 +238,7 @@ Cloud.prototype.renameRole = async function(roleId, name) {
         method: 'PATCH',
         body: JSON.stringify({name})
     };
-    const response = await fetch(`/api/projects/id/${this.projectId}/${roleId}`, options);
+    const response = await this.fetch(`/projects/id/${this.projectId}/${roleId}`, options);
     return await response.json();
 };
 
@@ -420,14 +420,11 @@ Cloud.prototype.signup = async function (
     username,
     email,
 ) {
-    const opts = {
-        method: 'POST',
-        body: JSON.stringify({
-            username,
-            email,
-        }),
+    const body = {
+        username,
+        email,
     };
-    const response = await fetch(`${this.url}/users/create`, opts);
+    const response = await this.post('/users/create', body);
     console.assert(response.status === 200);  // TODO
 };
 
@@ -449,15 +446,19 @@ Cloud.prototype.saveProjectCopy = async function() {
 Cloud.prototype.post = async function(url, body) {
     const opts = {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
     };
     if (body !== undefined) {
         opts.body = JSON.stringify(body);
     }
-    return await fetch(`${this.url}${url}`, opts);
-    
+    return await this.fetch(url, opts);
+};
+
+Cloud.prototype.fetch = async function(url, opts={}) {
+    url = this.url + url;
+    opts.credentials = opts.credentials || 'same-origin';
+    opts.headers = opts.headers || {};
+    opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
+    return await fetch(url, opts);
 };
 
 Cloud.prototype.setLocalState = function (projectId, roleId) {

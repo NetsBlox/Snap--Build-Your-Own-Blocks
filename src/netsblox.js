@@ -18,7 +18,7 @@ NetsBloxMorph.prototype.init = function (isAutoFill, config) {
     NetsBloxMorph.uber.init.call(this, isAutoFill, config);
 
     this.sockets = new WebSocketManager(this);
-    this.services = new ServicesRegistry(config.servicesHosts);
+    this.services = new ServicesRegistry(config);
     this.services.onInvalidHosts = this.onInvalidHosts.bind(this);
     this.room = null;
 

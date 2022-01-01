@@ -6502,7 +6502,7 @@ IDE_Morph.prototype.initializeCloud = function () {
                 sessionStorage.username = username;
                 this.controlBar.cloudButton.refresh();
                 this.source = 'cloud';
-                this.services.fetchHosts();
+                this.services.fetchHosts(username);
                 let msg = localize('Logged in as ') + username;
                 this.showMessage(msg, 2);
             } catch (err) {
