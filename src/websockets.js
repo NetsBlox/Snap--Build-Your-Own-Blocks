@@ -1,16 +1,15 @@
-/*globals nop, SERVER_URL, SERVER_ADDRESS,
+/*globals nop, 
   StageMorph, SnapActions, DialogBoxMorph, IDE_Morph, isObject, NetsBloxSerializer,
   localize, VariableFrame, isSnapObject*/
 // WebSocket Manager
 
-var WebSocketManager = function (ide) {
+var WebSocketManager = function (ide, config) {
     this.ide = ide;
-    this.uuid = ide.cloud.clientId;
+    this.uuid = config.clientId;
     this.websocket = null;
     this.messages = [];
     this.msgHandlerQueues = [];
-    this._protocol = SERVER_URL.substring(0,5) === 'https' ? 'wss:' : 'ws:';
-    this.url = this._protocol + '//' + SERVER_ADDRESS;
+    this.url = config.cloudUrl.replace(/^http/, 'ws') + `/network/${config.clientId}/connect`;
     this.lastSocketActivity = Date.now();
     this._connectWebSocket();
     this.version = Date.now();
@@ -249,10 +248,10 @@ WebSocketManager.prototype._connectWebSocket = function() {
         self.lastSocketActivity = Date.now();
         self.connected = true;
 
-        self.sendMessage({
-            type: 'set-uuid',
-            clientId: self.ide.cloud.clientId
-        });
+        //self.sendMesage({
+            //type: 'set-uuid',
+            //clientId: self.ide.cloud.clientId
+        //});
         self.hasConnected = true;
     };
 
