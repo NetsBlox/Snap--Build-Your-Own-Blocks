@@ -40,11 +40,32 @@ Process.prototype.doSocketMessage = function (msgInfo) {
         contents[fieldNames[i]] = fieldValues[i] || '';
     }
 
-    var dstId = targetRole instanceof List ? targetRole.asArray() : targetRole;
+    var dstId = targetRole instanceof List ? targetRole.asArray() : [targetRole];
+    function resolveAddress(addr) {
+        if (addr.includes('@')) {
+            return [addr];
+        }
+
+        let targets;
+        if (addr instanceof Array) {
+            targets = ide.room.getRoleNames();
+            if (addr[0] === 'others in room') {
+                targets = targets.filter(name => name !== ide.projectName);
+            }
+            return targets;
+        } else {
+            targets = [ide.projectName];
+        }
+
+        const ownerId = ide.room.ownerId;
+        const project = ide.room.name;
+        return targets.map(addr => `${addr}@${project}@${ownerId}`);
+    }
+
     var sendMessage = function() {
         ide.sockets.sendMessage({
             type: 'message',
-            dstId: dstId,
+            dstId: dstId.flatMap(resolveAddress),
             srcId: srcId,
             msgType: name,
             content: contents
