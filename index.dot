@@ -27,7 +27,7 @@
 
                 var SERVER_ADDRESS = SERVER_URL.replace(/^.*\/\//, '');
 
-                const opts = {credentials: 'same-origin'};
+                const opts = {credentials: 'include'};
                 const config = await (await fetch(SERVER_URL + '/configuration', opts)).json();
                 const DEFAULT_SERVICES_HOST = {url: SERVER_URL + '/services', categories: []};
                 config.defaultServicesHost = DEFAULT_SERVICES_HOST;

@@ -455,7 +455,7 @@ Cloud.prototype.post = async function(url, body) {
 
 Cloud.prototype.fetch = async function(url, opts={}) {
     url = this.url + url;
-    opts.credentials = opts.credentials || 'same-origin';
+    opts.credentials = opts.credentials || 'include';
     opts.headers = opts.headers || {};
     opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
     return await fetch(url, opts);
@@ -560,16 +560,13 @@ Cloud.prototype.setProjectName = function(name) {
 };
 
 Cloud.prototype.importProject = async function (name, role, roles) {
-    const options = {
-        method: 'POST',
-        body: JSON.stringify({
-            name: name,
-            roles: roles,
-            clientId: this.clientId,
-        }),
+    const body = {
+        name: name,
+        roles: roles,
+        clientId: this.clientId,
     };
 
-    const response = await fetch(`${this.url}/projects/`, options);
+    const response = await this.post('/projects/', body);
     return await response.json();
 };
 
