@@ -178,8 +178,8 @@ WebSocketManager.MessageHandlers = {
             }
         }
     },
-    'ping': function() {
-        this.sendMessage({type: 'pong'});
+    'pong': function() {
+        setTimeout(() => this.sendMessage({type: 'ping'}), WebSocketManager.HEARTBEAT_INTERVAL);
     },
     'user-action': function(msg) {
         SnapActions.onMessage(msg.action);
@@ -233,23 +233,20 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
     this.websocket = new WebSocket(this.url);
     // Set up message firing queue
-    this.websocket.onopen = function() {
-        if (self.errored === true) {
-            self.ide.showMessage((self.hasConnected ? 're' : '') + 'connected!', 2);
-            self.errored = false;
+    this.websocket.onopen = () => {
+        if (this.errored === true) {
+            this.ide.showMessage((this.hasConnected ? 're' : '') + 'connected!', 2);
+            this.errored = false;
         }
-        if (!self.hasConnected) {
-            setInterval(self.checkAlive.bind(self), WebSocketManager.HEARTBEAT_INTERVAL);
+        if (!this.hasConnected) {
+            setInterval(this.checkAlive.bind(this), WebSocketManager.HEARTBEAT_INTERVAL);
         }
 
-        self.lastSocketActivity = Date.now();
-        self.connected = true;
+        this.lastSocketActivity = Date.now();
+        this.connected = true;
 
-        //self.sendMesage({
-            //type: 'set-uuid',
-            //clientId: self.ide.cloud.clientId
-        //});
-        self.hasConnected = true;
+        this.hasConnected = true;
+        this.sendMessage({type: 'ping'});
     };
 
     // Set up message events
