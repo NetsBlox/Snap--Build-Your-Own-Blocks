@@ -2702,7 +2702,7 @@ ActionManager.prototype.onOpenProject = async function(str) {
         var roomName = this.ide().room.name,
             roleName = this.ide().projectName;
 
-        await this.ide().cloud.setClientState(roomName, roleName, this.lastSeen);
+        //await this.ide().cloud.setClientState(roomName, roleName, this.lastSeen);
         this.requestMissingActions();
     }
 };

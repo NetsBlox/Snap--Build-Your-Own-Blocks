@@ -118,16 +118,11 @@ RoomMorph.prototype.silentSetRoomName = function(name) {
 };
 
 RoomMorph.prototype.setRoomName = function(name) {
-    var myself = this,
-        changed = this.name !== name;
+    const changed = this.name !== name;
 
     if (changed) {
         const cloud = this.ide.cloud;
-        return cloud.setProjectName(name)
-            .then(function(state) {
-                return myself.onRoomStateUpdate(state);
-            })
-            .catch(this.ide.cloudError());
+        return cloud.setProjectName(name);
     }
 
     return Promise.resolve(name);
@@ -538,7 +533,7 @@ RoomMorph.prototype.createNewRole = function () {
     var myself = this;
 
     this.ide.prompt('New Role Name', function (roleName) {
-        myself.validateRoleName(roleName, async function() {
+        myself.validateRoleName(roleName, async () => {
             const state = await this.ide.cloud.addRole(roleName);
             myself.onRoomStateUpdate(state);
         });
@@ -1590,7 +1585,7 @@ EditRoleMorph.prototype.fixLayout = function() {
 };
 
 EditRoleMorph.prototype.editRoleName = function() {
-    this.room.editRoleName(this.role.name);
+    this.room.editRoleName(this.role.id);
     this.destroy();
 };
 
@@ -2246,7 +2241,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     // add buttons
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
-    this.uncollaborateButton = this.addButton(function() {
+    this.uncollaborateButton = this.addButton(() => {
         this.cloud.evictCollaborator(myself.listField.selected.username);
         myself.destroy();
     }, 'Remove');

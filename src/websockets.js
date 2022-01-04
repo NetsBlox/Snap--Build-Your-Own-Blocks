@@ -42,10 +42,6 @@ WebSocketManager.MessageHandlers = {
         }
     },
 
-    'connected': function() {
-        this.onConnect();
-    },
-
     'message': function(msg) {
         var messageType = msg.msgType,
             content = msg.content;
@@ -244,9 +240,8 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
         this.lastSocketActivity = Date.now();
         this.connected = true;
-
+        this.onConnect(this.hasConnected);
         this.hasConnected = true;
-        this.sendMessage({type: 'ping'});
     };
 
     // Set up message events
@@ -374,43 +369,20 @@ WebSocketManager.prototype.deserializeData = function(dataList) {
     });
 };
 
-WebSocketManager.prototype.onConnect = function() {
+WebSocketManager.prototype.onConnect = async function(isReconnect) {
     var myself = this;
+    this.sendMessage({type: 'ping'});
     SnapActions.requestMissingActions(true);
-    return this.updateRoomInfo()
-        .then(function() {
-            while (myself.messages.length) {
-                myself.websocket.send(myself.messages.shift());
-            }
-        });
-};
-
-WebSocketManager.prototype.getClientState = function() {
-    var owner = this.ide.room.ownerId,
-        roleName = this.ide.projectName || 'myRole',
-        roomName = this.ide.room.name || '__new_project__',
-        state = {
-            room: roomName,
-            role: roleName
-        };
-
-    if (owner) {
-        state.owner = owner;
-        // Implicitly request actions
-        state.actionId = SnapActions.lastSeen;
+    if (isReconnect) {
+        this.updateRoomInfo();
     }
-
-    return state;
+    while (myself.messages.length) {
+        myself.websocket.send(myself.messages.shift());
+    }
 };
 
 WebSocketManager.prototype.updateRoomInfo = function() {
-    var myself = this,
-        state = this.getClientState();
-
-    return this.ide.cloud.setClientState(state.room, state.role, state.actionId)
-        .catch(function() {
-            myself.ide.cloudError().apply(null, arguments);
-        });
+    return this.ide.cloud.setClientState();
 };
 
 /**

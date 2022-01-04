@@ -234,12 +234,13 @@ Cloud.prototype.addRole = async function(name) {
 };
 
 Cloud.prototype.renameRole = async function(roleId, name) {
-    const options = {
-        method: 'PATCH',
-        body: JSON.stringify({name})
+    const body = {
+        name,
+        clientId: this.clientId,
     };
-    const response = await this.fetch(`/projects/id/${this.projectId}/${roleId}`, options);
-    return await response.json();
+    const response = await this.patch(`/projects/id/${this.projectId}/${roleId}`, body);
+    // TODO: error handling
+    //return await response.json();
 };
 
 Cloud.prototype.cloneRole = async function(roleId) {
@@ -443,6 +444,16 @@ Cloud.prototype.saveProjectCopy = async function() {
     return saveResponse.status == 200;
 };
 
+Cloud.prototype.patch = async function(url, body) {
+    const opts = {
+        method: 'PATCH',
+    };
+    if (body !== undefined) {
+        opts.body = JSON.stringify(body);
+    }
+    return await this.fetch(url, opts);
+};
+
 Cloud.prototype.post = async function(url, body) {
     const opts = {
         method: 'POST',
@@ -467,28 +478,18 @@ Cloud.prototype.setLocalState = function (projectId, roleId) {
 };
 
 Cloud.prototype.resetLocalState = function () {
-    var baseId = this.clientId + '-' + Date.now();
-    var projectId = 'tmp-project-id-' + baseId;
-    var roleId = 'tmp-role-id-' + baseId;
-    this.setLocalState(projectId, roleId);
+    this.setLocalState(null, null);
 };
 
 Cloud.prototype.newProject = function (name=localize('untitled')) {
     var myself = this;
 
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({name, clientId: this.clientId})
-    };
     if (!this.newProjectRequest) {
-        const saveResponse = fetch(`${this.url}/projects/`, options);
+        const saveResponse = this.post(`/projects/`, {name, clientId: this.clientId});
         this.newProjectRequest = saveResponse
             .then(response => response.json())
-            .then(function(result) {
-                myself.setLocalState(result.projectId, result.roleId);
+            .then(async result => {
+                this.setClientState(result.projectId, result.roleId);
                 myself.newProjectRequest = null;
                 return result;
             })
@@ -511,26 +512,20 @@ Cloud.prototype.getClientState = function () {
     };
 };
 
-Cloud.prototype.setClientState = function (room, role, actionId) {
+Cloud.prototype.setClientState = function (projectId=this.projectId, roleId=this.roleId) {
     var myself = this,
         newProjectRequest = this.newProjectRequest || Promise.resolve();
 
+    this.projectId = projectId;
+    this.roleId = roleId;
     return newProjectRequest
-        .then(() => {
+        .then(async () => {
             const body = {
                 projectId: this.projectId,
                 roleId: this.roleId,
             };
-            return this.post(`/network/${this.clientId}/state`, body);
-        })
-        .then(function(result) {
+            await this.post(`/network/${this.clientId}/state`, body);
             // Only change the project ID if no other moves/newProjects/etc have occurred
-            myself.setLocalState(result.projectId, result.roleId);
-            if (!myself.api) {  // Set the api, if available...
-                myself.api = result.api;
-            }
-
-            return result;
         })
         .catch(function(req) {
             var connError = 'Could not connect to ' + myself.url;
@@ -539,23 +534,12 @@ Cloud.prototype.setClientState = function (room, role, actionId) {
 };
 
 Cloud.prototype.setProjectName = function(name) {
-    var myself = this,
-        newProjectRequest = this.newProjectRequest || Promise.resolve();
+    const newProjectRequest = this.newProjectRequest || Promise.resolve();
+
 
     return newProjectRequest
-        .then(function() {
-            var data = {
-                projectId: myself.projectId,
-                name: name
-            };
-            return myself.request('/api/setProjectName', data);
-        })
-        .then(function(result) {
-            return result;
-        })
-        .catch(function(req) {
-            var connError = 'Could not connect to ' + myself.url;
-            throw new Error(req.responseText || connError);
+        .then(async () => {
+            await this.patch(`/projects/id/${this.projectId}`, {name, clientId: this.clientId});
         });
 };
 
