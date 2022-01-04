@@ -47,8 +47,7 @@ WebSocketManager.MessageHandlers = {
     },
 
     'message': function(msg) {
-        var dstId = msg.dstId,
-            messageType = msg.msgType,
+        var messageType = msg.msgType,
             content = msg.content;
 
         // When replaying a network trace, actual messages to the client are ignored
@@ -60,10 +59,8 @@ WebSocketManager.MessageHandlers = {
             return;
         }
 
-        if (dstId === this.ide.projectName || dstId === 'others in room' || dstId === 'everyone in room') {
-            content = this.deserializeMessage(msg);
-            this.onMessageReceived(messageType, content, msg);
-        }
+        content = this.deserializeMessage(msg);
+        this.onMessageReceived(messageType, content, msg);
     },
 
     // Update on the current roles at the given room
