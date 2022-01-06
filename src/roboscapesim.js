@@ -12,6 +12,7 @@ var nextUpdateServerTime = 0;
 var roomInfo;
 var roomID;
 var bodyMeshes = {};
+var nameTags = {};
 var availableEnvironments = [];
 var availableRooms = [];
 var material_count = 0;
@@ -230,9 +231,59 @@ if (window.origin.includes("localhost")) {
  */
 const addRobot = async function () {
     imported = await BABYLON.SceneLoader.ImportMeshAsync('', modelsDir, 'parallax_robot.gltf');
-    //imported.meshes[0].scaling.scaleInPlace(2);
     return imported.meshes[0];
 };
+
+const createLabel = function (text, font = "Arial", color = "#ffffff") {
+    // Set font
+    var font_size = 48;
+	var font = "bold " + font_size + "px " + font;
+	
+	// Set height for plane
+    var planeHeight = 3;
+    
+    // Set height for dynamic texture
+    var DTHeight = 1.5 * font_size; //or set as wished
+    
+    // Calcultae ratio
+    var ratio = planeHeight/DTHeight;
+
+	//Use a temporary dynamic texture to calculate the length of the text on the dynamic texture canvas
+    var temp = new BABYLON.DynamicTexture("DynamicTexture", 64, scene);
+	var tmpctx = temp.getContext();
+	tmpctx.font = font;
+    var DTWidth = tmpctx.measureText(text).width + 8;
+    
+    // Calculate width the plane has to be 
+    var planeWidth = DTWidth * ratio;
+
+    //Create dynamic texture and write the text
+    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", {width:DTWidth + 8, height:DTHeight + 8}, scene, false);
+    var mat = new BABYLON.StandardMaterial("mat", scene);
+    mat.diffuseTexture = dynamicTexture;
+    mat.ambientColor = new BABYLON.Color3(1, 1, 1);
+    mat.specularColor = new BABYLON.Color3(0, 0, 0);
+    mat.diffuseColor = new BABYLON.Color3(0, 0, 0);
+    mat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+
+    // Create outline
+    dynamicTexture.drawText(text, 2, DTHeight - 4, font, "#111111", null, true);
+    dynamicTexture.drawText(text, 4, DTHeight - 2, font, "#111111", null, true);
+    dynamicTexture.drawText(text, 6, DTHeight - 4, font, "#111111", null, true);
+    dynamicTexture.drawText(text, 4, DTHeight - 6, font, "#111111", null, true);
+
+    // Draw text
+    dynamicTexture.drawText(text, 4, DTHeight - 4, font, color, null, true);
+    
+    dynamicTexture.hasAlpha = true;
+	dynamicTexture.getAlphaFromRGB = true;
+    
+    //Create plane and set dynamic texture as material
+    var plane = BABYLON.MeshBuilder.CreatePlane("plane", {width:planeWidth, height:planeHeight}, scene);
+    plane.material = mat;
+
+    return plane;
+}
 
 // Load socket.io
 var script = document.createElement('script');
@@ -289,6 +340,16 @@ setTimeout(() => {
                         if (bodiesInfo[label].image == 'parallax_robot') {
                             bodyMeshes[label] = addRobot().then(result => {
                                 bodyMeshes[label] = result;
+                                let tag = createLabel(label.substring(label.length - 4));
+                                
+                                // Move to position
+                                tag.billboardMode = BABYLON.TransformNode.BILLBOARDMODE_ALL;
+                                tag.setParent(result);
+                                tag.scaling.x = -0.05;
+                                tag.scaling.y = 0.05;
+                                tag.position.y = -0.2;
+                                
+                                nameTags[label] = tag;
                             });
                         } else {
                             bodyMeshes[label] = addBlock(bodiesInfo[label].width, bodiesInfo[label].height, bodiesInfo[label].depth).then(result => {
