@@ -523,8 +523,8 @@ Cloud.prototype.setClientState = function (projectId=this.projectId, roleId=this
             const body = {
                 state: {
                     browser: {
-                projectId: this.projectId,
-                roleId: this.roleId,
+                        projectId: this.projectId,
+                        roleId: this.roleId,
                     }
                 }
             };

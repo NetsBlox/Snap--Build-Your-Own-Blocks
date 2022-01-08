@@ -52,7 +52,6 @@ Process.prototype.doSocketMessage = function (msgInfo) {
             if (addr[0] === 'others in room') {
                 targets = targets.filter(name => name !== ide.projectName);
             }
-            return targets;
         } else {
             targets = [ide.projectName];
         }
