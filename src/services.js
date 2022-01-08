@@ -1,8 +1,8 @@
 /* globals utils, DEFAULT_SERVICES_HOST, SERVICES_HOSTS, SERVER_URL */
-function ServicesRegistry(config) {
+function ServicesRegistry(config, cloud) {
     // TODO: 
     this.DEFAULT_SERVICES_HOST = config.defaultHost;
-    this.cloudUrl = config.cloudUrl;
+    this.cloud = cloud;
     this.setServicesHosts(config.servicesHosts);
 }
 
@@ -16,8 +16,9 @@ ServicesRegistry.prototype.onInvalidHosts = function (invalidHosts) {
 };
 
 ServicesRegistry.prototype.fetchHosts = function (username) {
-    const url = this.cloudUrl + '/services-hosts/all/' + encodeURIComponent(username);
-    return fetch(url)
+    const url = '/services-hosts/all/' + encodeURIComponent(username);
+
+    return this.cloud.fetch(url)
         .then(response => response.json())
         .then(hosts => this.setServicesHosts(hosts))
         .catch(err => {
