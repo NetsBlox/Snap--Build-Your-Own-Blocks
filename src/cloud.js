@@ -521,8 +521,12 @@ Cloud.prototype.setClientState = function (projectId=this.projectId, roleId=this
     return newProjectRequest
         .then(async () => {
             const body = {
+                state: {
+                    browser: {
                 projectId: this.projectId,
                 roleId: this.roleId,
+                    }
+                }
             };
             await this.post(`/network/${this.clientId}/state`, body);
             // Only change the project ID if no other moves/newProjects/etc have occurred
