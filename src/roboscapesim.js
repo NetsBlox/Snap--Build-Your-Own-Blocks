@@ -222,15 +222,15 @@ var modelsDir;
 if (window.origin.includes("localhost")) {
     modelsDir = 'http://localhost:8080/src/';
 } else {
-    modelsDir = 'https://extensions.netsblox.org/RoboScapeOnline/assets/';
+    modelsDir = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/assets/';
 }
 
 /**
- * Import robot mesh and add it to scene
- * @returns Robot mesh object
+ * Import mesh and add it to scene
+ * @returns Mesh object
  */
-const addRobot = async function () {
-    imported = await BABYLON.SceneLoader.ImportMeshAsync('', modelsDir, 'parallax_robot.gltf');
+const addMesh = async function (name) {
+    imported = await BABYLON.SceneLoader.ImportMeshAsync('', modelsDir, name);
     return imported.meshes[0];
 };
 
@@ -337,10 +337,10 @@ setTimeout(() => {
                             continue;
                         }
 
-                        if (bodiesInfo[label].image == 'parallax_robot') {
-                            bodyMeshes[label] = addRobot().then(result => {
+                        if (bodiesInfo[label].image.endsWith('.gltf')) { // Mesh object
+                            bodyMeshes[label] = addMesh(bodiesInfo[label].image).then(result => {
                                 bodyMeshes[label] = result;
-                                let tag = createLabel(label.substring(label.length - 4));
+                                let tag = createLabel(label.split(':')[0].substring(label.length - 4));
                                 
                                 // Move to position
                                 tag.billboardMode = BABYLON.TransformNode.BILLBOARDMODE_ALL;
@@ -353,8 +353,8 @@ setTimeout(() => {
                             });
                         } else {
                             bodyMeshes[label] = addBlock(bodiesInfo[label].width, bodiesInfo[label].height, bodiesInfo[label].depth).then(result => {
-                                if(bodiesInfo[label].image && bodiesInfo[label].image[0] == "#"){
-                                    var material = new BABYLON.StandardMaterial("material" + material_count++);
+                                if(bodiesInfo[label].image && bodiesInfo[label].image[0] == '#'){
+                                    var material = new BABYLON.StandardMaterial('material' + material_count++);
 
                                     let color = hex2rgb(bodiesInfo[label].image);
 
