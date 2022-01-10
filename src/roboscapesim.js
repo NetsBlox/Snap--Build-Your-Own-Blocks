@@ -217,12 +217,12 @@ function leaveRoom() {
     updateCanvasTitle("Not connected");
 }
 
-var modelsDir;
+var assetsDir;
 
 if (window.origin.includes("localhost")) {
-    modelsDir = 'http://localhost:8080/src/';
+    assetsDir = 'http://localhost:8080/src/';
 } else {
-    modelsDir = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/assets/';
+    assetsDir = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/assets/';
 }
 
 /**
@@ -230,11 +230,19 @@ if (window.origin.includes("localhost")) {
  * @returns Mesh object
  */
 const addMesh = async function (name) {
-    imported = await BABYLON.SceneLoader.ImportMeshAsync('', modelsDir, name);
+    imported = await BABYLON.SceneLoader.ImportMeshAsync('', assetsDir, name);
     return imported.meshes[0];
 };
 
-const createLabel = function (text, font = "Arial", color = "#ffffff") {
+/**
+ * Create a new plane with text written on its texture
+ * @param {string} text Text to display on label
+ * @param {string} font Font to write text in
+ * @param {string} color Color of text
+ * @param {boolean} outline Should black outline be added around text for visibility
+ * @returns Plane with dynamic texture material applied
+ */
+const createLabel = function (text, font = "Arial", color = "#ffffff", outline = true) {
     // Set font
     var font_size = 48;
 	var font = "bold " + font_size + "px " + font;
@@ -267,10 +275,12 @@ const createLabel = function (text, font = "Arial", color = "#ffffff") {
     mat.emissiveColor = new BABYLON.Color3(1, 1, 1);
 
     // Create outline
-    dynamicTexture.drawText(text, 2, DTHeight - 4, font, "#111111", null, true);
-    dynamicTexture.drawText(text, 4, DTHeight - 2, font, "#111111", null, true);
-    dynamicTexture.drawText(text, 6, DTHeight - 4, font, "#111111", null, true);
-    dynamicTexture.drawText(text, 4, DTHeight - 6, font, "#111111", null, true);
+    if (outline) {
+        dynamicTexture.drawText(text, 2, DTHeight - 4, font, "#111111", null, true);
+        dynamicTexture.drawText(text, 4, DTHeight - 2, font, "#111111", null, true);
+        dynamicTexture.drawText(text, 6, DTHeight - 4, font, "#111111", null, true);
+        dynamicTexture.drawText(text, 4, DTHeight - 6, font, "#111111", null, true);
+    }
 
     // Draw text
     dynamicTexture.drawText(text, 4, DTHeight - 4, font, color, null, true);
@@ -359,6 +369,10 @@ setTimeout(() => {
                                     let color = hex2rgb(bodiesInfo[label].image);
 
                                     material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
+                                    result.material = material;    
+                                } else if (bodiesInfo[label].image && bodiesInfo[label].image.endsWith('.png')) {
+                                    var material = new BABYLON.StandardMaterial('material' + material_count++);
+                                    material.diffuseTexture = new BABYLON.Texture(assetsDir + bodiesInfo[label].image);
                                     result.material = material;    
                                 }
 
