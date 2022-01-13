@@ -147,7 +147,7 @@ Cloud.prototype.login = async function (
 };
 
 Cloud.prototype.getProjectList = async function () {
-    const response = await fetch(`/api/users/${this.username}/projects`);
+    const response = await this.fetch(`/projects/user/${this.username}`);
     return await response.json();
 };
 

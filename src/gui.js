@@ -8131,22 +8131,8 @@ CloudProjectsSource.prototype.open = async function(proj) {
     return deferred.promise;
 };
 
-CloudProjectsSource.prototype.list = function() {
-    const deferred = utils.defer();
-    this.ide.cloud.getProjectList(
-        function (projectList) {
-            projectList.forEach(proj => {
-                proj.name = proj.ProjectName;
-                proj.public = proj.Public === 'true';
-            });
-            deferred.resolve(projectList);
-        },
-        function (msg, label) {
-            const err = new CloudError(label, msg);
-            deferred.reject(err);
-        }
-    );
-    return deferred.promise;
+CloudProjectsSource.prototype.list = async function() {
+    return await this.ide.cloud.getProjectList();
 };
 
 CloudProjectsSource.prototype.getPreview = function(project) {
