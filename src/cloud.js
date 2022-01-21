@@ -152,7 +152,7 @@ Cloud.prototype.getProjectList = async function () {
 };
 
 Cloud.prototype.getSharedProjectList = async function() {
-    const response = await fetch(`/api/users/${this.username}/projects/shared`);
+    const response = await this.fetch(`/projects/shared/${this.username}`);
     return await response.json();
 };
 
@@ -243,14 +243,23 @@ Cloud.prototype.renameRole = async function(roleId, name) {
     //return await response.json();
 };
 
+Cloud.prototype.reportLatestRole = async function(id, data) {
+    const options = {
+        method: 'POST',
+        body: JSON.stringify({id, data})
+    };
+    await this.fetch(`/projects/id/${this.projectId}/${this.roleId}/latest`, options);
+};
+
 Cloud.prototype.cloneRole = async function(roleId) {
-    const xmlResponse = await fetch(`/api/projects/id/${this.projectId}/${roleId}/latest`);
+    const projectId = this.projectId;
+    const xmlResponse = await this.fetch(`/projects/id/${projectId}/${roleId}/latest`);
     const data = await xmlResponse.text();
     const options = {
         method: 'POST',
         body: JSON.stringify({name, data})
     };
-    const response = await fetch(`/api/projects/${this.projectId}/${roleId}`, options);
+    const response = await this.fetch(`/projects/id/${projectId}/`, options);
     // TODO: check response code
     return await response.json();
 };
@@ -349,7 +358,7 @@ Cloud.prototype.getCollaboratorList = async function () {
 
 Cloud.prototype.deleteRole = async function(roleId) {
     const method = 'DELETE';
-    const response = await fetch(`/api/projects/id/${this.projectId}/${roleId}`, {method});
+    const response = await this.fetch(`/projects/id/${this.projectId}/${roleId}`, {method});
     return response.status === 200;
 };
 
@@ -373,7 +382,7 @@ Cloud.prototype.saveProject = async function (roleData) {
 
 Cloud.prototype.deleteProject = async function (projectId) {
     const method = 'DELETE';
-    const response = await fetch(`/api/projects/${projectId}`, {method});
+    const response = await this.fetch(`/projects/id/${projectId}`, {method});
     return response.status == 200;
 };
 

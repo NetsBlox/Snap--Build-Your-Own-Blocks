@@ -8171,7 +8171,7 @@ CloudProjectsSource.prototype.save = function(newProject) {
 };
 
 CloudProjectsSource.prototype.delete = async function(project) {
-    await this.ide.cloud.deleteProject(project.ID);
+    await this.ide.cloud.deleteProject(project.id);
 };
 
 // SharedCloudProjectsSource ////////////////////////////////////////////////////
@@ -8188,21 +8188,8 @@ function SharedCloudProjectsSource(ide) {
     this.init(ide, 'Shared with me', 'cloud', 'cloud-shared');
 }
 
-SharedCloudProjectsSource.prototype.list = function() {
-    const deferred = utils.defer();
-    this.ide.cloud.getSharedProjectList(
-        function(projectList) {
-            projectList.forEach(proj => {
-                proj.name = proj.ProjectName;
-            });
-            deferred.resolve(projectList);
-        },
-        function (msg, label) {
-            const err = new CloudError(label, msg);
-            deferred.reject(err);
-        }
-    );
-    return deferred.promise;
+SharedCloudProjectsSource.prototype.list = async function() {
+    return this.ide.cloud.getSharedProjectList();
 };
 
 SharedCloudProjectsSource.prototype.delete = function(project) {

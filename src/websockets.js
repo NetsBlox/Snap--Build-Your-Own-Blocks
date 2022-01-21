@@ -109,12 +109,11 @@ WebSocketManager.MessageHandlers = {
         );
     },
 
-    'project-request': function(msg) {
-        var project = this.getSerializedProject();
-        msg.type = 'project-response';
-        msg.project = project;
-
-        this.sendMessage(msg);
+    'role-data-request': function(msg) {
+        console.log('ROle data requested!');
+        const data = this.getSerializedProject();
+        const id = msg.id;
+        this.ide.cloud.reportLatestRole(id, data);
     },
 
     'rename-role': function(msg) {

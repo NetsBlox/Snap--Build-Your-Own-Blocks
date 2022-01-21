@@ -530,12 +530,10 @@ RoomMorph.prototype.validateRoleName = function (name, cb) {
 
 RoomMorph.prototype.createNewRole = function () {
     // Ask for a new role name
-    var myself = this;
-
-    this.ide.prompt('New Role Name', function (roleName) {
-        myself.validateRoleName(roleName, async () => {
+    this.ide.prompt('New Role Name', roleName => {
+        this.validateRoleName(roleName, async () => {
             const state = await this.ide.cloud.addRole(roleName);
-            myself.onRoomStateUpdate(state);
+            this.onRoomStateUpdate(state);
         });
     }, null, 'createNewRole');
 };
