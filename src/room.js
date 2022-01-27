@@ -610,20 +610,13 @@ RoomMorph.prototype.deleteRole = async function(role) {
     }
 };
 
-RoomMorph.prototype.createRoleClone = function(roleId) {
+RoomMorph.prototype.createRoleClone = async function(roleId) {
     var myself = this;
     var roleName = this.getRoles().find(function(role) {
         return role.id === roleId;
     }).name;
 
-    this.ide.cloud.cloneRole(
-        roleId,
-        function(state) {
-            myself.onRoomStateUpdate(state);
-            myself.ide.showMessage('created copy of ' + roleName);
-        },
-        myself.ide.cloudError()
-    );
+    await this.ide.cloud.cloneRole(roleId);
 };
 
 RoomMorph.prototype.role = function() {

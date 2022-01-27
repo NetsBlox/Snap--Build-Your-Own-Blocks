@@ -250,7 +250,7 @@ IDE_Morph.prototype.init = function (isAutoFill, config) {
     this.applySavedSettings();
 
     // additional properties:
-    this.cloud = new Cloud(config.clientId, config.cloudUrl);
+    this.cloud = new Cloud(config.clientId, config.cloudUrl, config.username);
     this.cloudMsg = null;
     this.source = 'local';
     this.serializer = new SnapSerializer();
@@ -8085,33 +8085,23 @@ function CloudProjectsSource(ide) {
     this.init(ide, 'Cloud', 'cloud');
 }
 
-CloudProjectsSource.prototype.publish = function(proj, unpublish = false) {
-    const serviceName = unpublish ? 'unpublishProject' : 'publishProject';
-    const myself = this;
+CloudProjectsSource.prototype.publish = async function(proj, unpublish = false) {
     const cloud = this.ide.cloud;
+    if (unpublish) {
+        await cloud.unpublishProject(proj.ID);
+    } else {
+        await cloud.publishProject(proj.ID);
+    }
 
-    // TODO: update this
-    cloud.reconnect(
-        () => {
-            cloud.callService(
-                serviceName,
-                () => cloud.disconnect(),
-                this.ide.cloudError(),
-                [proj.name]
-            );
-
-            // Set the Shared URL if the project is currently open
-            if (!unpublish && proj.name === myself.ide.projectName) {
-                var usr = cloud.username,
-                    projectId = 'Username=' +
-                        encodeURIComponent(usr.toLowerCase()) +
-                        '&ProjectName=' +
-                        encodeURIComponent(proj.name);
-                location.hash = 'present:' + projectId;
-            }
-        },
-        this.ide.cloudError()
-    );
+    // Set the Shared URL if the project is currently open
+    if (!unpublish && proj.ID === cloud.projectId) {
+        var usr = cloud.username,
+            projectId = 'Username=' +
+                encodeURIComponent(usr.toLowerCase()) +
+                '&ProjectName=' +
+                encodeURIComponent(proj.name);
+        location.hash = 'present:' + projectId;
+    }
 };
 
 CloudProjectsSource.prototype.open = async function(proj) {

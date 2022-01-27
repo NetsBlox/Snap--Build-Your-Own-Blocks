@@ -37,43 +37,20 @@ var Cloud;
 
 // Cloud /////////////////////////////////////////////////////////////
 
-function Cloud(clientId, url) {
+function Cloud(clientId, url, username) {
     this.clientId = clientId;
+    this.username = username;
+    this.projectId = null;
     this.roleId = null;
-    this.username = null;
-    this.password = null; // hex_sha512 hashed
     this.url = url;
-    this.session = null;
-    this.limo = null;
-    this.route = null;
-    this.api = null;
 }
 
 Cloud.prototype.clear = function () {
     this.username = null;
-    this.password = null;
-    this.session = null;
-    this.limo = null;
-    this.route = null;
-    this.api = null;
 };
 
 Cloud.prototype.hasProtocol = function () {
     return this.url.toLowerCase().indexOf('http') === 0;
-};
-
-Cloud.prototype.setRoute = function (username) {
-    var routes = 20,
-        userNum = 0,
-        i;
-
-    for (i = 0; i < username.length; i += 1) {
-        userNum += username.charCodeAt(i);
-    }
-    userNum = userNum % routes + 1;
-    this.route = '.sc1m' +
-        (userNum < 10 ? '0' : '') +
-        userNum;
 };
 
 // Cloud: Snap! API
@@ -230,7 +207,7 @@ Cloud.prototype.addRole = async function(name) {
     const response = await this.post(`/projects/id/${this.projectId}/`, {name});
     // TODO: should I request the new project state, too?
     // I shouldn't have to since we should be subscribed to changes...
-    return await response.json();
+    //return await response.json();
 };
 
 Cloud.prototype.renameRole = async function(roleId, name) {
@@ -253,15 +230,14 @@ Cloud.prototype.reportLatestRole = async function(id, data) {
 
 Cloud.prototype.cloneRole = async function(roleId) {
     const projectId = this.projectId;
-    const xmlResponse = await this.fetch(`/projects/id/${projectId}/${roleId}/latest`);
-    const data = await xmlResponse.text();
+    const fetchRoleResponse = await this.fetch(`/projects/id/${projectId}/${roleId}/latest`);
+    const {ProjectName: name, SourceCode: data} = await fetchRoleResponse.json();
     const options = {
         method: 'POST',
         body: JSON.stringify({name, data})
     };
     const response = await this.fetch(`/projects/id/${projectId}/`, options);
     // TODO: check response code
-    return await response.json();
 };
 
 Cloud.prototype.inviteGuest = async function (username, roleId) {
@@ -328,7 +304,7 @@ Cloud.prototype.getFriendList = async function () {
 };
 
 Cloud.prototype.getProject = async function (projectId, roleId) {
-    const response = await fetch(`/api/projects/id/${projectId}/${roleId}`);
+    const response = await this.fetch(`/projects/id/${projectId}/${roleId}`);
     const project = await response.json();
     this.setLocalState(projectId, roleId);
     return project;
@@ -358,45 +334,37 @@ Cloud.prototype.getCollaboratorList = async function () {
 
 Cloud.prototype.deleteRole = async function(roleId) {
     const method = 'DELETE';
-    const response = await this.fetch(`/projects/id/${this.projectId}/${roleId}`, {method});
-    return response.status === 200;
+    await this.fetch(`/projects/id/${this.projectId}/${roleId}`, {method});
 };
 
 Cloud.prototype.evictUser = async function(clientID) {
     const method = 'DELETE';
-    // FIXME: This has changed
-    const response = await fetch(`/api/projects/${this.projectdId}/occupants/${clientID}`, {method});
-    return response.status === 200;
+    await this.fetch(`/network/id/${this.projectdId}/occupants/${clientID}`, {method});
 };
 
 Cloud.prototype.saveProject = async function (roleData) {
 
-    const url = `/api/projects/${this.projectId}/${this.roleId}`;
+    const url = `/projects/id/${this.projectId}/${this.roleId}`;
     const options = {
         method: 'POST',
         body: JSON.stringify(roleData),
     };
-    const response = await fetch(url, options);
-    return response.status === 200;
+    await this.fetch(url, options);
 };
 
 Cloud.prototype.deleteProject = async function (projectId) {
     const method = 'DELETE';
-    const response = await this.fetch(`/projects/id/${projectId}`, {method});
-    return response.status == 200;
+    await this.fetch(`/projects/id/${projectId}`, {method});
 };
 
 Cloud.prototype.publishProject = async function (projectId) {
     const method = 'POST';
-    const response = await fetch(`/api/projects/${projectId}/publish`, {method});
-    return response.status == 200;
+    await this.fetch(`/projects/${projectId}/publish`, {method});
 };
 
 Cloud.prototype.unpublishProject = async function (projectId) {
     const method = 'POST';
-    const response = await fetch(`/api/projects/${projectId}/unpublish`, {method});
-    // TODO: Show an error?
-    return response.status == 200;
+    await this.fetch(`/projects/${projectId}/unpublish`, {method});
 };
 
 Cloud.prototype.reconnect = function (callback, errorCall) {
@@ -478,7 +446,12 @@ Cloud.prototype.fetch = async function(url, opts={}) {
     opts.credentials = opts.credentials || 'include';
     opts.headers = opts.headers || {};
     opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
-    return await fetch(url, opts);
+    const response = await fetch(url, opts);
+    if (response.status > 399) {
+        throw new CloudError(await response.text());
+    }
+    return response;
+    // TODO: check response code and throw uniform error
 };
 
 Cloud.prototype.setLocalState = function (projectId, roleId) {

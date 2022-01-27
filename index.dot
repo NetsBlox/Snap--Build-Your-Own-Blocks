@@ -18,28 +18,24 @@
         <script type="text/javascript">
             var CLIENT_ID;
             (async function() {
-                const SERVER_URL = (function () {
+                /*FIXME: Uncomment this:
+                const serverUrl = (function () {
                     const qsParams = Object.fromEntries(
                         window.location.href.split('?').map(chunk => chunk.split('=').map(decodeURIComponent))
                     );
                     return qsParams.server || window.location.origin;
+                })();*/
+                const serverUrl = (function () {
+                    const qsParams = Object.fromEntries(
+                        window.location.href.split('?').map(chunk => chunk.split('=').map(decodeURIComponent))
+                    );
+                    return qsParams.server || 'http://127.0.0.1:7777';
                 })();
 
-                var SERVER_ADDRESS = SERVER_URL.replace(/^.*\/\//, '');
-
-                const opts = {credentials: 'include'};
-                const config = await (await fetch(SERVER_URL + '/configuration', opts)).json();
-                const DEFAULT_SERVICES_HOST = {url: SERVER_URL + '/services', categories: []};
-                config.defaultServicesHost = DEFAULT_SERVICES_HOST;
-
-                if (!config.servicesHosts.find(host => host.categories.length === 0)) {
-                    config.servicesHosts.push(DEFAULT_SERVICES_HOST);
-                }
-
                 if (document.readyState === 'complete') {
-                    startEnvironment(config);
+                    startEnvironment(serverUrl);
                 } else {
-                    window.onload = () => startEnvironment(config);
+                    window.onload = () => startEnvironment(serverUrl);
                 }
             })();
 
