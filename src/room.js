@@ -133,7 +133,7 @@ RoomMorph.prototype.getDefaultRoles = function() {
         name = this.getCurrentRoleName(),
         occupant = {
             uuid: this.myUuid(),
-            username: this.ide.cloud.username || 'me'
+            name: this.ide.cloud.username || 'me'
         };
 
     roleInfo[name] = {
@@ -218,7 +218,7 @@ RoomMorph.sameOccupants = function(list1, list2) {
         otherUuids,
         otherUsernames,
         getUuid = function(role) {return role.uuid;},
-        getUsername = function(role) {return role.username;};
+        getUsername = function(role) {return role.name;};
 
     uuids = list1.map(getUuid);
     otherUuids = list2.map(getUuid);
@@ -531,10 +531,10 @@ RoomMorph.prototype.validateRoleName = function (name, cb) {
 RoomMorph.prototype.createNewRole = function () {
     // Ask for a new role name
     this.ide.prompt('New Role Name', roleName => {
-        this.validateRoleName(roleName, async () => {
-            const state = await this.ide.cloud.addRole(roleName);
-            this.onRoomStateUpdate(state);
-        });
+        this.validateRoleName(
+            roleName,
+            () => this.ide.cloud.addRole(roleName)
+        );
     }, null, 'createNewRole');
 };
 
@@ -649,7 +649,7 @@ RoomMorph.prototype.evictUser = function (user) {
         user.uuid,
         function(state) {
             myself.onRoomStateUpdate(state);
-            myself.ide.showMessage('evicted ' + user.username + '!');
+            myself.ide.showMessage('evicted ' + user.name + '!');
         },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
@@ -1393,7 +1393,7 @@ RoleMorph.prototype.setOccupants = function(users) {
     var userText = '<empty>';
     if (this.users.length) {
         userText = this.users.map(function(user){
-            return user.username || localize('guest');
+            return user.name || localize('guest');
         }).join(', ');
     }
 
@@ -2181,7 +2181,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
         this.userList,
         this.userList.length > 0 ?
             function (element) {
-                return element.username || element;
+                return element.name || element;
             } : null,
         [ // format: display shared project names bold
             [
@@ -2211,7 +2211,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
 
         myself.listField.elements =
             myself.userList.filter(function (user) {
-                return user.username.toLowerCase().indexOf(text.toLowerCase()) > -1;
+                return user.name.toLowerCase().indexOf(text.toLowerCase()) > -1;
             });
 
         if (myself.listField.elements.length === 0) {
@@ -2240,7 +2240,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
     this.uncollaborateButton = this.addButton(() => {
-        this.cloud.evictCollaborator(myself.listField.selected.username);
+        this.cloud.evictCollaborator(myself.listField.selected.name);
         myself.destroy();
     }, 'Remove');
     this.collaborateButton = this.addButton('ok', 'Invite');
