@@ -1,4 +1,15 @@
-(function() {
+(function () {
+
+    var _open3d = function() {
+        if (window.externalVariables.roboscapeSimCanvasInstance) {
+            window.externalVariables.roboscapeSimCanvasInstance.show();
+        }
+
+        if (!engine) {
+            activateBabylon();
+        }
+    };
+
     class RoboScapeSim extends Extension {
         constructor(ide) {  
             super('RoboScape Simulator');   
@@ -30,12 +41,12 @@
                         dialog.labelString = `New Room`;
                         dialog.createLabel();
 
-                        bdy.add(new TextMorph("Room Password:"));
+                        bdy.add(new TextMorph('Room Password:'));
                         bdy.add(roomPasswordField);
                         bdy.fixLayout();
                         dialog.addBody(bdy);
 
-                        bdy.add(new TextMorph("Environment:"));
+                        bdy.add(new TextMorph('Environment:'));
                         bdy.add(environmentField);
                         bdy.fixLayout();
                         dialog.addBody(bdy);
@@ -43,6 +54,7 @@
                         dialog.addButton('submit', 'Create Room');
                         dialog.submit = () => {                        
                             newRoom(environmentField.getValue(), roomPasswordField.getValue());
+                            _open3d();
                             window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                             dialog.destroy();
                         };
@@ -76,12 +88,12 @@
                         dialog.createLabel();
 
 
-                        bdy.add(new TextMorph("Room ID:"));
+                        bdy.add(new TextMorph('Room ID:'));
                         bdy.add(roomIdField);
                         bdy.fixLayout();
                         dialog.addBody(bdy);
 
-                        bdy.add(new TextMorph("Room Password:"));
+                        bdy.add(new TextMorph('Room Password:'));
                         bdy.add(roomPasswordField);
                         roomPasswordField.contents().text.toggleIsPassword();
                         bdy.fixLayout();
@@ -90,6 +102,7 @@
                         dialog.addButton('submit', 'Join Room');
                         dialog.submit = () => {
                             joinRoom(roomIdField.getValue(), '', roomPasswordField.getValue());
+                            _open3d();
                             window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                             dialog.destroy();
                         };
@@ -106,13 +119,7 @@
                     });
                 },
                 'Open 3D view': function () {
-                    if (window.externalVariables.roboscapeSimCanvasInstance) {
-                        window.externalVariables.roboscapeSimCanvasInstance.show();
-                    }
-
-                    if (!engine) {
-                        activateBabylon();
-                    }
+                    _open3d();
                 }
             };
         }
@@ -135,7 +142,7 @@
 
     }
 
-    if (window.origin.includes("localhost")) {
+    if (window.origin.includes('localhost')) {
         script = document.createElement('script');
         script.type = 'text/javascript';
         script.src = 'http://localhost:8080/src/babylon-roboscapesim.js';
