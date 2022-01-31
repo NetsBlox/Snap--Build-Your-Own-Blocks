@@ -383,12 +383,9 @@ Cloud.prototype.disconnect = nop;
 
 Cloud.prototype.logout = async function () {
     const method = 'POST';
-    const response = await fetch('/api/users/logout', {method});
-    if (response.status == 200) {
-        this.clear();
-        return true;
-    }
-    return false;
+    await this.fetch('/users/logout', {method});
+    this.clear();
+    return true;
 };
 
 Cloud.prototype.signup = async function (

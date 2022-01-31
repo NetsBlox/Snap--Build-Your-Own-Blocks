@@ -6656,19 +6656,11 @@ IDE_Morph.prototype.changeCloudPassword = function () {
     );
 };
 
-IDE_Morph.prototype.logout = function () {
-    this.cloud.logout(
-        () => {
-            delete(sessionStorage.username);
-            this.controlBar.cloudButton.refresh();
-            this.showMessage('disconnected.', 2);
-        },
-        () => {
-            delete(sessionStorage.username);
-            this.controlBar.cloudButton.refresh();
-            this.showMessage('disconnected.', 2);
-        }
-    );
+IDE_Morph.prototype.logout = async function () {
+    await this.cloud.logout();
+    delete(sessionStorage.username);
+    this.controlBar.cloudButton.refresh();
+    this.showMessage('disconnected.', 2);
 };
 
 IDE_Morph.prototype.buildProjectRequest = function () {

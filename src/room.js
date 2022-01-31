@@ -564,42 +564,29 @@ RoomMorph.prototype.editRoleName = function(roleId) {
     }, null, 'editRoleName');
 };
 
-RoomMorph.prototype.moveToRole = function(role) {
+RoomMorph.prototype.moveToRole = async function(role) {
     var myself = this;
 
     myself.ide.showMessage('moving to ' + role.name);
-    this.ide.cloud.getProject(
-        this.ide.cloud.projectId,
-        async project => {
-            this.ide.showMessage('moved to ' + role.name + '!');
-            this.ide.silentSetProjectName(role.name);
-            this.ide.source = 'cloud';
+    const project = await this.ide.cloud.getProject(this.ide.cloud.projectId, role.id);
+    this.ide.showMessage('moved to ' + role.name + '!');
+    this.ide.silentSetProjectName(role.name);
+    this.ide.source = 'cloud';
 
-            // Load the project or make the project empty
-            if (project) {
-                if (project.Public === 'true') {
-                    location.hash = '#present:Username=' +
-                        encodeURIComponent(this.ide.cloud.username) +
-                        '&ProjectName=' +
-                        encodeURIComponent(project.ProjectName);
-                }
+    // Load the project or make the project empty
+    if (project.Public === true) {  // FIXME: This isn't ever true, is it?
+        location.hash = '#present:Username=' +
+            encodeURIComponent(this.ide.cloud.username) +
+            '&ProjectName=' +
+            encodeURIComponent(project.ProjectName);
+    }
 
-                if (project.SourceCode) {
-                    this.ide.droppedText(project.SourceCode);
-                } else {  // newly created role
-                    await SnapActions.openProject();
-                    this.ide.extensions.onOpenRole();
-                }
-            } else {  // Empty the project FIXME
-                await SnapActions.openProject();
-                this.ide.extensions.onOpenRole();
-            }
-        },
-        (err, lbl) => {
-            this.ide.cloudError().call(null, err, lbl);
-        },
-        role.id
-    );
+    if (project.SourceCode) {
+        this.ide.droppedText(project.SourceCode);
+    } else {  // newly created role
+        await SnapActions.openProject();
+        this.ide.extensions.onOpenRole();
+    }
 };
 
 RoomMorph.prototype.deleteRole = async function(role) {
@@ -1590,7 +1577,7 @@ EditRoleMorph.prototype.deleteRole = function() {
     this.destroy();
 };
 
-EditRoleMorph.prototype.moveToRole = function() {
+EditRoleMorph.prototype.moveToRole = async function() {
     var myself = this,
         ide = this.room.ide,
         dialog,
