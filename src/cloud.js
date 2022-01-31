@@ -109,9 +109,6 @@ Cloud.prototype.login = async function (
     remember,  // TODO: use this...
     strategy,
 ) {
-    if (!strategy) {
-        password = hex_sha512(password);
-    }
     const body = {
         username,
         password,
