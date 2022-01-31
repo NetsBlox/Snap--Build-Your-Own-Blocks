@@ -136,7 +136,7 @@ Cloud.prototype.changePassword = async function (
 ) {
     const body = JSON.stringify({
         username: this.username,
-        password_hash: hex_sha512(newPW),
+        password_hash: newPW,
     });
     const response = await fetch(
         `/api/users/${this.username}/password`,
