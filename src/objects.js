@@ -2534,6 +2534,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportStageHeight'));
         blocks.push(block('reportStageWidth'));
         blocks.push(block('reportImageOfObject'));
+        blocks.push('-');
+        blocks.push(block('reportFindHands'));
 
     // for debugging: ///////////////
 
@@ -8816,6 +8818,8 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportStageHeight'));
         blocks.push(block('reportStageWidth'));
         blocks.push(block('reportImageOfObject'));
+        blocks.push('-');
+        blocks.push(block('reportFindHands'));
 
     // for debugging: ///////////////
 

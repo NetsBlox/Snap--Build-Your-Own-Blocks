@@ -53,6 +53,11 @@
         <script type="text/javascript" src="src/message-inputs.js"></script>
         <script type="text/javascript" src="src/message-listeners.js"></script>
 
+        <!-- NetsBlox Extension Dependencies -->
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+        <!-- NetsBlox Extensions -->
         <script type="text/javascript" src="src/widgets-ext.js"></script>
         <script type="text/javascript" src="src/objects-ext.js"></script>
         <script type="text/javascript" src="src/gui-ext.js"></script>

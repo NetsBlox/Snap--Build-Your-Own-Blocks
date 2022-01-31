@@ -480,6 +480,44 @@ Process.prototype.reportImageOfObject = function (object) {
     }
 };
 
+const hands = new Hands({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+});
+const handsResults = {};
+hands.onResults(results => {
+    const resolve = handsResults[results.image];
+    delete handsResults[results.image];
+    resolve(results);
+});
+
+async function _findHands(image) {
+    return await new Promise(async resolve => {
+        handsResults[image] = resolve;
+        await hands.send({ image });
+    });
+}
+
+function objToStructData(obj) {
+    const res = [];
+    for (const key in obj) res.push(new List([key, obj[key]]));
+    return new List(res);
+}
+
+Process.prototype.reportFindHands = function (img) {
+    const res = this.runAsyncFn(_findHands, { args: [img.contents] });
+    if (res !== undefined) {
+        const parseLandmarks = raw => new List(raw.map(coords => new List(coords.map(p => new List([p.x, p.y, p.z])))));
+        const landmarks = parseLandmarks(res.multiHandLandmarks);
+        const worldLandmarks = parseLandmarks(res.multiHandWorldLandmarks);
+        const handedness = new List(res.multiHandedness.map(e => objToStructData({ index: e.index, score: e.score, label: e.label })));
+        return objToStructData({ landmarks, worldLandmarks, handedness });
+    }
+};
+
 // helps executing async functions in custom js blocks
 // WARN it could be slower than non-promise based approach
 // when calling this function, return only if the return value is not undefined.
@@ -516,11 +554,11 @@ Process.prototype.runAsyncFn = function (asyncFn, opts) {
     } else if (myself[id].complete) {
         // Clear request
         tmp = myself[id];
-        myself[id] = null;
+        delete myself[id];
         return tmp.response;
     } else if (myself[id].error) {
         tmp = myself[id];
-        myself[id] = null;
+        delete myself[id];
         console.error(tmp.response);
         throw new Error(tmp.response);
     }
