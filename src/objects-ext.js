@@ -133,10 +133,10 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'image of %self',
     };
 
-    SpriteMorph.prototype.blocks.reportFindHands = {
+    SpriteMorph.prototype.blocks.reportHandDetection = {
         type: 'reporter',
         category: 'sensing',
-        spec: 'find hands %s',
+        spec: '%hands hands %s',
     };
 
     SpriteMorph.prototype.blocks.reportUsername = {

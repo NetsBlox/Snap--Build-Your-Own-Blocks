@@ -1513,6 +1513,18 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             );
             part.setContents(['hue']);
             break;
+        case '%hands':
+            part = new InputSlotMorph(
+                null,
+                false,
+                {
+                    find: ['find'],
+                    render: ['render'],
+                },
+                true
+            );
+            part.setContents(['find']);
+            break;
         case '%pen':
             part = new InputSlotMorph(
                 null,
