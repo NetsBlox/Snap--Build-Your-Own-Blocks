@@ -560,8 +560,11 @@ Process.prototype.reportHandDetection = function (mode, img) {
     mode = mode?.toString();
     if (!mode) throw Error(`No hand detection mode specified`);
 
+    img = img?.contents || img;
+    if (!img || typeof(img) !== 'object' || !img.width || !img.height) throw Error('Expected an image as input');
+
     if (mode === 'find') {
-        const res = this.runAsyncFn(this._findHands, { args: [img.contents], timeout: 10000 });
+        const res = this.runAsyncFn(this._findHands, { args: [img], timeout: 10000 });
         if (res !== undefined) {
             const parseLandmarks = raw => new List(raw.map(coords => new List(coords.map(p => new List([p.x, p.y, p.z])))));
             const landmarks = parseLandmarks(res.multiHandLandmarks);
@@ -571,7 +574,7 @@ Process.prototype.reportHandDetection = function (mode, img) {
         }
     }
     else if (mode === 'render') {
-        const res = this.runAsyncFn(this._renderHands, { args: [img.contents], timeout: 10000 });
+        const res = this.runAsyncFn(this._renderHands, { args: [img], timeout: 10000 });
         if (res !== undefined) {
             return new Costume(res);
         }
