@@ -350,16 +350,19 @@ setTimeout(() => {
                         if (bodiesInfo[label].visualInfo.model && bodiesInfo[label].visualInfo.model.endsWith('.gltf')) { // Mesh object
                             bodyMeshes[label] = addMesh(bodiesInfo[label].visualInfo.model).then(result => {
                                 bodyMeshes[label] = result;
-                                let tag = createLabel(label.substring(label.length - 4));
+
+                                if (bodiesInfo[label].visualInfo.model.endsWith('robot.gltf')) {
+                                    let tag = createLabel(label.substring(label.length - 4));
                                 
-                                // Move to position
-                                tag.billboardMode = BABYLON.TransformNode.BILLBOARDMODE_ALL;
-                                tag.setParent(result);
-                                tag.scaling.x = -0.05;
-                                tag.scaling.y = 0.05;
-                                tag.position.y = -0.2;
+                                    // Move to position
+                                    tag.billboardMode = BABYLON.TransformNode.BILLBOARDMODE_ALL;
+                                    tag.setParent(result);
+                                    tag.scaling.x = -0.05;
+                                    tag.scaling.y = 0.05;
+                                    tag.position.y = -0.2;
                                 
-                                nameTags[label] = tag;
+                                    nameTags[label] = tag;
+                                }
                             });
                         } else {
                             bodyMeshes[label] = addBlock(bodiesInfo[label].width, bodiesInfo[label].height, bodiesInfo[label].depth).then(result => {
