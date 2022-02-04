@@ -5,9 +5,11 @@ var scene;
 var camera;
 var followCam;
 var firstPersonCam;
+var ambientLight;
 var ui;
 var vrHelper;
 var roboscapeSimCanvasInstance;
+var shadowGenerator;
 
 var updateLoopFunctions = [];
 
@@ -185,8 +187,8 @@ RoboScapeSimCanvasMorph.prototype.fixCanvasLayout = function() {
     var width = this.width() - 2 * this.padding,
         bh = this.buttons ? this.buttons.height() : 0,
         lh = this.label ? this.label.height() : 0,
-        rh = this.robotRow ? this.robotRow.height() : 0
-        height = this.height() - 4 * this.padding - bh - lh - rh;
+        rh = this.robotRow ? this.robotRow.height() : 0;
+    height = this.height() - 4 * this.padding - bh - lh - rh;
 
     this.canvas.style.width = width + 'px';
     this.canvas.style.height = height + 'px';
@@ -323,12 +325,12 @@ const activateBabylon = async function () {
 
     scene = new BABYLON.Scene(engine);
     
-
     // Parameters : name, position, scene
     camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(4, 10, -4), scene);
     camera.speed = 0.4;
     camera.minZ = 0.01;
-    
+    camera.maxZ = 200;
+
     // Attach the camera to the canvas
     camera.attachControl(canvas, true);
     camera.setTarget(new BABYLON.Vector3(0, 0, 0));
@@ -339,13 +341,28 @@ const activateBabylon = async function () {
     followCam.rotationOffset = 0;
     followCam.cameraAcceleration = 0.25;
     followCam.maxCameraSpeed = 100;
+    followCam.maxZ = 200;
 
     firstPersonCam = new BABYLON.UniversalCamera('firstPersonCam', new BABYLON.Vector3(5, 5, 5), scene, false);
     firstPersonCam.minZ = 0.01;
+    firstPersonCam.maxZ = 150;
 
-    light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), scene);
-    
-    
+    light = new BABYLON.DirectionalLight('light', new BABYLON.Vector3(-0.25, -1, 0), scene);
+    light.intensity = 0.8;
+    ambientLight = new BABYLON.HemisphericLight('ambient', new BABYLON.Vector3(0, 1, 0), scene);
+    ambientLight.intensity = 0.5;
+
+    // Shadow generator
+    shadowGenerator = new BABYLON.CascadedShadowGenerator(1024, light);
+    shadowGenerator.bias = 0.007;
+    shadowGenerator.cascadeBlendPercentage = 0.15;
+    shadowGenerator.lambda = 0.9;
+    shadowGenerator.stabilizeCascades = true;
+    shadowGenerator.filteringQuality = 1;
+    shadowGenerator.filter = 6;
+    shadowGenerator.frustumEdgeFalloff = 1;
+    shadowGenerator.shadowMaxZ = 50;
+
     engine.runRenderLoop(function () {
 
         let frameTime = performance.now();
@@ -379,12 +396,21 @@ const activateBabylon = async function () {
     }, 1500);
 };
 
-const addBlock = async function (width, height, depth = -1) {
-    if(depth > 0){
-        return await BABYLON.MeshBuilder.CreateBox('box', {width, depth: depth, height: height}, scene);
-    } 
+const addBlock = async function (width, height, depth = -1, castShadows = true, receiveShadows = true) {
+    var block;
 
-    return await BABYLON.MeshBuilder.CreateBox('box', {width, depth: height, height: 1}, scene);
+    if (depth > 0) {
+        block = await BABYLON.MeshBuilder.CreateBox('box', { width, depth: depth, height: height }, scene);
+    } else {
+        block = await BABYLON.MeshBuilder.CreateBox('box', { width, depth: height, height: 1 }, scene);
+    }
+
+    if (castShadows) {
+        shadowGenerator.addShadowCaster(block);
+    }
+
+    block.receiveShadows = receiveShadows;
+    return block;
 };
 
 // Load Babylon

@@ -231,6 +231,8 @@ if (window.origin.includes('localhost')) {
  */
 const addMesh = async function (name) {
     imported = await BABYLON.SceneLoader.ImportMeshAsync('', assetsDir, name);
+
+    shadowGenerator.addShadowCaster(imported.meshes[0], true);
     return imported.meshes[0];
 };
 
@@ -311,7 +313,11 @@ var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
     return BABYLON.Quaternion.Slerp(q1, q2, t);
 };
 
-// Converts a color hex string to an RGB color object 
+/**
+ * Converts a color hex string to an RGB color object
+ * @param {String} hexstring Input hex string (e.g. '#FFFFFF'), beginning # is optional
+ * @returns {{r: Number, g: Number, b: Number}} 
+ */
 var hex2rgb = function (hexstring) {
     if (hexstring[0] != '#') {
         hexstring = '#' + hexstring;
@@ -343,7 +349,7 @@ setTimeout(() => {
                 if (!Object.keys(bodyMeshes).includes(label)) {
                     if (Object.keys(bodiesInfo).includes(label)) {
                         
-                        if (!bodiesInfo[label].width) {
+                        if (!bodiesInfo[label].width || !bodiesInfo[label].visualInfo) {
                             continue;
                         }
 
@@ -406,6 +412,11 @@ setTimeout(() => {
                     
                     let angle = {...body.angle};
                     const nextBody = nextBodies[label];
+
+                    if (!nextBody) {
+                        continue;
+                    }
+                    
                     // Extrapolate/Interpolate position and rotation
                     x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
                     y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
