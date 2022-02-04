@@ -2473,31 +2473,32 @@ Process.prototype.doForEach = function (upvar, list, script) {
     // Distinguish between linked and arrayed lists.
 
     var next;
-    if (this.context.accumulator === null) {
+    let acc = this.context.accumulator;
+    if (acc === null) {
         this.assertType(list, 'list');
-        this.context.accumulator = {
+        acc = this.context.accumulator = {
             source : list,
             remaining : list.length(),
-            idx : 0
+            idx : 0,
+            params: new List(),
         };
     }
-    if (this.context.accumulator.remaining === 0) {
+    if (acc.remaining === 0) {
         return;
     }
-    this.context.accumulator.remaining -= 1;
-    if (this.context.accumulator.source.isLinked) {
-        next = this.context.accumulator.source.at(1);
-        this.context.accumulator.source =
-            this.context.accumulator.source.cdr();
+    acc.remaining -= 1;
+    if (acc.source.isLinked) {
+        next = acc.source.at(1);
+        acc.source = acc.source.cdr();
     } else { // arrayed
-        this.context.accumulator.idx += 1;
-        next = this.context.accumulator.source.at(this.context.accumulator.idx);
+        acc.idx += 1;
+        next = acc.source.at(acc.idx);
     }
     this.pushContext('doYield');
     this.pushContext();
     this.context.outerContext.variables.addVar(upvar);
     this.context.outerContext.variables.setVar(upvar, next);
-    this.evaluate(script, new List([next]), true);
+    this.evaluate(script, acc.params, true);
 };
 
 Process.prototype.doFor = function (upvar, start, end, script) {
