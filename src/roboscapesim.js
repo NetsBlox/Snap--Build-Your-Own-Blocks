@@ -305,7 +305,7 @@ document.body.appendChild(script);
 
 var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
     t = (t - t2) / Math.max(2, t2 - t1);
-    return BABYLON.Scalar.Lerp(x1, x2, t);
+    return BABYLON.Scalar.Lerp(+x1, +x2, t);
 };
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
@@ -382,7 +382,9 @@ setTimeout(() => {
                                 } else if (bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.image.endsWith('.png')) {
                                     var material = new BABYLON.StandardMaterial('material' + material_count++);
                                     material.diffuseTexture = new BABYLON.Texture(assetsDir + bodiesInfo[label].visualInfo.image);
-
+                                    material.diffuseTexture.uScale = bodiesInfo[label].width;
+                                    material.diffuseTexture.vScale = bodiesInfo[label].height;
+                                        
                                     if (bodiesInfo[label].visualInfo.color) {
                                         let color = hex2rgb(bodiesInfo[label].visualInfo.color);
                                         material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
@@ -416,7 +418,7 @@ setTimeout(() => {
                     if (!nextBody) {
                         continue;
                     }
-                    
+
                     // Extrapolate/Interpolate position and rotation
                     x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
                     y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
