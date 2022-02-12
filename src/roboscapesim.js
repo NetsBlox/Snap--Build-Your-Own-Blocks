@@ -35,7 +35,7 @@ const connectToRoboScapeSim = function () {
             socket.emit('getRooms', SnapCloud.username || SnapCloud.clientId);
 
             // Handle incremental updates
-            socket.on('update', data => {
+            socket.on('u', data => {
                 if (performance.now() - nextUpdateTime > 10) {
                     bodies = { ...nextBodies };
                     nextBodies = { ...bodies, ...data };
@@ -368,6 +368,12 @@ setTimeout(() => {
                                     tag.position.y = -0.2;
                                 
                                     nameTags[label] = tag;
+                                } else {
+                                    if (bodiesInfo[label].visualInfo.modelScale) {
+                                        bodyMeshes[label].scaling.x = bodiesInfo[label].visualInfo.modelScale;
+                                        bodyMeshes[label].scaling.y = bodiesInfo[label].visualInfo.modelScale;
+                                        bodyMeshes[label].scaling.z = bodiesInfo[label].visualInfo.modelScale;
+                                    }
                                 }
                             });
                         } else {
