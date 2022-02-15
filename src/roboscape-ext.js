@@ -27,29 +27,31 @@
                     connectToRoboScapeSim().then(() => {
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('NewRoboScapeSimRoom');
-                        const roomIdField = new InputFieldMorph();
                         const roomPasswordField = new InputFieldMorph();
                         const environmentField = new InputFieldMorph(null, false, availableEnvironments.reduce((p, c) => {
                             console.log(c);
                             p[c.Name] = c.ID;
                             return p;
                         }, {}), true);
-                        const bdy = new AlignmentMorph('column', this.padding);
-                    
-                        roomIdField.setWidth(200);
+                        const bdy = new AlignmentMorph('column', 2);
 
-                        dialog.labelString = `New Room`;
-                        dialog.createLabel();
 
-                        bdy.add(new TextMorph('Room Password:'));
-                        bdy.add(roomPasswordField);
+                        const row1 = new AlignmentMorph('row', 2);
+                        
+                        
+                        row1.add(new TextMorph('Room Password:'));
+                        row1.add(roomPasswordField);
+                        row1.fixLayout();
+                        bdy.add(row1);
+                        
+                        const row2 = new AlignmentMorph('row', 2);
+                        row2.add(new TextMorph('Environment:'));
+                        row2.add(environmentField);
+                        row2.fixLayout();
+                        bdy.add(row2);
                         bdy.fixLayout();
                         dialog.addBody(bdy);
-
-                        bdy.add(new TextMorph('Environment:'));
-                        bdy.add(environmentField);
-                        bdy.fixLayout();
-                        dialog.addBody(bdy);
+                        dialog.fixLayout();
 
                         dialog.addButton('submit', 'Create Room');
                         dialog.submit = () => {                        
@@ -65,6 +67,12 @@
                             window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
                         };
 
+                        dialog.labelString = `New Room`;
+                        dialog.createLabel();
+                        dialog.fixLayout();
+
+                        bdy.setWidth(dialog.width());
+                        bdy.fixLayout();
                         dialog.fixLayout();
                         dialog.popUp(world);
                         
@@ -118,7 +126,7 @@
                         
                     });
                 },
-                'Open 3D view': function () {
+                'Open 3D View': function () {
                     _open3d();
                 }
             };
@@ -158,14 +166,14 @@
     } else {
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'https://extensions.netsblox.org/RoboScapeOnline/js/babylon-roboscapesim.js';
+        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/babylon-roboscapesim.js';
         script.async = false;
         document.body.appendChild(script);
 
 
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'https://extensions.netsblox.org/RoboScapeOnline/js/roboscapesim.js';
+        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/roboscapesim.js';
         script.async = false;
         document.body.appendChild(script);
     }
