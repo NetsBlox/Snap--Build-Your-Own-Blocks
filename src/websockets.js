@@ -363,7 +363,18 @@ WebSocketManager.prototype.deserializeData = function(dataList) {
     };
 
     return dataList.map(function(value) {
-        if (value[0] === '<') {
+        if (Array.isArray(value)) {
+            console.log('Received json array format:', value.length);
+            function toSnapType(value) {
+                if (Array.isArray(value)) {
+                    return new List(value.map(toSnapType));
+                }
+                return value;
+            }
+            return toSnapType(value);
+        }
+
+        if (typeof(value) === 'string' && value[0] === '<') {
             try {
                 console.log('Received serialized format:', value.length);
                 model = SnapActions.serializer.parse(value);
@@ -378,9 +389,9 @@ WebSocketManager.prototype.deserializeData = function(dataList) {
                 return SnapActions.serializer.loadValue(model);
             } catch(e) {  // must not have been XML
                 console.error('Could not deserialize!', e);
-                return value;
             }
         }
+
         return value;
     });
 };
