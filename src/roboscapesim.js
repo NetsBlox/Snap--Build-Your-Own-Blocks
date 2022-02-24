@@ -19,9 +19,12 @@ var material_count = 0;
 
 const connectToRoboScapeSim = function () {
     return new Promise((resolve, reject) => {
-        if (socket && socket.connected) {
-            resolve(socket);
+        if (socket != undefined) {
+            console.log("Existing socket");
+            return resolve(socket);
         }
+
+        console.log("Created new socket");
 
         if (window.origin.includes('localhost')) {
             socket = io('//localhost:9001', { secure: true });
@@ -198,9 +201,6 @@ function leaveRoom() {
     if (roomID == null) {
         console.warn('Not in a room to leave');
     }
-    
-    // Not actually required, as server enforces one-room policy
-    socket.emit('leaveRoom');
 
     // Reset data
     bodies = {};
@@ -210,7 +210,7 @@ function leaveRoom() {
 
     // Clean up meshes
     for (let mesh of Object.values(bodyMeshes)) {
-        mesh.dispose();
+        mesh?.dispose();
     }
     bodyMeshes = {};
 
