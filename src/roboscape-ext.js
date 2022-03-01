@@ -18,7 +18,12 @@
         onOpenRole() {
             console.log('onOpenRole');
             roboscapeSimCanvasInstance.popUp(world);
-            roboscapeSimCanvasInstance.hide();
+            
+            if (!roomID) {
+                roboscapeSimCanvasInstance.hide();
+            } else {
+                roboscapeSimCanvasInstance.handle.fixLayout();
+            }
         }
 
         getMenu() {
