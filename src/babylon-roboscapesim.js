@@ -72,6 +72,8 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
     this.robotRow.add(new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             socket.emit('resetRobot', this.robotsList.getValue());
+        } else {
+            socket.emit('resetAll', this.robotsList.getValue());
         }
     }, 'Reset'));
     
@@ -336,11 +338,12 @@ const activateBabylon = async function () {
     camera.setTarget(new BABYLON.Vector3(0, 0, 0));
     
     followCam = new BABYLON.FollowCamera('followcam', new BABYLON.Vector3(5, 5, 5), scene);
-    followCam.heightOffset = 2;
-    followCam.radius = 3;
+    followCam.heightOffset = 1.25;
+    followCam.radius = 2;
     followCam.rotationOffset = 0;
-    followCam.cameraAcceleration = 0.25;
-    followCam.maxCameraSpeed = 100;
+    followCam.cameraAcceleration = 0.2;
+    followCam.maxCameraSpeed = 50;
+    followCam.minZ = 0.01;
     followCam.maxZ = 200;
 
     firstPersonCam = new BABYLON.UniversalCamera('firstPersonCam', new BABYLON.Vector3(5, 5, 5), scene, false);
