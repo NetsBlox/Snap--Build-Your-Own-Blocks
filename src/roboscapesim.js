@@ -127,6 +127,7 @@ const connectToRoboScapeSim = function () {
             // Update list of quick-join rooms
             socket.on('availableRooms', info => {
                 ({ availableRooms } = info);
+                availableRooms = availableRooms.sort((room1, room2) => Date.parse(room2.lastInteractionTime) - Date.parse(room1.lastInteractionTime));
             });
 
             // Robot beeped

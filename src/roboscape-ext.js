@@ -86,49 +86,54 @@
                 'Join Room': function () {
                     connectToRoboScapeSim().then(() => {
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
-                        const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
-                        const roomIdField = new InputFieldMorph(null, false, availableRooms.reduce((p, r) => {
-                            console.log(r);
-                            p[r] = r;
-                            return p;
-                        }, {}), false);
-                        const roomPasswordField = new InputFieldMorph();
-                        const bdy = new AlignmentMorph('column', this.padding);
+
+                        socket.emit('getRooms', SnapCloud.username || SnapCloud.clientId);
+
+                        // Pause for response
+                        setTimeout(() => {
+                            const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
+                            const roomIdField = new InputFieldMorph(null, false, availableRooms.reduce((p, r) => {
+                                console.log(r);
+                                p[r.name + ' (' + r. environment + ')'] = r.name;
+                                return p;
+                            }, {}), false);
+                            const roomPasswordField = new InputFieldMorph();
+                            const bdy = new AlignmentMorph('column', this.padding);
                     
-                        roomIdField.setWidth(200);
+                            roomIdField.setWidth(200);
 
-                        dialog.labelString = `Join Room`;
-                        dialog.createLabel();
+                            dialog.labelString = `Join Room`;
+                            dialog.createLabel();
 
 
-                        bdy.add(new TextMorph('Room ID:'));
-                        bdy.add(roomIdField);
-                        bdy.fixLayout();
-                        dialog.addBody(bdy);
+                            bdy.add(new TextMorph('Room ID:'));
+                            bdy.add(roomIdField);
+                            bdy.fixLayout();
+                            dialog.addBody(bdy);
 
-                        bdy.add(new TextMorph('Room Password:'));
-                        bdy.add(roomPasswordField);
-                        roomPasswordField.contents().text.toggleIsPassword();
-                        bdy.fixLayout();
-                        dialog.addBody(bdy);
+                            bdy.add(new TextMorph('Room Password:'));
+                            bdy.add(roomPasswordField);
+                            roomPasswordField.contents().text.toggleIsPassword();
+                            bdy.fixLayout();
+                            dialog.addBody(bdy);
 
-                        dialog.addButton('submit', 'Join Room');
-                        dialog.submit = () => {
-                            joinRoom(roomIdField.getValue(), '', roomPasswordField.getValue());
-                            _open3d();
-                            window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
-                            dialog.destroy();
-                        };
-                        dialog.addButton('cancel', 'Close');
-                        dialog.ok = () => this.grade(this.currentAssignment);
-                        dialog.cancel = () => {
-                            DialogBoxMorph.prototype.cancel.call(dialog);
-                            window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
-                        };
+                            dialog.addButton('submit', 'Join Room');
+                            dialog.submit = () => {
+                                joinRoom(roomIdField.getValue(), '', roomPasswordField.getValue());
+                                _open3d();
+                                window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
+                                dialog.destroy();
+                            };
+                            dialog.addButton('cancel', 'Close');
+                            dialog.ok = () => this.grade(this.currentAssignment);
+                            dialog.cancel = () => {
+                                DialogBoxMorph.prototype.cancel.call(dialog);
+                                window.externalVariables.roboscapeSimCanvasInstance.showCanvas();
+                            };
 
-                        dialog.fixLayout();
-                        dialog.popUp(world);
-                        
+                            dialog.fixLayout();
+                            dialog.popUp(world);
+                        }, 250);                        
                     });
                 },
                 'Open 3D View': function () {
