@@ -215,6 +215,11 @@ function leaveRoom() {
     bodyMeshes = {};
 
     updateCanvasTitle('Not connected');
+
+    // Reset camera
+    scene.activeCamera = camera;
+    camera.position = new BABYLON.Vector3(4, 10, -4);
+    camera.setTarget(new BABYLON.Vector3(0, 0, 0));
 }
 
 var assetsDir;
