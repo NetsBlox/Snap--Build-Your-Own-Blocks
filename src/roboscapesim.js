@@ -94,10 +94,21 @@ const connectToRoboScapeSim = function () {
                 world.inform(error);
             });
 
+            socket.on('connect_error', error => {
+                console.error(error);
+                world.inform(error);
+            });
+            
+            socket.on('reconnect_error', error => {
+                console.error(error);
+                //world.inform(error);
+            });
+
             // If we were previously connected, let server know we had an issue
             socket.on('reconnect', attempt => {
                 console.log(`Reconnected after ${attempt} attempts!`);
-                socket.emit('postReconnect', roomID);
+                //socket.emit('postReconnect', roomID);
+                joinRoom(roomID);
             });
 
             // Room joined message
@@ -145,8 +156,8 @@ const connectToRoboScapeSim = function () {
         });
 
         // Lost connection
-        socket.on('disconnect', () => {
-            leaveRoom();
+        socket.on('disconnect', () => {    
+            updateCanvasTitle('Not connected');
         });
 
         setTimeout(reject, 3500);
@@ -188,7 +199,7 @@ function newRoom(environment = 'default', password = '') {
  */
 function joinRoom(room, env = '', password = '') {
     // Prevent joining a second room
-    if (roomID != null) {
+    if (roomID != null && room != roomID) {
         leaveRoom();
     }
 
@@ -316,7 +327,7 @@ var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
     t = (t - t2) / Math.max(10, t2 - t1);
-    return BABYLON.Quaternion.Slerp(q1, q2, t);
+    return BABYLON.Quaternion.Slerp(q1, q2, t).normalize();
 };
 
 /**
