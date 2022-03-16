@@ -6455,7 +6455,7 @@ IDE_Morph.prototype.initializeCloudWithSnap = function () {
                     user.username.toLowerCase(),
                     user.password,
                     user.choice,
-                    'Snap!'
+                    'Snap'
                 );
                 //sessionStorage.username = username;
                 this.controlBar.cloudButton.refresh();

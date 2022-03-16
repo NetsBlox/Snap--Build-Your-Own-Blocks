@@ -107,17 +107,19 @@ Cloud.prototype.login = async function (
     username,
     password,
     remember,  // TODO: use this...
-    strategy,
+    strategy = 'NetsBlox',
 ) {
+    const credentials = {};
+    credentials[strategy] = {username, password};
     const body = {
-        username,
-        password,
-        strategy,
+        credentials,
+        clientId: this.clientId,
     };
     const response = await this.post('/users/login', body);
     if (response.status < 300) {
         this.username = await response.text();
     }
+    // TODO: handle errors
 };
 
 Cloud.prototype.getProjectList = async function () {
