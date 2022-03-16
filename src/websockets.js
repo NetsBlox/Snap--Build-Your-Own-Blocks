@@ -87,11 +87,9 @@ WebSocketManager.MessageHandlers = {
         this.ide.newProject();
     },
 
-    'evicted': function(msg) {
-        const {state} = msg;
+    'eviction-notice': function() {
         this.ide.showMessage('You have been evicted from the project.');
-        this.ide.cloud.setLocalState(state.projectId, state.roleId);
-        this.ide.newProjectFromInfo(state);
+        this.ide.newProject();
     },
 
     'permission-elevation-request': function(msg) {

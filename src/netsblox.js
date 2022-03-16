@@ -584,9 +584,9 @@ NetsBloxMorph.prototype.openRoomString = async function (str) {
         var media = role.children[1] || '';
 
         return {
-            ProjectName: role.attributes.name,
-            SourceCode: srcCode.toString(),
-            Media: media.toString()
+            name: role.attributes.name,
+            code: srcCode.toString(),
+            media: media.toString()
         };
     });
     const roleName = room.children[0].attributes.name;
@@ -710,22 +710,12 @@ NetsBloxMorph.prototype.saveProjectToCloud = async function (name) {
         if (name) {
             myself.showMessage('Saving ' + contentName + '\nto the cloud...');
             // TODO: rename the colliding name?
-            this.cloud.saveProject(
-                myself,
-                function (result) {
-                    if (result.name) {
-                        myself.room.silentSetRoomName(result.name);
-                    }
-                    if (overwrite) {
-                        myself.showMessage('Saved ' + contentName + ' to cloud!', 2);
-                    } else {
-                        myself.showMessage('Saved as ' + myself.room.name, 2);
-                    }
-                },
-                myself.cloudSaveError(),
-                overwrite,
-                name
-            );
+            this.cloud.saveProject();
+            if (overwrite) {
+                myself.showMessage('Saved ' + contentName + ' to cloud!', 2);
+            } else {
+                myself.showMessage('Saved as ' + myself.room.name, 2);
+            }
         }
     };
 
@@ -735,7 +725,8 @@ NetsBloxMorph.prototype.saveProjectToCloud = async function (name) {
     // TODO: Or we could try to save and see if it fails... This might be more performant
     // Use 409 status code (conflict)
     const projects = await this.cloud.getProjectList();
-    const hasConflicting= projects.find(project => project.name === name);
+    const hasConflicting = projects
+        .find(project => project.name === name && project.id !== this.cloud.projectId);
     if (!hasConflicting) {
         myself.updateUrlQueryString();
         return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
