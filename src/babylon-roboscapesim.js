@@ -83,16 +83,16 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     this.robotRow.add(spacerMorph);
     
-    this.robotRow.add(new PushButtonMorph(null, () => {
-        if (this.robotsList.getValue() != '') {
-            socket.emit('robotButton', this.robotsList.getValue(), true);
+    // this.robotRow.add(new PushButtonMorph(null, () => {
+    //     if (this.robotsList.getValue() != '') {
+    //         socket.emit('robotButton', this.robotsList.getValue(), true);
             
-            // Set unpress to happen automatically
-            setTimeout(() => {
-                socket.emit('robotButton', this.robotsList.getValue(), false);
-            }, 250);
-        }
-    }, 'Encrypt'));
+    //         // Set unpress to happen automatically
+    //         setTimeout(() => {
+    //             socket.emit('robotButton', this.robotsList.getValue(), false);
+    //         }, 250);
+    //     }
+    // }, 'Encrypt'));
     
     spacerMorph = new Morph();
     spacerMorph.setWidth(10);
