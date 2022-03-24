@@ -52,16 +52,20 @@ const connectToRoboScapeSim = function () {
             // Handle full updates
             socket.on('fullUpdate', data => {
                 bodiesInfo = { ...data };
-                bodies = { ...data, ...bodies };
-                nextBodies = { ...data };
-                lastUpdateTime = lastUpdateTime || performance.now() - 50;
-                nextUpdateTime = performance.now();
-                lastUpdateServerTime = data.time * 1000;
-                nextUpdateServerTime = data.time * 1000;
-                startClientTime = nextUpdateTime;
-                startServerTime = data.time * 1000;
-                serverTimeOffset = startClientTime - startServerTime;
 
+                if (Object.keys(bodies).length == 0 || Object.keys(nextBodies).length == 0) {
+                    bodies = { ...data };
+                    nextBodies = { ...data };
+                    lastUpdateTime = lastUpdateTime || performance.now() - 50;
+                    nextUpdateTime = performance.now();
+                    lastUpdateServerTime = data.time * 1000;
+                    nextUpdateServerTime = data.time * 1000;
+                    startClientTime = nextUpdateTime;
+                    startServerTime = data.time * 1000;
+                    serverTimeOffset = startClientTime - startServerTime;
+                }
+
+                
                 // Create entries in dropdown
                 window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
                     Object.keys(bodiesInfo).filter(label => label.startsWith('robot'))
