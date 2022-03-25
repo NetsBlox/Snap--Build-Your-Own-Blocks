@@ -24,9 +24,8 @@ function RoboScapeSimCanvasMorph(title = 'Not connected') {
 RoboScapeSimCanvasMorph.prototype.init = function (title) {
     this.minWidth = 600;
     this.minHeight = 300;
-    
-    if (!canvas)
-    {
+
+    if (!canvas) {
         canvas = document.createElement('canvas');
         canvas.id = 'main-canvas';
         canvas.style.position = 'relative';
@@ -59,7 +58,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     this.robotsList = new InputFieldMorph(null, false, {}, true);
     this.robotRow.add(this.robotsList);
-    
+
     this.robotRow.add(spacerMorph);
     this.robotRow.add(dividerMorph);
 
@@ -76,24 +75,24 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
             socket.emit('resetAll', this.robotsList.getValue());
         }
     }, 'Reset'));
-    
+
     spacerMorph = new Morph();
     spacerMorph.setWidth(10);
     spacerMorph.alpha = 0;
 
     this.robotRow.add(spacerMorph);
-    
+
     // this.robotRow.add(new PushButtonMorph(null, () => {
     //     if (this.robotsList.getValue() != '') {
     //         socket.emit('robotButton', this.robotsList.getValue(), true);
-            
+
     //         // Set unpress to happen automatically
     //         setTimeout(() => {
     //             socket.emit('robotButton', this.robotsList.getValue(), false);
     //         }, 250);
     //     }
     // }, 'Encrypt'));
-    
+
     spacerMorph = new Morph();
     spacerMorph.setWidth(10);
     spacerMorph.alpha = 0;
@@ -130,12 +129,12 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
     this.labelString = title;
     this.createLabel();
     this.addButton('hide', 'Close');
-    
+
     this.fixLayout();
     this.rerender();
 };
 
-RoboScapeSimCanvasMorph.prototype.fixLayout = function() {
+RoboScapeSimCanvasMorph.prototype.fixLayout = function () {
     var th = fontHeight(this.titleFontSize) + this.titlePadding * 2;
 
     this.bounds.setWidth(Math.max(this.minWidth, this.width()));
@@ -164,14 +163,14 @@ RoboScapeSimCanvasMorph.prototype.fixLayout = function() {
         this.buttons.fixLayout();
         this.bounds.setHeight(
             this.height()
-                    + this.buttons.height()
-                    + this.padding
+            + this.buttons.height()
+            + this.padding
         );
         this.bounds.setWidth(
             Math.max(
                 this.width(),
                 this.buttons.width()
-                        + (2 * this.padding)
+                + (2 * this.padding)
             )
         );
         this.buttons.setCenter(this.center());
@@ -185,7 +184,7 @@ RoboScapeSimCanvasMorph.prototype.fixLayout = function() {
     }
 };
 
-RoboScapeSimCanvasMorph.prototype.fixCanvasLayout = function() {
+RoboScapeSimCanvasMorph.prototype.fixCanvasLayout = function () {
     var width = this.width() - 2 * this.padding,
         bh = this.buttons ? this.buttons.height() : 0,
         lh = this.label ? this.label.height() : 0,
@@ -202,7 +201,7 @@ RoboScapeSimCanvasMorph.prototype.showCanvas = function () {
     if (this.isVisible) {
         this.setCanvasPosition();
         this.canvas.style.display = 'inline';
-    
+
         if (vrHelper) {
             vrHelper.vrButton.style.display = 'inline';
         }
@@ -211,54 +210,54 @@ RoboScapeSimCanvasMorph.prototype.showCanvas = function () {
 
 RoboScapeSimCanvasMorph.prototype.hideCanvas = function () {
     this.canvas.style.display = 'none';
-    
+
     if (vrHelper) {
         vrHelper.vrButton.style.display = 'none';
-    }  
+    }
 };
 
-RoboScapeSimCanvasMorph.prototype.show = function() {
+RoboScapeSimCanvasMorph.prototype.show = function () {
     RoboScapeSimCanvasMorph.uber.show.call(this);
     this.showCanvas();
 };
 
-RoboScapeSimCanvasMorph.prototype.hide = function() {
+RoboScapeSimCanvasMorph.prototype.hide = function () {
     RoboScapeSimCanvasMorph.uber.hide.call(this);
     this.hideCanvas();
 };
 
-RoboScapeSimCanvasMorph.prototype.prepareToBeGrabbed = function() {
+RoboScapeSimCanvasMorph.prototype.prepareToBeGrabbed = function () {
     this.hideCanvas();
 };
 
-RoboScapeSimCanvasMorph.prototype.justDropped = function() {
+RoboScapeSimCanvasMorph.prototype.justDropped = function () {
     this.showCanvas();
 };
 
-RoboScapeSimCanvasMorph.prototype.setCanvasPosition = function() {
+RoboScapeSimCanvasMorph.prototype.setCanvasPosition = function () {
     var titleHeight = Math.floor(
-            fontHeight(this.titleFontSize) + this.titlePadding * 2,
-        ),
+        fontHeight(this.titleFontSize) + this.titlePadding * 2,
+    ),
         top = this.top() + titleHeight + this.padding,
         left = this.left() + this.padding,
-        width = this.width() - 2*this.padding;
+        width = this.width() - 2 * this.padding;
 
     this.canvas.style.left = left + 'px';
     this.canvas.style.top = top + 'px';
     this.canvas.style.width = width + 'px';
-    
+
     if (vrHelper && vrHelper.vrButton) {
         vrHelper.vrButton.style.left = left + 'px';
         vrHelper.vrButton.style.top = top + 'px';
-    } 
+    }
 };
 
-RoboScapeSimCanvasMorph.prototype.popUp = function(world) {
+RoboScapeSimCanvasMorph.prototype.popUp = function (world) {
     document.body.appendChild(this.canvas);
     RoboScapeSimCanvasMorph.uber.popUp.call(this, world);
 
     // Re-add canvas if missing
-    if (canvas.parentNode == null){
+    if (canvas.parentNode == null) {
         document.body.appendChild(canvas);
     }
 
@@ -266,7 +265,7 @@ RoboScapeSimCanvasMorph.prototype.popUp = function(world) {
 
     this.fixLayout();
     this.rerender();
-    
+
     var myself = this;
 
     // Create handle
@@ -297,7 +296,7 @@ RoboScapeSimCanvasMorph.prototype.popUp = function(world) {
     }
 };
 
-RoboScapeSimCanvasMorph.prototype.destroy = function() {
+RoboScapeSimCanvasMorph.prototype.destroy = function () {
     this.canvas.remove();
     RoboScapeSimCanvasMorph.uber.destroy.call(this);
 };
@@ -321,12 +320,12 @@ const activateBabylon = async function () {
         setTimeout(activateBabylon, 200);
         return;
     }
-    
-    engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
+
+    engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     stage = world.children[0].children.find(c => c.name == 'Stage');
 
     scene = new BABYLON.Scene(engine);
-    
+
     // Parameters : name, position, scene
     camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(4, 10, -4), scene);
     camera.speed = 0.4;
@@ -336,7 +335,7 @@ const activateBabylon = async function () {
     // Attach the camera to the canvas
     camera.attachControl(canvas, true);
     camera.setTarget(new BABYLON.Vector3(0, 0, 0));
-    
+
     followCam = new BABYLON.FollowCamera('followcam', new BABYLON.Vector3(5, 5, 5), scene);
     followCam.heightOffset = 1.25;
     followCam.radius = 2;
@@ -354,6 +353,7 @@ const activateBabylon = async function () {
     light.intensity = 0.8;
     ambientLight = new BABYLON.HemisphericLight('ambient', new BABYLON.Vector3(0, 1, 0), scene);
     ambientLight.intensity = 0.5;
+    ambientLight.shadowEnabled = false;
 
     // Shadow generator
     shadowGenerator = new BABYLON.CascadedShadowGenerator(1024, light);
@@ -369,7 +369,7 @@ const activateBabylon = async function () {
     engine.runRenderLoop(function () {
 
         let frameTime = performance.now();
-        
+
         for (let func of updateLoopFunctions) {
             func(frameTime);
         }
@@ -384,7 +384,7 @@ const activateBabylon = async function () {
     });
 
     // the canvas/window resize event handler
-    window.addEventListener('resize', function(){
+    window.addEventListener('resize', function () {
         engine.resize();
     });
 
@@ -393,7 +393,7 @@ const activateBabylon = async function () {
 
     setTimeout(() => {
         // Enable VR if available
-        if ('getVRDisplays' in navigator || 'xr' in navigator){
+        if ('getVRDisplays' in navigator || 'xr' in navigator) {
             vrHelper = scene.createDefaultVRExperience({ createDeviceOrientationCamera: false, useXR: true });
         }
     }, 1500);
@@ -417,7 +417,7 @@ const addBlock = async function (width, height, depth = -1, castShadows = true, 
 };
 
 // Load Babylon
-var babylonScripts = ['https://preview.babylonjs.com/babylon.js','https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
+var babylonScripts = ['https://preview.babylonjs.com/babylon.js', 'https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
 var scriptPromises = [];
 
 for (let file of babylonScripts) {
