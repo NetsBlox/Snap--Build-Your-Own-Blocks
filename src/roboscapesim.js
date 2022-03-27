@@ -75,7 +75,7 @@ const connectToRoboScapeSim = function () {
                         }, {});
                 
                 // Validate choice (if selected robot no longer exists, reset dropdown choice)
-                if (window.externalVariables.roboscapeSimCanvasInstance.robotsList.getValue() in window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices) {
+                if (!(window.externalVariables.roboscapeSimCanvasInstance.robotsList.getValue() in window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices)) {
                     window.externalVariables.roboscapeSimCanvasInstance.robotsList.setChoice('');
                 }
             });
@@ -416,7 +416,7 @@ setTimeout(() => {
                                     material.diffuseTexture = new BABYLON.Texture(assetsDir + bodiesInfo[label].visualInfo.image);
                                     material.diffuseTexture.uScale = bodiesInfo[label].width;
                                     material.diffuseTexture.vScale = bodiesInfo[label].height;
-                                    
+
                                     material.specularColor.r = 0.5;
                                     material.specularColor.g = 0.5;
                                     material.specularColor.b = 0.5;
