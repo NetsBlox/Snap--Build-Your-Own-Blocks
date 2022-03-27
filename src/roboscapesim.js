@@ -405,12 +405,21 @@ setTimeout(() => {
                                     let color = hex2rgb(bodiesInfo[label].visualInfo.color);
 
                                     material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
+                                    material.specularColor.r = 0.5;
+                                    material.specularColor.g = 0.5;
+                                    material.specularColor.b = 0.5;
+                                    
                                     result.material = material;    
+
                                 } else if (bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.image.endsWith('.png')) {
                                     var material = new BABYLON.StandardMaterial('material' + material_count++);
                                     material.diffuseTexture = new BABYLON.Texture(assetsDir + bodiesInfo[label].visualInfo.image);
                                     material.diffuseTexture.uScale = bodiesInfo[label].width;
                                     material.diffuseTexture.vScale = bodiesInfo[label].height;
+                                    
+                                    material.specularColor.r = 0.5;
+                                    material.specularColor.g = 0.5;
+                                    material.specularColor.b = 0.5;
                                         
                                     if (bodiesInfo[label].visualInfo.color) {
                                         let color = hex2rgb(bodiesInfo[label].visualInfo.color);
