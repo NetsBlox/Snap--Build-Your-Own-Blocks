@@ -299,10 +299,16 @@ Cloud.prototype.getFriendList = async function () {
 };
 
 Cloud.prototype.getProject = async function (projectId, roleId) {
-    const response = await this.fetch(`/projects/id/${projectId}/${roleId}`);
+    const response = await this.fetch(`/projects/id/${projectId}/${roleId}/latest`);
     const project = await response.json();
     // TODO: Set the state here?
     this.setLocalState(projectId, roleId);
+    return project;
+};
+
+Cloud.prototype.getProjectMetadata = async function (projectId) {
+    const response = await this.fetch(`/projects/id/${projectId}/metadata`);
+    const project = await response.json();
     return project;
 };
 

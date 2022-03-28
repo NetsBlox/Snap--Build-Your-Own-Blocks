@@ -708,34 +708,35 @@ RoomMorph.prototype.promptShare = function(name) {
     }
 };
 
-RoomMorph.prototype.inviteOccupant = function (friend, role) {
+RoomMorph.prototype.inviteOccupant = function (friend, roleId) {
     // Use inviteOccupant service
     if (friend === 'myself') {
         friend = this.ide.cloud.username;
     }
-    this.ide.cloud.inviteOccupant(friend, role);
+    this.ide.cloud.inviteOccupant(friend, roleId);
 };
 
-RoomMorph.prototype.promptInvite = function (id, role, roomName, inviter) {
+RoomMorph.prototype.promptInvite = function (projectId, roleId, projectName, inviter) {
     // Create a confirm dialog about joining the group
     const dialog = new DialogBoxMorph(
         null,
-        () => this.respondToInvitation(id, role, true)
-    ).withKey(id);
-    const msg = inviter === this.ide.cloud.username ?
-        'Would you like to move to "' + roomName + '"?' :
-        inviter + ' has invited you to join\nhim/her at "' + roomName + '"';
+        async () => {
+            const metadata = await this.ide.cloud.getProjectMetadata(projectId);
+            const roleData = await this.ide.cloud.getProject(projectId, roleId);
+            await this.ide.rawLoadCloudRole(metadata, roleData);
+        }
+    ).withKey(projectId + '/' + roleId);
 
-    const superCancel = dialog.cancel;
-    dialog.cancel = () => {
-        this.respondToInvitation(id, role, false);
-        superCancel.call(dialog);
-    };
+    const msg = inviter === this.ide.cloud.username ?
+        'Would you like to move to "' + projectName + '"?' :
+        inviter + ' has invited you to join\nhim/her at "' + projectName + '"';
+
     dialog.askYesNo(
         'Room Invitation',
         localize(msg),
         this.ide.world()
     );
+
     setTimeout(
         () => dialog.destroy(),
         30000

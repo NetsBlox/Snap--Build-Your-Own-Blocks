@@ -822,26 +822,21 @@ NetsBloxMorph.prototype.rawOpenBlocksMsgTypeString = function (aString) {
     this.rawOpenBlocksString(blocksStr, '', true);
 };
 
-NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
-    var myself = this,
-        newRoom = project.RoomName,
-        roleName = project.ProjectName,
-        projectId = project.ProjectID;  // src proj name
-
+NetsBloxMorph.prototype.rawLoadCloudRole = function (project, roleData) {
     this.source = 'cloud';
-    project.Owner = project.Owner || this.cloud.username;
-    this.updateUrlQueryString(newRoom, isPublic);
+    project.owner = project.owner || this.cloud.username;
+    this.updateUrlQueryString(project.name, project.public);
 
     var msg = this.showMessage('Opening project...');
-    return SnapActions.openProject(project.SourceCode)
+    return SnapActions.openProject(roleData.code)
         .then(() => {
-            this.cloud.projectId = projectId;
-            myself.room.silentSetRoomName(newRoom);
-            myself.room.ownerId = project.Owner;
-            myself.silentSetProjectName(roleName);
+            this.cloud.projectId = project.id;
+            this.room.silentSetRoomName(project.name);
+            this.room.ownerId = project.owner;
+            this.silentSetProjectName(roleData.name);
 
             // Send the message to the server
-            myself.sockets.updateRoomInfo();
+            this.sockets.updateRoomInfo();
             msg.destroy();
         });
 };
