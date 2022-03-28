@@ -33,7 +33,7 @@ const connectToRoboScapeSim = function () {
         }
 
         socket.on('connect', e => {
-            
+
             // Tell server who we are
             socket.emit('getRooms', SnapCloud.username || SnapCloud.clientId);
 
@@ -65,7 +65,7 @@ const connectToRoboScapeSim = function () {
                     serverTimeOffset = startClientTime - startServerTime;
                 }
 
-                
+
                 // Create entries in dropdown
                 window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
                     Object.keys(bodiesInfo).filter(label => label.startsWith('robot'))
@@ -73,7 +73,7 @@ const connectToRoboScapeSim = function () {
                             prev[info.replace('robot_', '')] = info.replace('robot_', '');
                             return prev;
                         }, {});
-                
+
                 // Validate choice (if selected robot no longer exists, reset dropdown choice)
                 if (!(window.externalVariables.roboscapeSimCanvasInstance.robotsList.getValue() in window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices)) {
                     window.externalVariables.roboscapeSimCanvasInstance.robotsList.setChoice('');
@@ -102,7 +102,7 @@ const connectToRoboScapeSim = function () {
                 console.error(error);
                 world.inform(error);
             });
-            
+
             socket.on('reconnect_error', error => {
                 console.error(error);
                 //world.inform(error);
@@ -133,7 +133,7 @@ const connectToRoboScapeSim = function () {
             // Update list of available environments
             socket.on('availableEnvironments', list => {
                 availableEnvironments = list;
-                
+
                 setTimeout(() => {
                     resolve(socket);
                 }, 50);
@@ -160,7 +160,7 @@ const connectToRoboScapeSim = function () {
         });
 
         // Lost connection
-        socket.on('disconnect', () => {    
+        socket.on('disconnect', () => {
             updateCanvasTitle('Not connected');
         });
 
@@ -269,27 +269,27 @@ const createLabel = function (text, font = 'Arial', color = '#ffffff', outline =
     // Set font
     var font_size = 48;
     var font = 'bold ' + font_size + 'px ' + font;
-	
+
     // Set height for plane
     var planeHeight = 3;
-    
+
     // Set height for dynamic texture
     var DTHeight = 1.5 * font_size; //or set as wished
-    
+
     // Calcultae ratio
-    var ratio = planeHeight/DTHeight;
+    var ratio = planeHeight / DTHeight;
 
     //Use a temporary dynamic texture to calculate the length of the text on the dynamic texture canvas
     var temp = new BABYLON.DynamicTexture('DynamicTexture', 64, scene);
     var tmpctx = temp.getContext();
     tmpctx.font = font;
     var DTWidth = tmpctx.measureText(text).width + 8;
-    
+
     // Calculate width the plane has to be 
     var planeWidth = DTWidth * ratio;
 
     //Create dynamic texture and write the text
-    var dynamicTexture = new BABYLON.DynamicTexture('DynamicTexture', {width:DTWidth + 8, height:DTHeight + 8}, scene, false);
+    var dynamicTexture = new BABYLON.DynamicTexture('DynamicTexture', { width: DTWidth + 8, height: DTHeight + 8 }, scene, false);
     var mat = new BABYLON.StandardMaterial('mat', scene);
     mat.diffuseTexture = dynamicTexture;
     mat.ambientColor = new BABYLON.Color3(1, 1, 1);
@@ -307,12 +307,12 @@ const createLabel = function (text, font = 'Arial', color = '#ffffff', outline =
 
     // Draw text
     dynamicTexture.drawText(text, 4, DTHeight - 4, font, color, null, true);
-    
+
     dynamicTexture.hasAlpha = true;
     dynamicTexture.getAlphaFromRGB = true;
-    
+
     //Create plane and set dynamic texture as material
-    var plane = BABYLON.MeshBuilder.CreatePlane('plane', {width:planeWidth, height:planeHeight}, scene);
+    var plane = BABYLON.MeshBuilder.CreatePlane('plane', { width: planeWidth, height: planeHeight }, scene);
     plane.material = mat;
 
     return plane;
@@ -344,15 +344,15 @@ var hex2rgb = function (hexstring) {
         hexstring = '#' + hexstring;
     }
 
-    if(hexstring.length == 4){
+    if (hexstring.length == 4) {
         r = parseInt(hexstring.charAt(1) + '' + hexstring.charAt(1), 16) / 255;
         g = parseInt(hexstring.charAt(2) + '' + hexstring.charAt(2), 16) / 255;
         b = parseInt(hexstring.charAt(3) + '' + hexstring.charAt(3), 16) / 255;
     }
-    else{
-        r  = parseInt(hexstring.charAt(1) + '' + hexstring.charAt(2), 16) / 255;
-        g  = parseInt(hexstring.charAt(3) + '' + hexstring.charAt(4), 16) / 255;
-        b  = parseInt(hexstring.charAt(5) + '' + hexstring.charAt(6), 16) / 255;
+    else {
+        r = parseInt(hexstring.charAt(1) + '' + hexstring.charAt(2), 16) / 255;
+        g = parseInt(hexstring.charAt(3) + '' + hexstring.charAt(4), 16) / 255;
+        b = parseInt(hexstring.charAt(5) + '' + hexstring.charAt(6), 16) / 255;
     }
 
     return { r, g, b };
@@ -360,7 +360,7 @@ var hex2rgb = function (hexstring) {
 
 setTimeout(() => {
     updateLoopFunctions.push((frameTime) => {
-        
+
         let tempNextTime = lastUpdateTime + (nextUpdateServerTime - lastUpdateServerTime);
 
         if (bodies) {
@@ -369,7 +369,7 @@ setTimeout(() => {
                 // create if new
                 if (!Object.keys(bodyMeshes).includes(label)) {
                     if (Object.keys(bodiesInfo).includes(label)) {
-                        
+
                         if (!bodiesInfo[label].width || !bodiesInfo[label].visualInfo) {
                             continue;
                         }
@@ -378,16 +378,16 @@ setTimeout(() => {
                             bodyMeshes[label] = addMesh(bodiesInfo[label].visualInfo.model).then(result => {
                                 bodyMeshes[label] = result;
 
-                                if (bodiesInfo[label].visualInfo.model.endsWith('robot.gltf')) {
+                                if (label.startsWith('robot_')) {
                                     let tag = createLabel(label.substring(label.length - 4));
-                                
+
                                     // Move to position
                                     tag.billboardMode = BABYLON.TransformNode.BILLBOARDMODE_ALL;
                                     tag.setParent(result);
                                     tag.scaling.x = -0.05;
                                     tag.scaling.y = 0.05;
                                     tag.position.y = -0.2;
-                                
+
                                     nameTags[label] = tag;
                                 } else {
                                     if (bodiesInfo[label].visualInfo.modelScale) {
@@ -399,7 +399,7 @@ setTimeout(() => {
                             });
                         } else {
                             bodyMeshes[label] = addBlock(bodiesInfo[label].width, bodiesInfo[label].height, bodiesInfo[label].depth).then(result => {
-                                if(bodiesInfo[label].visualInfo.color && !bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.color[0] == '#'){
+                                if (bodiesInfo[label].visualInfo.color && !bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.color[0] == '#') {
                                     var material = new BABYLON.StandardMaterial('material' + material_count++);
 
                                     let color = hex2rgb(bodiesInfo[label].visualInfo.color);
@@ -408,8 +408,8 @@ setTimeout(() => {
                                     material.specularColor.r = 0.5;
                                     material.specularColor.g = 0.5;
                                     material.specularColor.b = 0.5;
-                                    
-                                    result.material = material;    
+
+                                    result.material = material;
 
                                 } else if (bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.image.endsWith('.png')) {
                                     var material = new BABYLON.StandardMaterial('material' + material_count++);
@@ -420,13 +420,13 @@ setTimeout(() => {
                                     material.specularColor.r = 0.5;
                                     material.specularColor.g = 0.5;
                                     material.specularColor.b = 0.5;
-                                        
+
                                     if (bodiesInfo[label].visualInfo.color) {
                                         let color = hex2rgb(bodiesInfo[label].visualInfo.color);
                                         material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
                                     }
 
-                                    result.material = material;    
+                                    result.material = material;
                                 }
 
                                 bodyMeshes[label] = result;
@@ -441,14 +441,14 @@ setTimeout(() => {
 
                     // Update position
                     let body = bodies[label];
-                    
+
                     if (!body.pos) {
                         continue;
                     }
 
                     let { x, y, z } = body.pos;
-                    
-                    let angle = {...body.angle};
+
+                    let angle = { ...body.angle };
                     const nextBody = nextBodies[label];
 
                     if (!nextBody) {
@@ -497,7 +497,7 @@ setTimeout(() => {
 // Mapping of robots to currently playing notes (so robots can only play one at a time)
 let roboNotes = {};
 
-const playNote = function(robot, frequency, duration){
+const playNote = function (robot, frequency, duration) {
     // Stop an already playing note from this robot
     if (roboNotes[robot]) {
         roboNotes[robot].stop();
