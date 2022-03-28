@@ -251,6 +251,7 @@ IDE_Morph.prototype.init = function (isAutoFill, config) {
 
     // additional properties:
     this.cloud = new Cloud(config.clientId, config.cloudUrl, config.username);
+    this.cloud.onerror = this.cloudError();
     this.cloudMsg = null;
     this.source = 'local';
     this.serializer = new SnapSerializer();
@@ -6722,23 +6723,16 @@ IDE_Morph.prototype.verifyProject = function (body) {
     return encodedBody.length;
 };
 
-IDE_Morph.prototype.saveProjectToCloud = function (name) {
+IDE_Morph.prototype.saveProjectToCloud = async function (name) {
     const contentName = this.room.hasMultipleRoles() ?
         this.room.getCurrentRoleName() : this.room.name;
 
     if (name) {
         this.showMessage('Saving ' + contentName + '\nto the cloud...');
         this.room.name = name;
-        this.cloud.saveProject(
-            this,
-            result => {
-                if (result.name) {
-                    this.room.silentSetRoomName(result.name);
-                }
-                this.showMessage('Saved ' + contentName + ' to the cloud!', 2);
-            },
-            this.cloudSaveError()
-        );
+        const roleData = this.sockets.getSerializedProject();
+        await this.cloud.saveProject(roleData);
+        this.showMessage('Saved ' + contentName + ' to the cloud!', 2);
     }
 };
 

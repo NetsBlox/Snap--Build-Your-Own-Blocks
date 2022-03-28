@@ -653,7 +653,7 @@ RoomMorph.prototype.inviteUser = async function (role) {
     const world = this.world();
     const dialog = new UserDialogMorph(this, user => {
         if (user) {
-            this.inviteGuest(user, role.id);
+            this.inviteOccupant(user, role.id);
         }
     }, friends);
     dialog.popUp(world);
@@ -708,12 +708,12 @@ RoomMorph.prototype.promptShare = function(name) {
     }
 };
 
-RoomMorph.prototype.inviteGuest = function (friend, role) {
-    // Use inviteGuest service
+RoomMorph.prototype.inviteOccupant = function (friend, role) {
+    // Use inviteOccupant service
     if (friend === 'myself') {
         friend = this.ide.cloud.username;
     }
-    this.ide.cloud.inviteGuest(friend, role);
+    this.ide.cloud.inviteOccupant(friend, role);
 };
 
 RoomMorph.prototype.promptInvite = function (id, role, roomName, inviter) {
@@ -1978,7 +1978,7 @@ function UserDialogMorph(target, action, users) {
 }
 
 UserDialogMorph.prototype.init = function(target, action, users) {
-    this.key = 'inviteGuest';
+    this.key = 'inviteOccupant';
     this.userList = users;
     UserDialogMorph.uber.init.call(
         this,

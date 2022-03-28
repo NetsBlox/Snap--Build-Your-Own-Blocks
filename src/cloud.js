@@ -230,22 +230,18 @@ Cloud.prototype.reportLatestRole = async function(id, data) {
 Cloud.prototype.cloneRole = async function(roleId) {
     const projectId = this.projectId;
     const fetchRoleResponse = await this.fetch(`/projects/id/${projectId}/${roleId}/latest`);
-    const {ProjectName: name, SourceCode: data} = await fetchRoleResponse.json();
+    const {name, code, media} = await fetchRoleResponse.json();
     const options = {
         method: 'POST',
-        body: JSON.stringify({name, data})
+        body: JSON.stringify({name, code, media})
     };
-    const response = await this.fetch(`/projects/id/${projectId}/`, options);
+    const response = await this.post(`/projects/id/${projectId}/`, options);
     // TODO: check response code
 };
 
-Cloud.prototype.inviteGuest = async function (username, roleId) {
-    const options = {
-        method: 'POST',
-        body: JSON.stringify({username, roleId})
-    };
-    const response = await fetch(`/api/projects/${this.projectId}/occupants/invite`, options);
-    return await response.json();
+Cloud.prototype.inviteOccupant = async function (username, roleId) {
+    const body = {username, roleId};
+    await this.post(`/network/id/${this.projectId}/occupants/invite`, body);
 };
 
 Cloud.prototype.inviteToCollaborate = async function (username) {
@@ -298,19 +294,21 @@ Cloud.prototype.evictCollaborator = async function (id, projectId) {
 };
 
 Cloud.prototype.getFriendList = async function () {
-    const response = await fetch(`/api/friends/${this.username}/online`);
+    const response = await this.fetch(`/friends/${this.username}/online`);
     return await response.json();
 };
 
 Cloud.prototype.getProject = async function (projectId, roleId) {
     const response = await this.fetch(`/projects/id/${projectId}/${roleId}`);
     const project = await response.json();
+    // TODO: Set the state here?
     this.setLocalState(projectId, roleId);
     return project;
 };
 
 Cloud.prototype.getProjectByName = async function (owner, name) {
     const response = await fetch(`/api/projects/user/${owner}/${name}`);
+    // FIXME: This is returning an empty response somtimes
     const project = await response.json();
     this.setLocalState(project.ProjectID, project.RoleID);
     console.assert(project.ProjectID, 'Response does not have a project ID');
@@ -403,7 +401,7 @@ Cloud.prototype.signup = async function (
 };
 
 Cloud.prototype.saveProjectCopy = async function() {
-    const response = await fetch(`/api/projects/${this.projectId}/latest`);
+    const response = await this.fetch(`/projects/${this.projectId}/latest`);
     const xml = await response.text();
     const options = {
         method: 'POST',
@@ -444,7 +442,9 @@ Cloud.prototype.fetch = async function(url, opts={}) {
     opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
     const response = await fetch(url, opts);
     if (response.status > 399) {
-        throw new CloudError(await response.text());
+        const text = await response.text();
+        this.onerror(text);
+        throw new CloudError(text);
     }
     return response;
     // TODO: check response code and throw uniform error

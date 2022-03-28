@@ -73,7 +73,11 @@ WebSocketManager.MessageHandlers = {
 
     // Receive an invite to join a room
     'room-invitation': function(msg) {
-        this.ide.room.promptInvite(msg.id, msg.role, msg.roomName, msg.inviter);
+        const {projectId, roleId, projectName, inviter} = msg;
+        const isCurrentRole = projectId === this.ide.cloud.projectId && roleId === this.ide.cloud.roleId;
+        if (!isCurrentRole) {
+            this.ide.room.promptInvite(projectId, roleId, projectName, inviter);
+        }
     },
 
     'collab-invitation': function(msg) {
@@ -108,7 +112,6 @@ WebSocketManager.MessageHandlers = {
     },
 
     'role-data-request': function(msg) {
-        console.log('ROle data requested!');
         const data = this.getSerializedProject();
         const id = msg.id;
         this.ide.cloud.reportLatestRole(id, data);
@@ -483,12 +486,9 @@ WebSocketManager.prototype.getSerializedProject = function() {
     ide.serializer.flush();
 
     return {
-        ProjectName: ide.projectName,
-        SourceCode: pdata,
-        Media: media,
-        SourceSize: pdata.length,
-        MediaSize: media ? media.length : 0,
-        RoomName: this.ide.room.name
+        name: ide.projectName,
+        code: pdata,
+        media: media,
     };
 };
 
