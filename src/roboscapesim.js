@@ -251,10 +251,15 @@ if (window.origin.includes('localhost')) {
  * @returns Mesh object
  */
 const addMesh = async function (name) {
-    imported = await BABYLON.SceneLoader.ImportMeshAsync('', assetsDir, name);
+    try {
+        imported = await BABYLON.SceneLoader.ImportMeshAsync('', assetsDir, name);
 
-    shadowGenerator.addShadowCaster(imported.meshes[0], true);
-    return imported.meshes[0];
+        shadowGenerator.addShadowCaster(imported.meshes[0], true);
+        return imported.meshes[0];
+    } catch (e) {
+        console.log(e);
+        return addBlock(1, 1);
+    }
 };
 
 /**
