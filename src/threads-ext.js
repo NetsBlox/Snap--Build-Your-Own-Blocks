@@ -494,7 +494,7 @@ Process.prototype.reportHTTPRequest = function (method, url, data, headers) {
                 header.at(2)
             );
         }
-        this.httpRequest.setRequestHeader('X-NetsBlox-Source', 'NetsBlox'); // flag this as coming from the NetsBlox client
+        this.httpRequest.setRequestHeader('X-Source', 'NetsBlox'); // flag this as coming from the NetsBlox client
 
         this.httpRequest.send(data || null);
     } else if (this.httpRequest.readyState === 4) {
