@@ -336,6 +336,36 @@ const activateBabylon = async function () {
     camera.attachControl(canvas, true);
     camera.setTarget(new BABYLON.Vector3(0, 0, 0));
 
+    
+	scene.onKeyboardObservable.add((kbInfo) => {
+		switch (kbInfo.type) {
+            case BABYLON.KeyboardEventTypes.KEYDOWN:
+                
+                const camSpeed = 0.005;
+                
+                // Keyboard camera controls for touchscreen usability
+				switch (kbInfo.event.key) {
+                    case "u":
+                    case "U":
+                        camera.cameraRotation.x -= camSpeed;
+                    break
+                    case "j":
+                    case "J":
+                        camera.cameraRotation.x += camSpeed;
+                    break
+                    case "h":
+                    case "H":
+                        camera.cameraRotation.y -= camSpeed;
+                    break
+                    case "k":
+                    case "K":
+                        camera.cameraRotation.y += camSpeed;
+                    break
+                }
+			break;
+		}
+	});
+
     followCam = new BABYLON.FollowCamera('followcam', new BABYLON.Vector3(5, 5, 5), scene);
     followCam.heightOffset = 1.25;
     followCam.radius = 2;
