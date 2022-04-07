@@ -327,8 +327,8 @@ const activateBabylon = async function () {
     scene = new BABYLON.Scene(engine);
 
     // Parameters : name, position, scene
-    camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(4, 10, -4), scene);
-    camera.speed = 0.4;
+    camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(0, 6, -2), scene);
+    camera.speed = 0.35;
     camera.minZ = 0.01;
     camera.maxZ = 200;
 
