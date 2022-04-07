@@ -93,19 +93,26 @@ const connectToRoboScapeSim = function () {
                 serverTimeOffset = startClientTime - startServerTime;
             });
 
+            var lastError = {};
+
             socket.on('error', error => {
                 console.error(error);
-                world.inform(error);
+                if (error.message != lastError.message) {
+                    world.inform(error);
+                    lastError = error;
+                }
             });
 
             socket.on('connect_error', error => {
                 console.error(error);
-                world.inform(error);
+                if (error.message != lastError.message) {
+                    world.inform(error);
+                    lastError = error;
+                }
             });
 
             socket.on('reconnect_error', error => {
                 console.error(error);
-                //world.inform(error);
             });
 
             // If we were previously connected, let server know we had an issue
@@ -489,7 +496,7 @@ setTimeout(() => {
                 let body = bodyMeshes['robot_' + firstPersonCam.targetRobot];
                 let offset = new BABYLON.Vector3();
 
-                BABYLON.Vector3.Forward().scale(0.11).rotateByQuaternionToRef(body.rotationQuaternion, offset);
+                BABYLON.Vector3.Forward().scale(0.10).rotateByQuaternionToRef(body.rotationQuaternion, offset);
                 offset = offset.add(new BABYLON.Vector3(0, 0.05, 0));
 
                 firstPersonCam.position = body.position.add(offset);
