@@ -496,7 +496,7 @@ setTimeout(() => {
                 let body = bodyMeshes['robot_' + firstPersonCam.targetRobot];
                 let offset = new BABYLON.Vector3();
 
-                BABYLON.Vector3.Forward().scale(0.10).rotateByQuaternionToRef(body.rotationQuaternion, offset);
+                BABYLON.Vector3.Forward().scale(0.6).rotateByQuaternionToRef(body.rotationQuaternion, offset);
                 offset = offset.add(new BABYLON.Vector3(0, 0.05, 0));
 
                 firstPersonCam.position = body.position.add(offset);
