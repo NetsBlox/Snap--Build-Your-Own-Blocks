@@ -382,7 +382,7 @@ setTimeout(() => {
                 if (!Object.keys(bodyMeshes).includes(label)) {
                     if (Object.keys(bodiesInfo).includes(label)) {
 
-                        if (!bodiesInfo[label].width || !bodiesInfo[label].visualInfo) {
+                        if (!bodiesInfo[label].width || !bodiesInfo[label].visualInfo || bodiesInfo[label].visualInfo.modelScale == -1) {
                             continue;
                         }
 
