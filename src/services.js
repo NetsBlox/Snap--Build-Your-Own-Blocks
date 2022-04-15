@@ -1,13 +1,10 @@
 /* globals utils, DEFAULT_SERVICES_HOST, SERVICES_HOSTS, SERVER_URL */
 function ServicesRegistry(config, cloud) {
-    // TODO: 
-    this.DEFAULT_SERVICES_HOST = config.defaultHost;
     this.cloud = cloud;
     this.setServicesHosts(config.servicesHosts);
 }
 
 ServicesRegistry.prototype.reset = function () {
-    this.defaultHost = DEFAULT_SERVICES_HOST;
     this.auxServicesHosts = [];
 };
 

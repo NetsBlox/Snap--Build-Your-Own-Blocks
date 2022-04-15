@@ -8,15 +8,7 @@ async function getConfiguration(serverUrl) {
         credentials: 'include',
         headers: {'Content-Type': 'application/json'},
     };
-    console.log('making request to', serverUrl);
     const config = await (await fetch(serverUrl + '/configuration', opts)).json();
-    const DEFAULT_SERVICES_HOST = {url: serverUrl + '/services', categories: []};
-    config.defaultServicesHost = DEFAULT_SERVICES_HOST;
-
-    if (!config.servicesHosts.find(host => host.categories.length === 0)) {
-        config.servicesHosts.push(DEFAULT_SERVICES_HOST);
-    }
-    console.log({config});
     return config;
 }
 

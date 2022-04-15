@@ -568,7 +568,7 @@ RoomMorph.prototype.moveToRole = async function(role) {
     var myself = this;
 
     myself.ide.showMessage('moving to ' + role.name);
-    const project = await this.ide.cloud.getProject(this.ide.cloud.projectId, role.id);
+    const project = await this.ide.cloud.getRole(this.ide.cloud.projectId, role.id);
     this.ide.showMessage('moved to ' + role.name + '!');
     this.ide.silentSetProjectName(role.name);
     this.ide.source = 'cloud';
@@ -722,7 +722,7 @@ RoomMorph.prototype.promptInvite = function (projectId, roleId, projectName, inv
         null,
         async () => {
             const metadata = await this.ide.cloud.getProjectMetadata(projectId);
-            const roleData = await this.ide.cloud.getProject(projectId, roleId);
+            const roleData = await this.ide.cloud.getRole(projectId, roleId);
             await this.ide.rawLoadCloudRole(metadata, roleData);
         }
     ).withKey(projectId + '/' + roleId);

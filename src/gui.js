@@ -8089,21 +8089,12 @@ CloudProjectsSource.prototype.publish = async function(proj, unpublish = false) 
     }
 };
 
-CloudProjectsSource.prototype.open = async function(proj) {
-    const deferred = utils.defer();
-    this.ide.cloud.getProject(
-        proj.ID,
-        async projectInfo => {
-            await this.ide.rawLoadCloudProject(projectInfo, proj.public);
-            deferred.resolve(projectInfo);
-        },
-        function(msg, label) {
-            const err = new CloudError(label, msg);
-            deferred.reject(err);
-        }
-    );
-
-    return deferred.promise;
+CloudProjectsSource.prototype.open = async function(metadata) {
+    const projectId = metadata.id;
+    // FIXME: Get the most recently updated role?
+    const roleId = Object.keys(metadata.roles).shift();
+    const roleData = await this.ide.cloud.getRole(projectId, roleId);
+    await this.ide.rawLoadCloudRole(metadata, roleData);
 };
 
 CloudProjectsSource.prototype.list = async function() {
@@ -8111,10 +8102,11 @@ CloudProjectsSource.prototype.list = async function() {
 };
 
 CloudProjectsSource.prototype.getPreview = function(project) {
+    const updatedAt = new Date(project.updated.secs_since_epoch * 1000);
     return {
-        thumbnail: project.Thumbnail,
+        thumbnail: project.thumbnail,
         notes: project.notes,
-        details: localize('last changed') + '\n' + project.Updated
+        details: localize('last changed') + '\n' + updatedAt
     };
 };
 

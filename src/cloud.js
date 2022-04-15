@@ -233,7 +233,7 @@ Cloud.prototype.cloneRole = async function(roleId) {
     const {name, code, media} = await fetchRoleResponse.json();
     const options = {
         method: 'POST',
-        body: JSON.stringify({name, code, media})
+        body: {name, code, media}
     };
     const response = await this.post(`/projects/id/${projectId}/`, options);
     // TODO: check response code
@@ -298,7 +298,7 @@ Cloud.prototype.getFriendList = async function () {
     return await response.json();
 };
 
-Cloud.prototype.getProject = async function (projectId, roleId) {
+Cloud.prototype.getRole = async function (projectId, roleId) {
     const response = await this.fetch(`/projects/id/${projectId}/${roleId}/latest`);
     const project = await response.json();
     // TODO: Set the state here?

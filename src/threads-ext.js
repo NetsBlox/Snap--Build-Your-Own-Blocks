@@ -223,17 +223,10 @@ Process.prototype.receiveSocketMessage = function (fields) {
 
 Process.prototype.createRPCUrl = function (url) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
-        uuid = ide.sockets.uuid,
-        projectId = encodeURIComponent(ide.cloud.projectId),
-        roleId = encodeURIComponent(ide.cloud.roleId);
+        clientId = ide.sockets.uuid;
 
-    url += '?uuid=' + uuid + '&projectId=' +
-        projectId + '&roleId=' + roleId;
-
-    if (ide.cloud.username) {
-        url += '&username=' + ide.cloud.username;
-    }
-    return url;
+    // TODO: add a client secret?
+    return url + '?clientId=' + clientId;
 };
 
 Process.prototype.callRPC = function (baseUrl, params, noCache) {
