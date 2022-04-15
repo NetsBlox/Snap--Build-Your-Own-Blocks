@@ -2473,32 +2473,31 @@ Process.prototype.doForEach = function (upvar, list, script) {
     // Distinguish between linked and arrayed lists.
 
     var next;
-    let acc = this.context.accumulator;
-    if (acc === null) {
+    if (this.context.accumulator === null) {
         this.assertType(list, 'list');
-        acc = this.context.accumulator = {
+        this.context.accumulator = {
             source : list,
             remaining : list.length(),
-            idx : 0,
-            params: new List(),
+            idx : 0
         };
     }
-    if (acc.remaining === 0) {
+    if (this.context.accumulator.remaining === 0) {
         return;
     }
-    acc.remaining -= 1;
-    if (acc.source.isLinked) {
-        next = acc.source.at(1);
-        acc.source = acc.source.cdr();
+    this.context.accumulator.remaining -= 1;
+    if (this.context.accumulator.source.isLinked) {
+        next = this.context.accumulator.source.at(1);
+        this.context.accumulator.source =
+            this.context.accumulator.source.cdr();
     } else { // arrayed
-        acc.idx += 1;
-        next = acc.source.at(acc.idx);
+        this.context.accumulator.idx += 1;
+        next = this.context.accumulator.source.at(this.context.accumulator.idx);
     }
     this.pushContext('doYield');
     this.pushContext();
     this.context.outerContext.variables.addVar(upvar);
     this.context.outerContext.variables.setVar(upvar, next);
-    this.evaluate(script, acc.params, true);
+    this.evaluate(script, new List([]), true);  // pass [] for args to disable auto-filling default (RPC) args
 };
 
 Process.prototype.doFor = function (upvar, start, end, script) {
