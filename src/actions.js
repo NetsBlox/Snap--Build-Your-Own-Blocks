@@ -216,69 +216,13 @@ ActionManager.prototype.initializeRecords = function() {
     this._blockToOwnerId = {};
 };
 
-ActionManager.URL = 'ws://' + window.location.host;
-ActionManager.prototype.enableCollaboration = function() {
-    if (this.supportsCollaboration === false) {
-        // Display error message
-        this.ide().showMessage('Collaboration not supported');
-    }
-    this._ws = new WebSocket(ActionManager.URL);
-    this._enableCollaboration();
-};
-
-ActionManager.RECONNECT_INTERVAL = 1500;
-ActionManager.prototype._enableCollaboration = function() {
-    var self = this;
-
-    if (this._ws.readyState > WebSocket.OPEN) {  // closed or closing
-        this._ws = new WebSocket(ActionManager.URL);
-    }
-
-    this._ws.onopen = function() {
-        logger.debug('websocket connected!');
-        self.isLeader = false;
-        self.supportsCollaboration = true;
-    };
-
-    this._ws.onclose = function() {
-        self.isLeader = true;
-        if (self.supportsCollaboration !== true) {
-            self.supportsCollaboration = false;
-        }
-        if (self._ws) {  // network failure or something. Try to reconnect
-            self.reconnectId = setTimeout(self._enableCollaboration.bind(self), ActionManager.RECONNECT_INTERVAL);
-        }
-    };
-
-    this._ws.onmessage = function(raw) {
-        var msg = JSON.parse(raw.data);
-        self.onMessage(msg);
-    };
-};
-
-ActionManager.prototype.disableCollaboration = function() {
-    var ws = this._ws;
-
-    if (this.isCollaborating()) {
-        this._ws = null;
-        ws.close();
-        if (this.reconnectId) {
-            clearTimeout(this.reconnectId);
-        }
-        if (location.hash.indexOf('collaborate') !== -1) {
-            location.hash = '';
-        }
-    }
-};
-
 ActionManager.prototype.isCollaborating = function() {
-    return this._ws !== null;
+    return this.ide().room.getCurrentOccupants().length > 1;
 };
 
 ActionManager.prototype.initialize = function() {
     this.serializer = new SnapSerializer();
     this.serializer.idProperty = 'actionSerializationID';
-    this._ws = null;
     this.supportsCollaboration = null;
     this.isLeader = true;
     this.isApplyingAction = false;
@@ -543,23 +487,36 @@ ActionManager.prototype._rawApplyEvent = function(event) {
 };
 
 ActionManager.prototype.submitAction = function(event) {
-
+    event.user = this.ide().cloud.clientId;
     if (this.isLeader || !this.isCollaborating() || this.isAlwaysAllowed(event)) {
         this.acceptEvent(event);
     } else {
+        // TODO: send it to the leader
         this.send(event);
     }
 };
 
-ActionManager.prototype.send = function(json) {
-    var canSend = this._ws && this._ws.readyState === WebSocket.OPEN;
-    json.id = json.id || this.lastSeen + 1;
+ActionManager.prototype.send = function(event) {
+    const {sockets, cloud} = this.ide();
 
-    if (!this.isUserAction(json)) {
-        this.lastSent = json.id;
+    event.id = event.id || this.lastSeen + 1;
+    if (!this.isUserAction(event)) {
+        this.lastSent = event.id;
     }
-    if (this.isCollaborating() && json.type !== 'openProject' && canSend) {
-        this._ws.send(JSON.stringify(json));
+    if (event.type !== 'openProject') {
+        const {projectId, roleId} = this.ide().cloud;
+        const targets = this.ide().room.getCurrentOccupants()
+            .map(occupant => occupant.id)
+            .filter(clientId => clientId !== cloud.clientId);
+
+        if (targets.length) {
+            sockets.sendIDEMessage({
+                type: 'user-action',
+                projectId,
+                roleId,
+                action: event,
+            }, ...targets);
+        }
     }
 };
 
@@ -3064,37 +3021,34 @@ ActionManager.prototype.afterActionApplied = function(action) {
 ActionManager.prototype.onMessage = function(msg) {
     var socket = this.ide().sockets;
 
-    if (msg.type === 'rank') {
-        this.rank = msg.value;
-        logger.info('assigned rank of', this.rank);
-    } else if (msg.type === 'leader-appoint') {
-        this.isLeader = msg.value;
-        if (msg.value) {
-            logger.info('Appointed leader!');
-        }
-    } else if (msg.type === 'uuid') {
-        this.id = msg.value;
-        logger.info('assigned id of', this.id);
-        if (this.onconnect) {
-            this.onconnect();
-        }
-    } else if (msg.type === 'session-project-request') {
-        // Return the serialized project
-        var str = this.serialize(this.ide().stage);
-        msg.args = [str];
-        msg.id = this.lastSeen;
-        this.send(msg);
-    } else if (msg.type === 'session-id') {
-        this.sessionId = msg.value;
-        location.hash = 'collaborate=' + this.sessionId;
-    } else if (this.isLeader && !socket.inActionRequest) {
+    if (this.isLeader) {
         // Verify that the lastSeen value is the same as the current
+        if (!this.isAllowed(msg)) {
+            return {
+                type: 'action-rejected',
+                reason: 'Cannot edit project. Edits can only be made by the owner or collaborators.',
+                action: msg,
+            };
+        }
+
         if (this.isNextAction(msg)) {
             this.acceptEvent(msg);
+        } else {
+            return {
+                type: 'action-rejected',
+                action: msg,
+            };
         }
     } else {
         this.onReceiveAction(msg);
     }
+};
+
+ActionManager.prototype.isAllowed = function(action) {
+    const {username} = action;
+    const {room} = this.ide();
+    // TODO: ensure that the username is not spoofed
+    return room.isOwner(username) || room.isCollaborator(username);
 };
 
 ActionManager.prototype.onActionReject = function(action, reason) {

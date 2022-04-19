@@ -129,11 +129,12 @@ RoomMorph.prototype.setRoomName = function(name) {
 };
 
 RoomMorph.prototype.getDefaultRoles = function() {
+    const cloud = this.ide.cloud;
     var roleInfo = {},
         name = this.getCurrentRoleName(),
         occupant = {
-            uuid: this.myUuid(),
-            name: this.ide.cloud.username || 'me'
+            id: cloud.clientId,
+            name: cloud.username || 'me'
         };
 
     roleInfo[name] = {
@@ -147,12 +148,12 @@ RoomMorph.prototype.getDefaultRoles = function() {
 RoomMorph.prototype.getCurrentRoleName = function() {
     var myself = this,
         roleNames = this.getRoleNames(),
-        myUuid = myself.ide.sockets.uuid;
+        myId = myself.ide.cloud.clientId;
 
     // Look up the role name from the current room info
     return roleNames.find(function(name) {
         return myself.getCurrentOccupants(name).find(function(occupant) {
-            return occupant.uuid === myUuid;
+            return occupant.id === myId;
         });
     }) || this.ide.projectName;
 };
@@ -176,12 +177,17 @@ RoomMorph.prototype.getCurrentOccupants = function(name) {
     }
 };
 
-RoomMorph.prototype.isLeader = function() {
-    return this.getCurrentOccupants().length === 1;
+RoomMorph.prototype.getLeaderID = function() {
+    // since the order is the same on each client, agree that
+    // the first occupant is the leader. This user will accept/reject
+    // edits to the project.
+    const [leader] = this.getCurrentOccupants();
+    return leader?.id;
 };
 
-RoomMorph.prototype.myUuid = function() {
-    return this.ide.sockets.uuid;
+RoomMorph.prototype.isLeader = function() {
+    const leaderID = this.getLeaderID();
+    return leaderID && leaderID === this.ide.cloud.clientId;
 };
 
 RoomMorph.prototype.myUserId = function() {
@@ -190,7 +196,7 @@ RoomMorph.prototype.myUserId = function() {
 
 RoomMorph.prototype.isOwner = function(user) {
     if (RoomMorph.isSocketUuid(this.ownerId) && !user) {
-        return this.ide.sockets.uuid === this.ownerId;
+        return this.ide.cloud.clientId === this.ownerId;
     }
 
     if (!user && this.ownerId === null) return true;
@@ -626,7 +632,7 @@ RoomMorph.prototype.setRoleName = function(roleId, name) {
 RoomMorph.prototype.evictUser = function (user) {
     var myself = this;
     this.ide.cloud.evictUser(
-        user.uuid,
+        user.id,
         function(state) {
             myself.onRoomStateUpdate(state);
             myself.ide.showMessage('evicted ' + user.name + '!');
@@ -1530,7 +1536,7 @@ EditRoleMorph.prototype.init = function(room, role) {
         this.addButton('inviteUser', 'Invite User');
 
         const hasEvictableUsers = this.role.users
-            .filter(user => user.uuid !== cloud.clientId)
+            .filter(user => user.id !== cloud.clientId)
             .length;
         if (this.room.isOwner() && hasEvictableUsers) {
             this.addButton('evictUser', 'Evict User');
@@ -1621,7 +1627,7 @@ EditRoleMorph.prototype.moveToRole = async function() {
 
 EditRoleMorph.prototype.evictUser = function() {
     const cloud = this.room.ide.cloud;
-    const user = this.role.users.find(user => user.uuid !== cloud.clientId);
+    const user = this.role.users.find(user => user.id !== cloud.clientId);
     this.room.evictUser(user);
     this.destroy();
 };

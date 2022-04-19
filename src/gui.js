@@ -336,7 +336,6 @@ IDE_Morph.prototype.openIn = function (world) {
 
     this.buildPanes();
     SnapActions.configure(this);
-    SnapActions.disableCollaboration();
     SnapUndo.reset();
     world.add(this);
     world.userMenu = this.userMenu;

@@ -19,11 +19,105 @@ var WebSocketManager = function (ide, config) {
     this.hasConnected = false;
     this.connected = false;
     this.inActionRequest = false;
+    this._requests = {};
+    this._counter = 1;
     this.serializer = new NetsBloxSerializer();
 };
 
 WebSocketManager.HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
+class MessageHandler {
+    constructor() {
+        this._handlers = {};
+    }
+
+    handle(msg) {
+        if (this._handlers[type]) {
+            return this._handlers[type].call(self, msg);
+        } else {
+            console.error('Unknown message:', msg);
+        }
+    }
+
+    addHandler(type, fn) {
+        if (this._handlers[type]) {
+            throw new Error(`Handler already defined for ${type}`);
+        }
+        this._handlers[type] = fn;
+    }
+}
+
+WebSocketManager.IDEMessageHandlers = {
+    'action-rejected': function(msg) {
+        if (msg.reason) {
+            this.ide.showMessage(localize(msg.reason));
+        }
+    },
+    'user-action': function(msg, sender) {
+        const cloud = this.ide.cloud;
+        if (msg.projectId === cloud.projectId && msg.roleId === cloud.roleId) {
+            const response = SnapActions.onMessage(msg.action);
+            if (response) {
+                this.sendIDEMessage(response, sender);
+            }
+        }
+    },
+    'request-actions': function(msg, sender) {
+        const cloud = this.ide.cloud;
+        if (msg.projectId === cloud.projectId && msg.roleId === cloud.roleId) {
+            const actions = utils.takeWhile(
+                SnapUndo.allEvents.reverse(),
+                event => event.id > msg.actionId
+            ).reverse();
+
+            const starterAction = {id: actionId};
+            const actionAndNext = utils.zip([starterAction].concat(actions), actions);
+            const isMissingActions = actionAndNext.reduce(
+                (isMissingActions, [action, nextAction]) => isMissingActions ||
+                    (nextAction.id - action.id > 1),
+                false
+            );
+            if (isMissingActions) {
+                throw new Errors.MissingActionsError();
+            }
+            return actions;
+        } else {
+            // No longer at the given role, try again
+            throw new Errors.NoLongerLeaderError();
+        }
+    }
+};
+
 WebSocketManager.MessageHandlers = {
+    'ide-message': function(msg) {
+        const {data, sender} = msg;
+        let response, error;
+        try {
+            response = WebSocketManager.IDEMessageHandlers[data.type].call(this, data, sender);
+        } catch (err) {
+            error = err.message;
+        }
+        if (msg.reqID) {
+            this.sendIDEMessage({
+                type: 'response',
+                reqID,
+                response,
+                error,
+            });
+        }
+    },
+
+    'response': function(msg) {
+        const deferred = this._requests[msg.reqID];
+        if (deferred) {
+            if (msg.error) {
+                deferred.reject(new Error(msg.error));
+            } else {
+                deferred.resolve(msg.response);
+            }
+            delete this._requests[msg.reqID];
+        }
+    },
+
     'request-actions-complete': function() {
         this.inActionRequest = false;
     },
@@ -177,9 +271,6 @@ WebSocketManager.MessageHandlers = {
     'pong': function() {
         setTimeout(() => this.sendMessage({type: 'ping'}), WebSocketManager.HEARTBEAT_INTERVAL);
     },
-    'user-action': function(msg) {
-        SnapActions.onMessage(msg.action);
-    },
     'action-rejected': function(msg) {
         SnapActions.onActionReject(msg.action, msg.error.message);
     }
@@ -252,7 +343,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
         self.lastSocketActivity = Date.now();
         if (WebSocketManager.MessageHandlers[type]) {
-            WebSocketManager.MessageHandlers[type].call(self, msg);
+            const response = WebSocketManager.MessageHandlers[type].call(self, msg);
         } else {
             console.error('Unknown message:', msg);
         }
@@ -303,6 +394,29 @@ WebSocketManager.prototype.sendMessage = function(message) {
     message.projectId = this.ide.cloud.projectId;
     message = this.serializeMessage(message);
     this.send(message);
+};
+
+WebSocketManager.prototype.sendIDEMessage = function(data, ...recipients) {
+    // TODO: add support for req-reply
+    console.log('sending IDE message to', recipients, data);
+    return this.sendMessage({
+        type: 'ide-message',
+        recipients,
+        data,
+    });
+};
+
+WebSocketManager.prototype.sendIDERequest = async function(data, ...recipients) {
+    data.reqID = ++this._counter;
+    this._requests[data.reqID] = utils.defer();
+    setTimeout(() => {
+        const deferred = this._requests[data.reqID];
+        if (deferred) {
+            deferred.reject(new Error('Timeout exceeded.'));
+            delete this._requests[data.reqID];
+        }
+    }, 5000);
+    return this.sendIDEMessage(data, ...recipients);
 };
 
 WebSocketManager.prototype.serializeMessage = function(message) {
@@ -566,5 +680,25 @@ class MessageHandlerQueue {
         return nextMsg;
     }
 }
+
+const Errors = (function() {
+    class NoLongerLeaderError extends Error {
+        constructor() {
+            super('No longer the leader.');
+        }
+    }
+
+    class MissingActionsError extends Error {
+        constructor() {
+            super('Could not retrieve all missing actions.');
+        }
+    }
+
+    return {
+        NoLongerLeaderError,
+        MissingActionsError,
+    };
+})();
+
 
 WebSocketManager.MessageHandlerQueue = MessageHandlerQueue;
