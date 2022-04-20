@@ -1,3 +1,4 @@
+const { timeout } = require("async");
 
 var socket;
 var bodies = {};
@@ -162,6 +163,15 @@ const connectToRoboScapeSim = function () {
             // Kicked from room
             socket.on('roomLeft', args => {
                 leaveRoom();
+            });
+
+            // Show message
+            socket.on('showText', args => {
+                text = args[0];
+                id = args[1];
+                timeout = args[2];
+
+                addOrUpdateText(text, id, timeout);
             });
 
         });

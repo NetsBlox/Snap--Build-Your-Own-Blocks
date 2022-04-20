@@ -309,6 +309,9 @@ const resizeBabylonCanvas = function () {
     canvas.style.top = stage.boundingBox().top() + 'px';
 };
 
+var textStackPanel;
+const textBlocks = {};
+
 const activateBabylon = async function () {
 
     if (!canvas) {
@@ -325,6 +328,16 @@ const activateBabylon = async function () {
     stage = world.children[0].children.find(c => c.name == 'Stage');
 
     scene = new BABYLON.Scene(engine);
+
+    
+    // GUI
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+    textStackPanel = new BABYLON.GUI.StackPanel();    
+    textStackPanel.setPadding(20, 20, 20, 20);
+    textStackPanel.spacing = 20;
+    textStackPanel.verticalAlignment = "top";
+    advancedTexture.addControl(textStackPanel);   
 
     // Parameters : name, position, scene
     camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(0, 6, -2), scene);
@@ -445,6 +458,35 @@ const addBlock = async function (width, height, depth = -1, castShadows = true, 
     block.receiveShadows = receiveShadows;
     return block;
 };
+
+const addOrUpdateText = function (text, id, timeout) {
+
+    if (!Object.keys(textBlocks).includes(id)) {
+        var textBlock = new BABYLON.GUI.TextBlock("textblock_" + (id ?? Math.round(Math.random() * 10000000)));
+        textBlock.text = text;
+        textBlock.heightInPixels = 24;
+        textBlock.outlineColor = "#2226";
+        textBlock.outlineWidth = 3;
+        textBlock.color = "#FFF";
+        textBlock.fontSizeInPixels = 20;
+
+        textStackPanel.addControl(textBlock);
+        textBlocks[id] = textBlock;
+    } else {
+        textBlocks[id].text = text;
+    }
+
+    if (timeout) {
+        if (textBlocks[id].timeout) {
+            clearTimeout(textBlocks[id].timeout);
+        }
+
+        textBlocks[id].timeout = setTimeout(() => {
+            textStackPanel.removeControl(textBlocks[id]);
+            delete textBlocks[id];
+        }, timeout);
+    }
+}
 
 // Load Babylon
 var babylonScripts = ['https://preview.babylonjs.com/babylon.js', 'https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
