@@ -1,5 +1,3 @@
-const { timeout } = require("async");
-
 var socket;
 var bodies = {};
 var nextBodies = {};
