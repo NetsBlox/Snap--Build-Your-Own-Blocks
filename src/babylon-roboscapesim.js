@@ -10,6 +10,7 @@ var ui;
 var vrHelper;
 var roboscapeSimCanvasInstance;
 var shadowGenerator;
+var optimizer;
 
 var updateLoopFunctions = [];
 
@@ -329,6 +330,10 @@ const activateBabylon = async function () {
 
     scene = new BABYLON.Scene(engine);
 
+    
+    // Optimizer
+    var options = BABYLON.SceneOptimizerOptions.ModerateDegradationAllowed();
+    optimizer = new BABYLON.SceneOptimizer(scene, options);
     
     // GUI
     var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
