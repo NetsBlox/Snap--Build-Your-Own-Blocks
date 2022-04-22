@@ -168,8 +168,6 @@ ActionManager.prototype.initializeEventMethods = function() {
         'toggleBoolean',
         'setColorField',
         'setField',
-
-        'openProject'
     );
 
     this.addUserActions(
@@ -1158,11 +1156,6 @@ ActionManager.prototype._detachParts = function(parts) {
         partIds,
         currentAnchorIds
     ];
-};
-
-ActionManager.prototype._openProject = function(str) {
-    this.initializeRecords();
-    return [str];
 };
 
 ActionManager.prototype.assignUniqueIds = function (str) {
@@ -2583,12 +2576,12 @@ ActionManager.prototype.onImportBlocks = function(aString, lbl) {
     this.completeAction(null, blocks);
 };
 
-ActionManager.prototype.onOpenProject = async function(str) {
+ActionManager.prototype.openProject = async function(str) {
     var myself = this,
         project = null,
-        event = this.currentEvent,
         ide = this.ide();
 
+    const lastSeen = this.lastSeen;
     SnapUndo.reset();
     this.initializeRecords();
 
@@ -2608,31 +2601,24 @@ ActionManager.prototype.onOpenProject = async function(str) {
         return myself.loadOwner(sprite);
     });
 
-    this.lastSeen = event.id;  // don't reset lastSeen
-    this.completeAction(null, project);
+    this.lastSeen = lastSeen;
 
-    if (!this.ide().isReplayMode) {
-        // Load the replay and action manager state from project
-        var len = SnapUndo.allEvents.length;
+    // Load the replay and action manager state from project
+    var len = SnapUndo.allEvents.length;
 
-        // Remove the openProject event from the replay history.
-        // In the future, this information would be good to collect
-        // but it will not be recorded for now since it will exponentially
-        // inflate the project size...
-        if (event === SnapUndo.allEvents[len-1]) {
-            SnapUndo.allEvents.pop();
-        }
-
-        if (project && project.collabStartIndex !== undefined) {
-            this.lastSeen = project.collabStartIndex;
-        }
-
-        var roomName = this.ide().room.name,
-            roleName = this.ide().projectName;
-
-        //await this.ide().cloud.setClientState(roomName, roleName, this.lastSeen);
-        this.requestMissingActions();
+    // Remove the openProject event from the replay history.
+    // In the future, this information would be good to collect
+    // but it will not be recorded for now since it will exponentially
+    // inflate the project size...
+    if (event === SnapUndo.allEvents[len-1]) {
+        SnapUndo.allEvents.pop();
     }
+
+    if (project && project.collabStartIndex !== undefined) {
+        this.lastSeen = project.collabStartIndex;
+    }
+
+    return project;
 };
 
 ActionManager.prototype._getCurrentTarget = function(block) {
@@ -3136,7 +3122,6 @@ ActionManager.OwnerFor.deleteVariable =
 ActionManager.OwnerFor.setStageSize =
 ActionManager.OwnerFor.importBlocks =
 ActionManager.OwnerFor.importSprites =
-ActionManager.OwnerFor.openProject =
 ActionManager.OwnerFor.duplicateSprite =
 ActionManager.OwnerFor.addSprite = function() {
     return null;
