@@ -9,6 +9,7 @@ async function getConfiguration(serverUrl) {
         headers: {'Content-Type': 'application/json'},
     };
     const config = await (await fetch(serverUrl + '/configuration', opts)).json();
+    config.cloudUrl = serverUrl;  // TODO: Update the server?
     return config;
 }
 
