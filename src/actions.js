@@ -457,7 +457,11 @@ ActionManager.prototype._rawApplyEvent = function(event) {
 
 ActionManager.prototype.submitAction = function(event) {
     event.user = this.ide().cloud.clientId;
-    if (this.isLeader || !this.isCollaborating() || this.isAlwaysAllowed(event)) {
+    if (!this.ide().sockets.isConnected()) {
+        throw new Error('Cannot edit projects while disconnected.');
+    }
+
+    if (this.isLeader) {
         this.acceptEvent(event);
     } else {
         // TODO: send it to the leader
