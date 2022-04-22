@@ -822,23 +822,28 @@ NetsBloxMorph.prototype.rawOpenBlocksMsgTypeString = function (aString) {
     this.rawOpenBlocksString(blocksStr, '', true);
 };
 
-NetsBloxMorph.prototype.rawLoadCloudRole = function (project, roleData) {
+NetsBloxMorph.prototype.rawLoadCloudRole = async function (project, roleData) {
+    const rolePair = Object.entries(project.roles)
+        .find(([id, metadata]) => metadata.name === roleData.name)
+    if (!rolePair) throw new Error(`Could not find role ${roleData.name} in project.`);
+    const [roleId] = rolePair;
+
     this.source = 'cloud';
     project.owner = project.owner || this.cloud.username;
     this.updateUrlQueryString(project.name, project.public);
 
-    var msg = this.showMessage('Opening project...');
-    return SnapActions.openProject(roleData.code)
-        .then(() => {
-            this.cloud.projectId = project.id;
-            this.room.silentSetRoomName(project.name);
-            this.room.ownerId = project.owner;
-            this.silentSetProjectName(roleData.name);
+    const msg = this.showMessage('Opening project...');
+    this.cloud.setLocalState(project.id, roleId);
 
-            // Send the message to the server
-            this.sockets.updateRoomInfo();
-            msg.destroy();
-        });
+    await SnapActions.openProject(roleData.code);
+    const isLoadInterrupted = this.cloud.projectId !== project.id || this.cloud.roleId !== roleId;
+    if (isLoadInterrupted) return;
+
+    this.room.silentSetRoomName(project.name);
+    this.room.ownerId = project.owner;
+    this.silentSetProjectName(roleData.name);
+    await this.cloud.setClientState(project.id, roleId);
+    msg.destroy();
 };
 
 NetsBloxMorph.prototype.updateUrlQueryString = function (room, isPublic, isExample) {
