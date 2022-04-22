@@ -599,11 +599,6 @@ IDE_Morph.prototype.interpretUrlAnchors = async function (loc) {
         this.loadNewProject = true;
     } else if (loc.hash.substr(0, 7) === '#signup') {
         this.createCloudAccount();
-    } else if (loc.hash.substr(0, 12) === '#collaborate') {
-        var sessionId = loc.hash.substr(13);
-        // Get the session id and join it!
-        SnapActions.enableCollaboration();
-        SnapActions.joinSession(sessionId, this.cloudError());
     } else if (loc.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
         const example = dict ? dict.ProjectName : loc.hash.substr(9);
 

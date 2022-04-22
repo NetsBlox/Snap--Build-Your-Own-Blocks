@@ -289,35 +289,6 @@ ActionManager.prototype.isAlwaysAllowed = function(action) {
     return action.type === 'openProject';
 };
 
-ActionManager.prototype.joinSession = function(sessionId, error) {
-    if (!SnapActions.id) {
-        this.onconnect = this._joinSession.bind(this, sessionId, error);
-    } else {
-        this._joinSession(sessionId, error);
-    }
-};
-
-ActionManager.prototype._joinSession = function(sessionId, error) {
-    var request = new XMLHttpRequest();
-    request.open(
-        'POST',
-        window.location.origin + '/collaboration/join'
-            + '?id=' + encodeURIComponent(SnapActions.id)
-            + '&sessionId=' + encodeURIComponent(sessionId),
-        true
-    );
-    request.withCredentials = true;
-    request.onreadystatechange = function () {
-        if (request.readyState === 4) {
-            if (request.responseText.indexOf('ERROR') === 0) {
-                return error(request.responseText, 'Collaborate');
-            }
-        }
-    };
-    request.send();
-    this.onconnect = null;
-};
-
 function Action(event) {
     this.id = event.id;
     this.data = event;
