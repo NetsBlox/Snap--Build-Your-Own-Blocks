@@ -463,7 +463,15 @@ const addBlock = async function (width, height, depth = -1, castShadows = true, 
     block.receiveShadows = receiveShadows;
     return block;
 };
-
+ 
+/**
+ * Create a TextBlock in the 3D view's overlay.
+ * If a TextBlock already has the id, that TextBlock's text and timeout will be updated.
+ * 
+ * @param {string} text Text to display in TextBlock
+ * @param {string} id ID of TextBlock
+ * @param {number | boolean} timeout TextBlock will be removed after timeout ms, or never if timeout is falsey.
+ */
 const addOrUpdateText = function (text, id, timeout) {
 
     if (!Object.keys(textBlocks).includes(id)) {
@@ -492,6 +500,26 @@ const addOrUpdateText = function (text, id, timeout) {
         }, timeout);
     }
 }
+
+/**
+ * Removes all TextBlocks from the 3D view's overlay
+ */
+const clearAllTextBlocks = function () {
+    for (const id in textBlocks) {
+        if (Object.hasOwnProperty.call(textBlocks, id)) {
+            const element = textBlocks[id];
+
+            if (element.timeout) {
+                clearTimeout(element.timeout);
+            }
+            
+            element.timeout = setTimeout(() => {
+                textStackPanel.removeControl(element);
+                delete element;
+            }, timeout);
+        }
+    }
+};
 
 // Load Babylon
 var babylonScripts = ['https://preview.babylonjs.com/babylon.js', 'https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
