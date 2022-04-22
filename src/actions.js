@@ -41,7 +41,7 @@ ActionManager.prototype.addActions = function() {
     //  - onEventName
     //    - Update the Snap environment
     actions.forEach(function(method) {
-        myself[method] = function() {
+        myself[method] = async function() {
             var args = Array.prototype.slice.apply(arguments),
                 fn = '_' + method,
                 ownerId = this.ide().stage.id,
