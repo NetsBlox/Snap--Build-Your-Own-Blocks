@@ -69,7 +69,7 @@ SnapActions.onMessage = function(msg) {
 
 SnapActions.requestMissingActions = async function(silent) {
     const {sockets, cloud, room} = this.ide();
-    if (!sockets.inActionRequest) {
+    if (!sockets.inActionRequest && !room.isLeader()) {
         sockets.inActionRequest = true;
         const leader = room.getLeaderID();
         const response = await sockets.sendIDERequest({
