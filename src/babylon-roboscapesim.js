@@ -566,4 +566,30 @@ updateLoopFunctions.push(() => {
             tempCanvasVisibility = false;
         }
     }
+
+    // Keep in-bounds
+    if(window.externalVariables.roboscapeSimCanvasInstance.width() > world.width()){
+        window.externalVariables.roboscapeSimCanvasInstance.setWidth(world.width());
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.height() > world.height()){
+        window.externalVariables.roboscapeSimCanvasInstance.setHeight(world.height());
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.left() < 0){
+        window.externalVariables.roboscapeSimCanvasInstance.setLeft(0);
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.right() > world.width()){
+        window.externalVariables.roboscapeSimCanvasInstance.setRight(world.width());
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.bottom() > world.height()){
+        window.externalVariables.roboscapeSimCanvasInstance.setBottom(world.height());
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
+    if(window.externalVariables.roboscapeSimCanvasInstance.top() < 0){
+        window.externalVariables.roboscapeSimCanvasInstance.setTop(0);
+        window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
+    }
 });
