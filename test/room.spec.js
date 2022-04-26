@@ -101,48 +101,46 @@ describe('room', function() {
     describe('new', function() {
         const name = 'newRoleName';
         let initialRoleName = '';
-        before(() => {
-            return driver.reset()
-                .then(() => driver.addBlock('forward'))
-                .then(() => {
-                    initialRoleName = driver.ide().projectName;
-                    driver.newRole(name);
+        before(async () => {
+            await driver.reset()
+            await driver.addBlock('forward');
+            initialRoleName = driver.ide().projectName;
+            driver.newRole(name);
 
-                    // wait for it to show up
-                    let room = driver.ide().room;
-                    return driver.expect(
-                        () => room.getRole(name),
-                        `new role (${name}) did not appear`
-                    );
-                });
+            // wait for it to show up
+            let room = driver.ide().room;
+            return driver.expect(
+                () => room.getRole(name),
+                `new role (${name}) did not appear`
+            );
         });
 
         describe('moveToRole', function() {
-            let SnapCloud, projectId, oldRoleId;
+            let cloud, projectId, oldRoleId;
             before(function() {
-                SnapCloud = driver.globals().SnapCloud;
-                projectId = SnapCloud.projectId;
-                oldRoleId = SnapCloud.projectId;
+                cloud = driver.ide().cloud;
+                projectId = cloud.projectId;
+                oldRoleId = cloud.projectId;
 
                 driver.moveToRole(name);
                 driver.dialogs().forEach(d => d.destroy());
             });
 
-            it('should be able to move to new role', function() {
+            it('should update role/project name', function() {
                 // wait for the project name to change
                 return driver
                     .expect(() => {
                         return driver.ide().projectName === name;
                     }, `could not move to ${name} role`)
-                    .then(() => expect(projectId).toBe(SnapCloud.projectId));
+                    .then(() => expect(projectId).toBe(cloud.projectId));
             });
 
             it('should not update projectId', function() {
-                expect(projectId).toBe(SnapCloud.projectId);
+                expect(projectId).toBe(cloud.projectId);
             });
 
             it('should update roleId', function() {
-                expect(oldRoleId).toNotBe(SnapCloud.roleId);
+                expect(oldRoleId).toNotBe(cloud.roleId);
             });
 
             it('should be able to move back and forth', async function() {
@@ -169,6 +167,16 @@ describe('room', function() {
                 return driver.expect(() => {
                     return !driver.ide().currentSprite.scripts.children.length;
                 }, `did not load empty role "${name}"`);
+            });
+
+            it('should update occupancy in room', function() {
+                const {room} = driver.ide();
+                driver.expect(() => 
+                    room.getRoles().every(role => {
+                        const count = role.name === initialRoleName ? 0 : 1;
+                        return role.users.length === count;
+                    }),
+                );
             });
 
             it('should be able to add block', function() {
@@ -217,9 +225,10 @@ describe('room', function() {
         });
 
         it('should change role name in room tab', function() {
-            return driver.expect(() => {
-                return driver.ide().room.getRole(newName);
-            }, 'role did not change names');
+            return driver.expect(
+                () => driver.ide().room.getRole(newName),
+                'role did not change names'
+            );
         });
     });
 

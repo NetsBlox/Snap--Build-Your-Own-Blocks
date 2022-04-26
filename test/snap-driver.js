@@ -44,11 +44,11 @@ SnapDriver.prototype.reset = async function() {
     dialogs.forEach(dialog => dialog.destroy());
 
     this.ide().exitReplayMode();
-    const {SnapCloud} = this.globals();
-    const projectId = SnapCloud.projectId;
+    const {cloud} = this.ide();
+    const projectId = cloud.projectId;
     await this.ide().newProject();
     await this.expect(
-        () => this.ide().room.version !== -1 && SnapCloud.projectId !== projectId,
+        () => this.ide().room.version !== -1 && cloud.projectId !== projectId,
         'No room state received'
     );
 };
@@ -290,8 +290,8 @@ SnapDriver.prototype.login = async function(name, password='password', opts) {
     if (isLoggedIn) {
         this.click(logoutBtn);
         await this.expect(
-            () => this.isShowingDialogTitle(title => title.includes('disconnected')),
-            `Did not see logout message`,
+            () => this.ide().cloud.username === null,
+            `Did not clear user on logout`,
             opts
         );
     }
