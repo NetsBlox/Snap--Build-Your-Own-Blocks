@@ -13,7 +13,7 @@ ServicesRegistry.prototype.onInvalidHosts = function (invalidHosts) {
 };
 
 ServicesRegistry.prototype.fetchHosts = function (username) {
-    const url = '/services-hosts/all/' + encodeURIComponent(username);
+    const url = '/services/hosts/all/' + encodeURIComponent(username);
 
     return this.cloud.fetch(url)
         .then(response => response.json())
