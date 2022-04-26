@@ -584,21 +584,26 @@ RoomMorph.prototype.moveToRole = async function(role) {
     var myself = this;
 
     myself.ide.showMessage('moving to ' + role.name);
-    const project = await this.ide.cloud.getRole(this.ide.cloud.projectId, role.id);
+    const {projectId} = this.ide.cloud;
+    const metadata = await this.ide.cloud.getProjectMetadata(projectId);
+    const roleData = await this.ide.cloud.getRole(projectId, role.id);
+    await this.ide.rawLoadCloudRole(metadata, roleData);
+
     this.ide.showMessage('moved to ' + role.name + '!');
     this.ide.silentSetProjectName(role.name);
     this.ide.source = 'cloud';
 
     // Load the project or make the project empty
-    if (project.Public === true) {  // FIXME: This isn't ever true, is it?
+    if (metadata.public === true) {
         location.hash = '#present:Username=' +
-            encodeURIComponent(this.ide.cloud.username) +
+            encodeURIComponent(metadata.owner) +
             '&ProjectName=' +
-            encodeURIComponent(project.ProjectName);
+            encodeURIComponent(metadata.name);
     }
 
-    if (project.SourceCode) {
-        this.ide.droppedText(project.SourceCode);
+    if (roleData.code) {
+        // TODO: add media
+        this.ide.droppedText(roleData.code);
     } else {  // newly created role
         await SnapActions.openProject();
         this.ide.extensions.onOpenRole();
