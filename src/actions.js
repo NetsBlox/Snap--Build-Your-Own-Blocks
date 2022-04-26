@@ -15,7 +15,7 @@ var logger = {
 
 // If not the leader, send operations to the leader for approval
 function ActionManager() {
-    this.id = CLIENT_ID;
+    this.id = null;
     this.rank = null;
     this.isLeader = false;
     this._pendingLocalActions = [];
@@ -26,6 +26,7 @@ function ActionManager() {
 
 ActionManager.prototype.configure = function(ide) {
     this.__ide = ide;
+    this.id = ide.cloud.clientId;
 };
 
 ActionManager.prototype.addActions = function() {
