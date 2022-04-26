@@ -93,3 +93,12 @@ utils.zip = (...lists) => {
 
     return zipped;
 };
+
+utils.partition = (array, predicate) => {
+    const result = [[], []];
+    array.forEach(item => {
+        const index = predicate(item) ? 0 : 1;
+        result[index].push(item);
+    });
+    return result;
+};

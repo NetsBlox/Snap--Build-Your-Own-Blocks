@@ -84,7 +84,71 @@ WebSocketManager.IDEMessageHandlers = {
             // No longer at the given role, try again
             throw new Errors.NoLongerLeaderError();
         }
-    }
+    },
+    'share-msg-type': function(msg) {
+        // only share with intended role
+        const msgType = msg.data;
+        if (this.ide.cloud.roleId === msg.roleId) {
+            var myself = this,
+                dialog = new DialogBoxMorph();
+
+            // reject duplicates
+            if (this.ide.stage.messageTypes.msgTypes[msgType.name]) {
+                this.ide.showMessage(msg.from + ' tried sending you message type \'' + msgType.name + '\' when you already have it!', 2);
+            } else {
+                // Prepare dialog & prompt user
+                var request =
+                    msg.from + ' requested to send you a message type:\n\'' +
+                    msgType.name + '\' with ' +
+                    msgType.fields.length +
+                    (msgType.fields.length !== 1 ? ' fields.' : ' field.') + '\n' +
+                    'Would you like to accept?';
+
+                dialog.askYesNo('Message Share Request', request, myself.ide.root());
+
+                // Accept the request
+                dialog.ok = function() {
+                    var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
+                    SnapActions.addMessageType(msgType.name, msgType.fields)
+                        .then(function() {
+                            // format fields
+                            var fields = [];
+                            for (var i = 0; i < msgType.fields.length; i++) {
+                                fields.push(' ' + '\'' + msgType.fields[i] + '\'');
+                            }
+
+                            // format notification
+                            var notification = 'Received message type \'' + msgType.name + '\' with ' + msgType.fields.length +
+                                (msgType.fields.length === 0 ? ' fields.' : (msgType.fields.length === 1 ? ' field: ' + msgType.fields : ' fields: ' + msgType.fields));
+
+                            // notify
+                            myself.ide.showMessage(notification, 2);
+
+                            // refresh message palette
+                            if (ide && ide.currentTab === 'room') {
+                                ide.spriteBar.tabBar.tabTo('room');
+                            }
+                        });
+                    dialog.destroy();
+                };
+            }
+        }
+    },
+    'permission-elevation-request': function(msg) {
+        var myself = this,
+            username = msg.guest;
+
+        this.ide.confirm(
+            username + localize(' would like to be made a collaborator on ') +
+            myself.ide.room.name + '\n\n' + localize('Would you like to make ') + username +
+            localize(' a collaborator?'),
+            'Collaboration Request',
+            function() {
+                this.ide.cloud.addCollaborator(msg.projectId, username);
+            }
+        );
+    },
+
 };
 
 WebSocketManager.MessageHandlers = {
@@ -190,21 +254,6 @@ WebSocketManager.MessageHandlers = {
         this.ide.newProject();
     },
 
-    'permission-elevation-request': function(msg) {
-        var myself = this,
-            username = msg.guest;
-
-        this.ide.confirm(
-            username + localize(' would like to be made a collaborator on ') +
-            myself.ide.room.name + '\n\n' + localize('Would you like to make ') + username +
-            localize(' a collaborator?'),
-            'Collaboration Request',
-            function() {
-                this.ide.cloud.addCollaborator(msg.projectId, username);
-            }
-        );
-    },
-
     'role-data-request': function(msg) {
         const data = this.getSerializedProject();
         const id = msg.id;
@@ -219,54 +268,6 @@ WebSocketManager.MessageHandlers = {
 
     'notification': function(msg) {
         this.ide.showMessage(msg.message);
-    },
-
-    'share-msg-type': function(msg) {
-        // only share with intended role
-        if (this.ide.projectName === msg.roleId) {
-            var myself = this,
-                dialog = new DialogBoxMorph();
-            // reject duplicates
-            if (this.ide.stage.messageTypes.msgTypes[msg.name]) {
-                this.ide.showMessage(msg.from + ' tried sending you message type \'' + msg.name + '\' when you already have it!', 2);
-            } else {
-                // Prepare dialog & prompt user
-                var request =
-                    msg.from + ' requested to send you a message type:\n\'' +
-                    msg.name + '\' with ' +
-                    msg.fields.length +
-                    (msg.fields.length !== 1 ? ' fields.' : ' field.') + '\n' +
-                    'Would you like to accept?';
-
-                dialog.askYesNo('Message Share Request', request, myself.ide.root());
-
-                // Accept the request
-                dialog.ok = function() {
-                    var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
-                    SnapActions.addMessageType(msg.name, msg.fields)
-                        .then(function() {
-                            // format fields
-                            var fields = [];
-                            for (var i = 0; i < msg.fields.length; i++) {
-                                fields.push(' ' + '\'' + msg.fields[i] + '\'');
-                            }
-
-                            // format notification
-                            var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length +
-                                (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
-
-                            // notify
-                            myself.ide.showMessage(notification, 2);
-
-                            // refresh message palette
-                            if (ide && ide.currentTab === 'room') {
-                                ide.spriteBar.tabBar.tabTo('room');
-                            }
-                        });
-                    dialog.destroy();
-                };
-            }
-        }
     },
     'pong': function() {
         setTimeout(() => this.sendMessage({type: 'ping'}), WebSocketManager.HEARTBEAT_INTERVAL);

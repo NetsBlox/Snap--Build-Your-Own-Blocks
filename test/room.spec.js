@@ -51,13 +51,15 @@ describe('room', function() {
 
             driver.click(toggleTraceBtn());
             const {projectName, room} = driver.ide();
-            const srcId = [projectName, room.name, room.ownerId].join('@');
+            const roleName = driver.ide().projectName;
+            const srcId = [roleName, room.name, room.ownerId].join('@');
+            const dstId = [`OtherRole@${room.name}@${room.ownerId}`];
             await messages.reduce(
                 (lastSend, content) => lastSend.then(async () => {
                     await driver.sleep(50);
                     driver.ide().sockets.sendMessage({
                         type: 'message',
-                        dstId: 'OtherRole',
+                        dstId,
                         srcId,
                         msgType: 'message',
                         content: {msg: content},
@@ -303,6 +305,35 @@ describe('room', function() {
             return driver.expect(() => {
                 return room.name.startsWith(newName);  // may have (2) or (3) appended
             }, 'did not rename project: ' + room.name);
+        });
+    });
+
+    describe('share msg types', function() {
+        const msgType = 'testShareMessage';
+        const otherRole = 'recipient';
+        before(async () => {
+            const {SnapActions} = driver.globals();
+            await driver.newRole(otherRole);
+            await SnapActions.addMessageType(msgType, ['f1', 'f2']);
+        });
+
+        it('should be able to (queue and) send msg type to self', async function() {
+            const room = driver.ide().room;
+
+            driver.selectTab('room');
+
+            const [messageType] = driver.ide().spriteEditor.palette.contents.children;
+            const role = room.getRole(otherRole);
+            driver.dragAndDrop(messageType, role.center());
+            await driver.moveToRole(otherRole);
+            const shareMsgDialog = await driver.expect(
+                () => driver.dialogs().find(dialog => dialog.key?.includes(msgType))
+            );
+            assert(shareMsgDialog, 'Share message dialog not found.');
+
+            shareMsgDialog.ok();
+            await driver.actionsSettled();
+            assert(driver.ide().stage.messageTypes.names().includes(msgType));
         });
     });
 });

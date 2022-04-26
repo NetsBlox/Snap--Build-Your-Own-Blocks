@@ -314,11 +314,26 @@ Cloud.prototype.getProjectMetadata = async function (projectId) {
 
 Cloud.prototype.getProjectByName = async function (owner, name) {
     const response = await fetch(`/api/projects/user/${owner}/${name}`);
-    // FIXME: This is returning an empty response somtimes
+    // FIXME: This is returning an empty response sometimes
     const project = await response.json();
     this.setLocalState(project.ProjectID, project.RoleID);
     console.assert(project.ProjectID, 'Response does not have a project ID');
     return project;
+};
+
+Cloud.prototype.startNetworkTrace = async function (projectId) {
+    const response = await this.post(`/network/id/${projectId}/trace/`);
+    return await response.text();
+};
+
+Cloud.prototype.stopNetworkTrace = async function (projectId, traceId) {
+    const response = await this.post(`/network/id/${projectId}/trace/${traceId}/stop`);
+    return await response.text();
+};
+
+Cloud.prototype.getNetworkTrace = async function (projectId, traceId) {
+    const response = await this.fetch(`/network/id/${projectId}/trace/${traceId}`);
+    return await response.json();
 };
 
 Cloud.prototype.getCollaboratorList = async function () {

@@ -94,7 +94,7 @@ RoomMorph.prototype.init = function(ide) {
 
     // Set the initial values
     // Shared messages array for when messages are sent to unoccupied roles
-    this.sharedMsgs = [];
+    this.queuedRoleMsgs = [];
 
     this.blockHighlights = [];
 };
@@ -245,15 +245,13 @@ RoomMorph.equalLists = function(first, second) {
 };
 
 RoomMorph.prototype.onRoomStateUpdate = function(state) {
-    if (this.version < state.version) {
-        this.update(
-            state.owner,
-            state.name,
-            state.roles,
-            state.collaborators
-        );
-        this.version = state.version;
-    }
+    this.update(
+        state.owner,
+        state.name,
+        state.roles,
+        state.collaborators
+    );
+    this.version += 1;
 };
 
 RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
@@ -294,6 +292,8 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
 
     // Update collaborative editing
     SnapActions.isLeader = this.isLeader();
+
+    this.sendQueuedMessages();
 };
 
 RoomMorph.prototype.getRoleNames = function() {
@@ -313,6 +313,16 @@ RoomMorph.prototype.getRole = function(name) {
     return this.getRoles().find(function(role) {
         return role.name === name;
     });
+};
+
+// Get the role given a client state from NetsBlox cloud
+RoomMorph.prototype.getRoleFromState = function(state) {
+    if (!state.browser) return;
+    const {projectId, roleId} = state.browser;
+    const isCurrentProject = this.projectId === this.ide.cloud.projectId;
+    if (isCurrentProject) {
+        return this.getRoles().find(role => role.id === roleId);
+    }
 };
 
 RoomMorph.prototype.updateRoles = function(roleInfo) {
@@ -685,23 +695,21 @@ RoomMorph.prototype.promptShare = function(name) {
         var dialog = new DialogBoxMorph();
         dialog.prompt('Send to...', '', world, false, choices);
         dialog.accept = function() {
-            var choice = dialog.getInput();
+            const choice = dialog.getInput();
             if (roles.indexOf(choice) !== -1) {
-                if (myself.getRole(choice)) {  // occupied
-                    myself.ide.sockets.sendMessage({
-                        type: 'share-msg-type',
-                        roleId: choice,
-                        from: myself.ide.projectName,
+                const role = myself.getRole(choice);
+                const shareMessage = {
+                    type: 'share-msg-type',
+                    data: {
                         name: name,
                         fields: myself.ide.stage.messageTypes.getMsgType(name).fields
-                    });
+                    }
+                };
+
+                const sent = myself.sendMessageToRole(shareMessage, role.id);
+                if (sent) {
                     myself.ide.showMessage('Successfully sent!', 2);
-                } else {  // not occupied, store in sharedMsgs array
-                    myself.sharedMsgs.push({
-                        roleId: choice,
-                        msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields},
-                        from: myself.ide.projectName
-                    });
+                } else {
                     myself.ide.showMessage('The role will receive this message type on next occupation.', 2);
                 }
             } else {
@@ -782,60 +790,51 @@ RoomMorph.prototype.respondToInvitation = function (id, role, accepted) {
     );
 };
 
-RoomMorph.prototype.checkForSharedMsgs = function(role) {
-    // Send queried messages if possible
-    for (var i = 0 ; i < this.sharedMsgs.length; i++) {
-        if (this.sharedMsgs[i].roleId === role) {
-            this.ide.sockets.sendMessage({
-                type: 'share-msg-type',
-                name: this.sharedMsgs[i].msg.name,
-                fields: this.sharedMsgs[i].msg.fields,
-                from: this.sharedMsgs[i].from,
-                roleId: role
-            });
-            this.sharedMsgs.splice(i, 1);
-            i--;
+RoomMorph.prototype.sendMessageToRole = function(msg, roleId) {
+    msg.roleId = roleId;
+    msg.from = this.ide.projectName;
+    this.queuedRoleMsgs.push(msg);
+    const sentMsgs = this.sendQueuedMessages();
+    return sentMsgs.includes(msg);
+};
+
+RoomMorph.prototype.sendQueuedMessages = function() {
+    const [queuedRoleMsgs, sentMsgs] = utils.partition(
+        this.queuedRoleMsgs,
+        msg => {
+            const role = this.getRoles().find(role => role.id === msg.roleId);
+            if (!role) return false;  // role no longer exists
+
+            if (role.users.length > 0) {
+                const clientId = role.users[0].id;
+                this.ide.sockets.sendIDEMessage(msg, clientId);
+                return false;
+            }
+
+            return true;
         }
-    }
+    );
+
+    this.queuedRoleMsgs = queuedRoleMsgs;
+    return sentMsgs;
 };
 
 RoomMorph.prototype.showMessage = function(msg, msgIndex) {
-    var myself = this;
-
-    // Get the source role
-    var address = msg.srcId.split('@');
-    var relSrcId = address.shift();
-    var projectId = address.join('@');
-
-    // This will have problems if the role name has been changed...
+    const {source} = msg;
 
     // Get the target role(s)
-    var relDstIds = msg.recipients
-        .filter(function(id) {  // in the current project
-            var address = id.split('@');
-            var roleId = address.shift();
-            var inCurrentProject = address.join('@') === projectId;
-            var stillExists = !!myself.getRole(roleId);
-            return inCurrentProject && stillExists;
-        })
-        .map(function(id) {
-            return id.split('@').shift();
-        });
-
-    // If they are both in the room and they both exist, animate the message
-    if (this.getRole(relSrcId)) {
-        // get a message for each
-        relDstIds.forEach(function(dstId) {
-            myself.showSentMsg(msg, relSrcId, dstId, msgIndex);
-        });
-    }
+    msg.recipients.forEach(state => {
+        const srcRole = this.getRoleFromState(source);
+        const dstRole = this.getRoleFromState(state);
+        if (srcRole && dstRole) {
+            this.showSentMsg(msg, srcRole, dstRole, msgIndex);
+        }
+    });
 };
 
-RoomMorph.prototype.showSentMsg = function(msg, srcId, dstId, msgLabel) {
-    var srcRole = this.getRole(srcId),
-        dstRole = this.getRole(dstId),
-        relEndpoint = dstRole.center().subtract(srcRole.center()),
-        msgMorph = new SentMessageMorph(msg, srcId, dstId, relEndpoint, msgLabel);
+RoomMorph.prototype.showSentMsg = function(msg, srcRole, dstRole, msgLabel) {
+    const relEndpoint = dstRole.center().subtract(srcRole.center());
+    const msgMorph = new SentMessageMorph(msg, srcRole.name, dstRole.name, relEndpoint, msgLabel);
 
     this.addBack(msgMorph);
     this.displayedMsgMorphs.push(msgMorph);
@@ -855,9 +854,7 @@ RoomMorph.prototype.showSentMsg = function(msg, srcId, dstId, msgLabel) {
                     }
                     return blocks;
                 })
-                .reduce(function(l1, l2) {
-                    return l1.concat(l2);
-                }, []);
+                .flat();
 
         this.blockHighlights = blocks.map(function(block) {
             return block.addHighlight();
@@ -917,7 +914,7 @@ RoomMorph.prototype.hideSentMsgs = function() {
 };
 
 RoomMorph.prototype.isCapturingTrace = function() {
-    return this.trace.startTime && !this.trace.endTime;
+    return this.trace.id && !this.trace.messages;
 };
 
 RoomMorph.prototype.isReplayingTrace = function() {
@@ -946,39 +943,21 @@ RoomMorph.prototype.resetTrace = function() {
     this.trace = {};
 };
 
-RoomMorph.prototype.startTrace = function() {
-    var ide = this.ide,
-        url = ide.resourceURL('api', 'trace', 'start', ide.cloud.projectId, ide.cloud.clientId),
-        startTime = +ide.getURL(url);
-
-    this.trace = {startTime: startTime};
+RoomMorph.prototype.startTrace = async function() {
+    const {projectId} = this.ide.cloud;
+    const id = await this.ide.cloud.startNetworkTrace(projectId);
+    this.trace = {id};
 };
 
-RoomMorph.prototype.endTrace = function() {
-    this.trace.endTime = Date.now();
-    this.trace.messages = this.getMessagesForTrace();
+RoomMorph.prototype.endTrace = async function() {
+    const {projectId} = this.ide.cloud;
+    this.trace.messages = await this.ide.cloud.getNetworkTrace(projectId, this.trace.id);
+    await this.ide.cloud.stopNetworkTrace(projectId, this.trace.id);
 
     if (this.trace.messages.length === 0) {
         this.ide.showMessage('No messages captured', 2);
         this.resetTrace();
     }
-};
-
-RoomMorph.prototype.getMessagesForTrace = function() {
-    var ide = this.ide;
-    var url = ide.resourceURL('api', 'trace', 'end', ide.cloud.projectId, ide.cloud.clientId);
-    var messages = [];
-
-    // Update this to request start/end times
-    try {
-        messages = JSON.parse(ide.getURL(url));
-    } catch(e) {
-        ide.showMessage('Failed to retrieve messages', 2);
-        this.resetTrace();
-        throw e;
-    }
-
-    return messages;
 };
 
 RoomMorph.prototype.inspectMessage = function(msg) {
@@ -1222,6 +1201,10 @@ NetworkReplayControls.prototype.applyEvent = function(event, next) {
     next();
 };
 
+NetworkReplayControls.prototype.getSliderPosition = function(message) {
+    return this.getSliderPositionFromTime(message.time.$date.$numberLong);
+};
+
 NetworkReplayControls.prototype.updateDisplayedMessages = function() {
     var ide = this.parentThatIsA(IDE_Morph),
         room = ide.room,
@@ -1271,12 +1254,12 @@ NetworkReplayControls.prototype.settingsMenu = function() {
     return menu;
 };
 
-NetworkReplayControls.prototype.getColorForTick = function(event) {
+NetworkReplayControls.prototype.getColorForTick = function(msgData) {
     var ide = this.parentThatIsA(IDE_Morph),
-        room = ide.room,
-        srcId = event.srcId.split('@').shift(),
-        role = room.getRole(srcId);
-
+        room = ide.room;
+    const {source} = msgData;
+    const roleId = source.browser?.roleId;
+    const role = room.getRoles().find(role => role.id === roleId);
 
     if (role) {
         return role.color;
@@ -1467,25 +1450,20 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
 
     // Share the intended message type
     function shareMsgType(myself, name, fields) {
-        if (myself.users.length && myself.parent.ide.projectName === myself.name) {  // occupied & myself
+        if (myself.parent.ide.projectName === myself.name) {  // occupied & myself
             myself.parent.ide.showMessage('Can\'t send a message type to yourself!', 2);
             return;
         }
-        if (myself.users && myself.parent.ide.projectName !== myself.name) {  // occupied & not myself
-            myself.parent.ide.sockets.sendMessage({
-                type: 'share-msg-type',
-                roleId: myself.name,
-                from: myself.parent.ide.projectName,
-                name: name,
-                fields: fields
-            });
+
+        const shareMessage = {
+            type: 'share-msg-type',
+            data: { name, fields },
+        };
+
+        const sent = myself.parent.sendMessageToRole(shareMessage, myself.id);
+        if (sent) {
             myself.parent.ide.showMessage('Successfully sent!', 2);
-        } else {  // not occupied, store in sharedMsgs array
-            myself.parent.sharedMsgs.push({
-                roleId: myself.name,
-                msg: {name: name, fields: fields},
-                from: myself.parent.ide.projectName
-            });
+        } else {
             myself.parent.ide.showMessage('The role will receive this message type on next occupation.', 2);
         }
     }
@@ -1653,9 +1631,6 @@ RoomEditorMorph.prototype.init = function(room, sliderColor) {
     this.palette = this.createMsgPalette();
     this.add(this.palette);
 
-    // Check for queried shared messages
-    this.room.checkForSharedMsgs(this.room.getCurrentRoleName());
-
     // Replay Controls
     if (this.room.isReplayingTrace()) {
         this.replayControls = this.room.trace.replayer;
@@ -1775,12 +1750,12 @@ RoomEditorMorph.prototype.addToolbar = function() {
 
     var recordButton = new PushButtonMorph(
         this,
-        function() {
+        async () => {
             if (this.isReplayMode()) {
-                myself.exitReplayMode();
+                this.exitReplayMode();
             }
-            myself.toggleRecordMode();
-            myself.updateToolbar();
+            await this.toggleRecordMode();
+            this.updateToolbar();
         },
         this.isRecording() ? stopRecordSymbol : recordSymbol,
         null,
@@ -1831,13 +1806,13 @@ RoomEditorMorph.prototype.isRecording = function() {
 };
 
 RoomEditorMorph.prototype.hasNetworkRecording = function() {
-    var trace = this.room.trace;
-    return !!(trace.startTime && trace.endTime);
+    const trace = this.room.trace || {};
+    return trace.messages?.length;
 };
 
-RoomEditorMorph.prototype.toggleRecordMode = function() {
+RoomEditorMorph.prototype.toggleRecordMode = async function() {
     if (this.isRecording()) {
-        this.exitRecordMode();
+        await this.exitRecordMode();
     } else {
         this.enterRecordMode();
     }
@@ -1852,8 +1827,8 @@ RoomEditorMorph.prototype.enterRecordMode = function() {
     this.room.startTrace();
 };
 
-RoomEditorMorph.prototype.exitRecordMode = function() {
-    this.room.endTrace();
+RoomEditorMorph.prototype.exitRecordMode = async function() {
+    await this.room.endTrace();
 };
 
 RoomEditorMorph.prototype.isReplayMode = function() {
