@@ -1296,8 +1296,8 @@ RoleMorph.COLORS = [
 });
 
 // The role morph needs to know where to draw itself
-function RoleMorph(id, name, user) {
-    this.init(id, name, user);
+function RoleMorph(id, name, users) {
+    this.init(id, name, users);
 }
 
 RoleMorph.prototype.init = function(id, name, users) {
