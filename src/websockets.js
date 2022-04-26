@@ -487,9 +487,11 @@ WebSocketManager.prototype.deserializeData = function(dataList) {
 WebSocketManager.prototype.onConnect = async function(isReconnect) {
     var myself = this;
     this.sendMessage({type: 'ping'});
-    SnapActions.requestMissingActions(true);
     if (isReconnect) {
         this.updateRoomInfo();
+        if (this.ide.cloud.projectId) {
+            SnapActions.requestMissingActions(true);
+        }
     }
     while (myself.messages.length) {
         myself.websocket.send(myself.messages.shift());
