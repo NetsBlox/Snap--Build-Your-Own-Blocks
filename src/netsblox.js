@@ -1260,25 +1260,6 @@ NetsBloxMorph.prototype.collabResponse = async function (invite, response) {
     }
 };
 
-NetsBloxMorph.prototype.logout = function () {
-    delete localStorage['-snap-user'];
-    this.cloud.logout(
-        () => {
-            this.services.reset();
-            this.cloud.clear();
-            this.controlBar.cloudButton.refresh();
-            this.showMessage('disconnected.', 2);
-            this.newProject();
-        },
-        () => {
-            this.cloud.clear();
-            this.controlBar.cloudButton.refresh();
-            this.showMessage('disconnected.', 2);
-            this.newProject();
-        }
-    );
-};
-
 NetsBloxMorph.prototype.createCloudAccount = function () {
     var myself = this,
         world = this.world();

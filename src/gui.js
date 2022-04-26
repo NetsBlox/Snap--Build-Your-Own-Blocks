@@ -6655,7 +6655,9 @@ IDE_Morph.prototype.logout = async function () {
     await this.cloud.logout();
     delete(sessionStorage.username);
     this.controlBar.cloudButton.refresh();
+    this.services.reset();
     this.showMessage('disconnected.', 2);
+    this.newProject();
 };
 
 IDE_Morph.prototype.buildProjectRequest = function () {
