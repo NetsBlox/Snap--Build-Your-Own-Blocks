@@ -313,8 +313,18 @@ SnapDriver.prototype.login = async function(name, password='password', opts) {
     userField.setContents(name);
     passwordField.setContents(password);
     this.dialog().ok();
+    // TODO: either show a new dialog or log the user in
+    const dialogs = this.dialogs();
+    const cloud = this.ide().cloud;
+    console.log({dialogs});
     await this.expect(
-        () => !!this.isShowingDialogTitle(title => title.includes('Logged in')),
+        () => {
+            const hasCloudError = this.dialogs().find(
+                d => !dialogs.includes(d) && d.key?.includes('Cloud')
+            );
+            if (hasCloudError) throw new Error('Login failed');
+            return cloud.username === name;
+        },
         `Did not see connected message`,
         opts
     );

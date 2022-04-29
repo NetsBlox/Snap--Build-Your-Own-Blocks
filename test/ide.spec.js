@@ -1,20 +1,19 @@
 /*globals driver, expect, assert, EmbeddedNetsBloxAPI */
 describe('ide', function() {
-    let SnapCloud, SnapActions, SnapUndo;
+    let cloud, SnapActions, SnapUndo;
 
-    this.timeout(5000);
-    before(() => {
-        SnapCloud = driver.globals().SnapCloud;
+    before(async () => {
+        cloud = driver.ide().cloud;
         SnapActions = driver.globals().SnapActions;
         SnapUndo = driver.globals().SnapUndo;
-        return driver.reset();
+        await driver.reset();
     });
 
     describe('login', function() {
         it('should show error on incorrect username/password', async function() {
             let loginFailed = false;
             try {
-                await driver.login('test', 'ThisPasswordIsIncorrect', {maxWait: 1800});
+                await driver.login('test', 'ThisPasswordIsIncorrect', {maxWait: 5000});
             } catch (err) {
                 const dialog = driver.dialog();
                 assert(
@@ -289,17 +288,17 @@ describe('ide', function() {
         before(() => driver.reset());
 
         after(function() {
-            SnapCloud.username = username;
+            cloud.username = username;
         });
 
         it('should have option to saveACopy if collaborator', function() {
             var ide = driver.ide();
 
             // make the user a collaborator
-            username = SnapCloud.username;
-            SnapCloud.username = 'test';
+            username = cloud.username;
+            cloud.username = 'test';
 
-            ide.room.collaborators.push(SnapCloud.username);
+            ide.room.collaborators.push(cloud.username);
             ide.room.ownerId = 'otherUser';
 
             // Click the project menu
@@ -433,11 +432,11 @@ describe('ide', function() {
 
     describe('newProject', function() {
         before(() => driver.reset().then(() => driver.addBlock('doIf')));
-        after(() => delete SnapCloud.request);
+        after(() => delete cloud.request);
 
         it('should be able to get new project on failed network request', function() {
-            const SnapCloud = driver.globals().SnapCloud;
-            SnapCloud.request = Promise.reject.bind(Promise, {responseText: 'Test error'});
+            const cloud = driver.ide().cloud;
+            cloud.request = Promise.reject.bind(Promise, {responseText: 'Test error'});
 
             driver.click(driver.ide().controlBar.projectButton);
             const newBtn = driver.dialog().children

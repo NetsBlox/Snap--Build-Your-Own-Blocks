@@ -1,6 +1,5 @@
 /*global driver, expect, assert */
 describe('room', function() {
-    this.timeout(10000);
     describe('isValidName', function() {
         it('should reject names including @', function() {
             const {RoomMorph} = driver.globals();
@@ -322,6 +321,7 @@ describe('room', function() {
         const otherRole = 'recipient';
         before(async () => {
             const {SnapActions} = driver.globals();
+            await driver.reset();
             await driver.newRole(otherRole);
             await SnapActions.addMessageType(msgType, ['f1', 'f2']);
         });
@@ -334,11 +334,12 @@ describe('room', function() {
             const [messageType] = driver.ide().spriteEditor.palette.contents.children;
             const role = room.getRole(otherRole);
             driver.dragAndDrop(messageType, role.center());
+            console.log('moving to role', otherRole);
             await driver.moveToRole(otherRole);
             const shareMsgDialog = await driver.expect(
-                () => driver.dialogs().find(dialog => dialog.key?.includes(msgType))
+                () => driver.dialogs().find(dialog => dialog.key?.includes(msgType)),
+                'Share message dialog not found.'
             );
-            assert(shareMsgDialog, 'Share message dialog not found.');
 
             shareMsgDialog.ok();
             await driver.actionsSettled();

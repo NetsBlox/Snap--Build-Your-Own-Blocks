@@ -566,12 +566,12 @@ Cloud.prototype.unlinkAccount = async function(account) {
 };
 
 Cloud.prototype.exportProject = async function(projectId=this.projectId) {
-    const response = await fetch(`/api/v2/projects/${projectId}/latest?clientId=${this.clientId}`);
+    const response = await this.fetch(`/projects/id/${projectId}/latest?clientId=${this.clientId}`);
     return await response.text();
 };
 
 Cloud.prototype.exportRole = async function(projectId=this.projectId, roleId=this.roleId) {
-    const response = await fetch(`/api/v2/projects/${projectId}/${roleId}/latest?clientId=${this.clientId}`);
+    const response = await this.fetch(`/projects/id/${projectId}/${roleId}/latest?clientId=${this.clientId}`);
     return await response.text();
 };
 

@@ -6445,27 +6445,23 @@ IDE_Morph.prototype.initializeCloudWithSnap = function () {
     new DialogBoxMorph(
         null,
         async user => {
-            try {
-                await this.cloud.login(
-                    user.username.toLowerCase(),
-                    user.password,
-                    user.choice,
-                    'Snap'
-                );
-                //sessionStorage.username = username;
-                this.controlBar.cloudButton.refresh();
-                this.source = 'cloud';
+            await this.cloud.login(
+                user.username.toLowerCase(),
+                user.password,
+                user.choice,
+                'Snap'
+            );
+            //sessionStorage.username = username;
+            this.controlBar.cloudButton.refresh();
+            this.source = 'cloud';
 
-                const {username, strategy} = this.cloud;
-                let msg = localize('Logged in as ') + username;
-                if (strategy) {
-                    msg += ` (using ${strategy})`;
-                }
-
-                this.showMessage(msg, 2);
-            } catch (err) {
-                this.cloudError()(err.message);
+            const {username, strategy} = this.cloud;
+            let msg = localize('Logged in as ') + username;
+            if (strategy) {
+                msg += ` (using ${strategy})`;
             }
+
+            this.showMessage(msg, 2);
         }
     ).withKey('cloudlogin').promptCredentials(
         'Sign in with Snap!',
@@ -6486,22 +6482,18 @@ IDE_Morph.prototype.initializeCloud = function () {
     new DialogBoxMorph(
         null,
         async user => {
-            try {
-                await this.cloud.login(
-                    user.username,
-                    user.password,
-                    user.choice,
-                );
-                const {username} = this.cloud;
-                sessionStorage.username = username;
-                this.controlBar.cloudButton.refresh();
-                this.source = 'cloud';
-                this.services.fetchHosts(username);
-                let msg = localize('Logged in as ') + username;
-                this.showMessage(msg, 2);
-            } catch (err) {
-                this.cloudError()(err.message);
-            }
+            await this.cloud.login(
+                user.username,
+                user.password,
+                user.choice,
+            );
+            const {username} = this.cloud;
+            sessionStorage.username = username;
+            this.controlBar.cloudButton.refresh();
+            this.source = 'cloud';
+            this.services.fetchHosts(username);
+            let msg = localize('Logged in as ') + username;
+            this.showMessage(msg, 2);
         }
     ).withKey('cloudlogin').promptCredentials(
         'Sign in',
