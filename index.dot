@@ -16,20 +16,13 @@
         {{ if (it.url) { }} <meta property="og:url" content="{{= encodeURI(it.url) }}"/> {{ } }}
         <script type="text/javascript" src="src/main.js"></script>
         <script type="text/javascript">
-            var CLIENT_ID;
             (async function() {
-                /*FIXME: Uncomment this:
+                const defaultCloud = {{= it.cloud ? `"${it.cloud}"` : 'window.location.origin' }};
                 const serverUrl = (function () {
                     const qsParams = Object.fromEntries(
                         window.location.href.split('?').map(chunk => chunk.split('=').map(decodeURIComponent))
                     );
-                    return qsParams.server || window.location.origin;
-                })();*/
-                const serverUrl = (function () {
-                    const qsParams = Object.fromEntries(
-                        window.location.href.split('?').map(chunk => chunk.split('=').map(decodeURIComponent))
-                    );
-                    return qsParams.server || 'http://127.0.0.1:7777';
+                    return qsParams.server || defaultCloud;
                 })();
 
                 if (document.readyState === 'complete') {
