@@ -260,18 +260,14 @@ WebSocketManager.MessageHandlers = {
         this.ide.cloud.reportLatestRole(id, data);
     },
 
-    'rename-role': function(msg) {
-        if (msg.roleId === this.ide.projectName) {  // role name and project name are the same
-            this.ide.silentSetProjectName(msg.name);
-        }
-    },
-
     'notification': function(msg) {
         this.ide.showMessage(msg.message);
     },
+
     'pong': function() {
         setTimeout(() => this.sendMessage({type: 'ping'}), WebSocketManager.HEARTBEAT_INTERVAL);
     },
+
     'action-rejected': function(msg) {
         SnapActions.onActionReject(msg.action, msg.error.message);
     }
