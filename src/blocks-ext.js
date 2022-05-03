@@ -263,15 +263,17 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
     }
 };
 
-StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value, meta) {
+StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value, meta={}) {
     // Input slot is empty or has a string
     if (!value || typeof value === 'string') {
+        const hostUrl = this.parentThatIsA(IDE_Morph)?.services.defaultHost?.url;
+        if (!hostUrl) return new HintInputSlotMorph(value || '', fieldname, false, undefined, false);
+
         // FIXME: support type definitions from other hosts, too
-        const hostUrl = this.parentThatIsA(IDE_Morph).services.defaultHost?.url;
         const typeMeta = utils.getUrlSyncCached(`${hostUrl}/input-types`, x => JSON.parse(x));
 
         // follow the base type chain to see if we can make a strongly typed slot
-        for (let type = (meta || {}).type; type; type = (typeMeta[type.name] || {}).baseType) {
+        for (let type = meta.type; type; type = typeMeta[type.name].baseType) {
             if (type.name === 'Number') {
                 return new HintInputSlotMorph(value || '', fieldname, true, undefined, false);
             }
