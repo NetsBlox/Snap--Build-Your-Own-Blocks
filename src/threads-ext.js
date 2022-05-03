@@ -222,8 +222,8 @@ Process.prototype.receiveSocketMessage = function (fields) {
 };
 
 Process.prototype.createRPCUrl = function (url) {
-    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
-        clientId = ide.sockets.uuid;
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
+    const {clientId} = ide.cloud;
 
     // TODO: add a client secret?
     return url + '?clientId=' + clientId;
