@@ -2623,6 +2623,7 @@ ActionManager.prototype.openProject = async function(str) {
         this.lastSeen = project.collabStartIndex;
     }
 
+    ide.extensions.onOpenRole();
     return project;
 };
 
