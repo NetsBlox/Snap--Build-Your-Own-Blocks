@@ -593,7 +593,7 @@ NetsBloxMorph.prototype.openRoomString = async function (str) {
 
     const msg = this.showMessage(localize('Opening project...'));
     const {name} = room.attributes;
-    const state = await this.cloud.importProject(name, roleName, roles);
+    const state = await this.cloud.importProject({name, roles});
     // TODO: open the new project
     this.room.onRoomStateUpdate(state);
     const [role] = room.children;
@@ -710,7 +710,7 @@ NetsBloxMorph.prototype.saveProjectToCloud = async function (name) {
         if (name) {
             myself.showMessage('Saving ' + contentName + '\nto the cloud...');
             // TODO: rename the colliding name?
-            this.cloud.saveProject();
+            this.cloud.saveProject();  // FIXME
             if (overwrite) {
                 myself.showMessage('Saved ' + contentName + ' to cloud!', 2);
             } else {

@@ -606,7 +606,6 @@ RoomMorph.prototype.moveToRole = async function(role) {
         this.ide.droppedText(roleData.code);
     } else {  // newly created role
         await SnapActions.openProject();
-        this.ide.extensions.onOpenRole();
     }
 };
 
@@ -1585,7 +1584,7 @@ EditRoleMorph.prototype.moveToRole = async function() {
         dialog.accept = async function() {
             try {
                 const roleData = ide.sockets.getSerializedProject();
-                await ide.cloud.saveProject(roleData);
+                await ide.cloud.saveRole(roleData);
                 ide.showMessage('Saved ' + currentRole + ' to cloud!', 2);
             } catch (err) {
                 ide.cloudError()(err.message);

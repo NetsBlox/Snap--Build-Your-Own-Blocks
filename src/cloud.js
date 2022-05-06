@@ -209,6 +209,16 @@ Cloud.prototype.addRole = async function(name) {
     //return await response.json();
 };
 
+Cloud.prototype.saveRole = async function (roleData) {
+
+    const url = `/projects/id/${this.projectId}/${this.roleId}`;
+    const options = {
+        method: 'POST',
+        body: JSON.stringify(roleData),
+    };
+    await this.fetch(url, options);
+};
+
 Cloud.prototype.renameRole = async function(roleId, name) {
     const body = {
         name,
@@ -217,6 +227,14 @@ Cloud.prototype.renameRole = async function(roleId, name) {
     const response = await this.patch(`/projects/id/${this.projectId}/${roleId}`, body);
     // TODO: error handling
     //return await response.json();
+};
+
+Cloud.prototype.renameProject = async function(name) {
+    const body = {
+        name,
+        clientId: this.clientId,
+    };
+    const response = await this.patch(`/projects/id/${this.projectId}`, body);
 };
 
 Cloud.prototype.reportLatestRole = async function(id, data) {
@@ -358,16 +376,6 @@ Cloud.prototype.deleteRole = async function(roleId) {
 Cloud.prototype.evictUser = async function(clientID) {
     const method = 'DELETE';
     await this.fetch(`/network/id/${this.projectdId}/occupants/${clientID}`, {method});
-};
-
-Cloud.prototype.saveProject = async function (roleData) {
-
-    const url = `/projects/id/${this.projectId}/${this.roleId}`;
-    const options = {
-        method: 'POST',
-        body: JSON.stringify(roleData),
-    };
-    await this.fetch(url, options);
 };
 
 Cloud.prototype.deleteProject = async function (projectId) {
@@ -546,14 +554,10 @@ Cloud.prototype.setProjectName = function(name) {
         });
 };
 
-Cloud.prototype.importProject = async function (name, role, roles) {
-    const body = {
-        name: name,
-        roles: roles,
-        clientId: this.clientId,
-    };
+Cloud.prototype.importProject = async function (projectData) {
+    projectData.clientId = this.clientId;
 
-    const response = await this.post('/projects/', body);
+    const response = await this.post('/projects/', projectData);
     return await response.json();
 };
 
@@ -567,7 +571,7 @@ Cloud.prototype.unlinkAccount = async function(account) {
 
 Cloud.prototype.exportProject = async function(projectId=this.projectId) {
     const response = await this.fetch(`/projects/id/${projectId}/latest?clientId=${this.clientId}`);
-    return await response.text();
+    return await response.json();
 };
 
 Cloud.prototype.exportRole = async function(projectId=this.projectId, roleId=this.roleId) {

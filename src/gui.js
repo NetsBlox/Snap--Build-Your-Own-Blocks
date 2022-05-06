@@ -2378,7 +2378,6 @@ IDE_Morph.prototype.droppedText = async function (aString, name, fileType) {
     // check for Snap specific files, projects, libraries, sprites, scripts
     if (aString.indexOf('<project') === 0) {
         location.hash = '';
-        SnapActions.disableCollaboration();
         SnapUndo.reset();
         return this.openProjectString(aString);
     }
@@ -2386,7 +2385,6 @@ IDE_Morph.prototype.droppedText = async function (aString, name, fileType) {
         return this.openReplayString(aString);
     }
     if (aString.indexOf('<snapdata') === 0) {
-        SnapActions.disableCollaboration();
         SnapUndo.reset();
         location.hash = '';
         return this.openCloudDataString(aString);
@@ -2502,26 +2500,6 @@ IDE_Morph.prototype.toggleVariableFrameRate = function () {
     } else {
         StageMorph.prototype.frameRate = 30;
         this.stage.fps = 30;
-    }
-};
-
-IDE_Morph.prototype.toggleCollaborativeEditing = function () {
-    var myself = this;
-
-    if (SnapActions.isCollaborating()) {
-        SnapActions.disableCollaboration();
-    } else if (this.isReplayMode) {
-        this.confirm(
-            'Cannot enter collaborate while in replay mode. \nWould you ' +
-            'like to exit replay mode and enable collaborative editing?',
-            'Exit Replay Mode?',
-            function() {
-                myself.exitReplayMode();
-                SnapActions.enableCollaboration();
-            }
-        );
-    } else {
-        SnapActions.enableCollaboration();
     }
 };
 
@@ -3710,16 +3688,6 @@ IDE_Morph.prototype.settingsMenu = function () {
         'EXPERIMENTAL! check to enable\nsupport for compiling',
         true
     );
-    if (SnapActions.supportsCollaboration !== false) {
-        addPreference(
-            'Collaborative editing',
-            'toggleCollaborativeEditing',
-            SnapActions.isCollaborating(),
-            'uncheck to disable Google Docs-style collaboration',
-            'check to enable Google Docs-style collaboration',
-            false
-        );
-    }
     addPreference(
         'Replay Mode',
         () => {
@@ -3742,12 +3710,14 @@ IDE_Morph.prototype.settingsMenu = function () {
                 return this.showMessage('Nothing to replay!', 2);
             }
             if (SnapActions.isCollaborating()) {
+                // FIXME: Simply disable while collaborating?
                 this.confirm(
                     'Cannot enter replay mode while collaborating. \nWould you ' +
                     'like to disable collaboration and enter replay mode?',
                     'Disable Collaboration?',
                     () => {
-                        SnapActions.disableCollaboration();
+                        // FIXME: disable collaboration 
+                        //SnapActions.disableCollaboration();
                         this.replayEvents();
                     }
                 );
@@ -5333,7 +5303,6 @@ IDE_Morph.prototype.rawOpenCloudDataString = function (str) {
     StageMorph.prototype.enableSublistIDs = false;
     StageMorph.prototype.enablePenLogging = false;
     Process.prototype.enableLiveCoding = false;
-    SnapActions.disableCollaboration();
     SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
@@ -5567,7 +5536,6 @@ IDE_Morph.prototype.openProject = function (name) {
         this.showMessage('opening project\n' + name);
         this.setProjectName(name);
         str = localStorage['-snap-project-' + name];
-        SnapActions.disableCollaboration();
         SnapUndo.reset();
         this.openProjectString(str);
         this.setURL('#open:' + str);
@@ -6043,7 +6011,6 @@ IDE_Morph.prototype.createNewProject = function () {
         'New Project',
         () => {
             this.exitReplayMode();
-            SnapActions.disableCollaboration();
             SnapUndo.reset();
             this.newProject();
         }
@@ -6719,7 +6686,7 @@ IDE_Morph.prototype.saveProjectToCloud = async function (name) {
         this.showMessage('Saving ' + contentName + '\nto the cloud...');
         this.room.name = name;
         const roleData = this.sockets.getSerializedProject();
-        await this.cloud.saveProject(roleData);
+        await this.cloud.saveRole(roleData);
         this.showMessage('Saved ' + contentName + ' to the cloud!', 2);
     }
 };
@@ -7342,12 +7309,13 @@ SaveOpenDialogMorph.prototype.openItem = async function() {
 
 SaveOpenDialogMorph.prototype.trySaveItem = async function() {
     const newItem = {
+        id: this.getNewItemID(),
         name: this.nameField.contents().text.text,
         notes: this.notesText.text,
     };
     const existingItem = detect(
         this.itemsList,
-        function (item) {return item.name === newItem.name; }
+        item => item.name === newItem.name && item.id !== newItem.id
     );
     const sourceName = localize(this.source.name.toLowerCase());
     const savingMsg = localize(`Saving ${this.itemName.toLowerCase()}\nto the `) + 
@@ -8098,31 +8066,22 @@ CloudProjectsSource.prototype.getPreview = function(project) {
     };
 };
 
-CloudProjectsSource.prototype.save = function(newProject) {
+CloudProjectsSource.prototype.save = async function(newProject) {
     const deferred = utils.defer();
     const isSaveAs = newProject.name !== this.ide.room.name;
-    const myself = this;
 
-    this.ide.cloud.saveProject(
-        this.ide,
-        function (result) {
-            if (result.name) {
-                myself.ide.room.silentSetRoomName(result.name);
-            }
-            if (isSaveAs) {
-                myself.ide.updateUrlQueryString();
-            }
-            deferred.resolve();
-        },
-        function (msg, label) {
-            const err = new CloudError(label, msg);
-            deferred.reject(err);
-        },
-        true,
-        newProject.name
-    );
-
-    return deferred.promise;
+    if (isSaveAs) {
+        const projectData = await this.ide.cloud.exportProject();
+        console.log({projectData});
+        await this.ide.cloud.renameProject(newProject.name);
+        const keys = ['owner', 'name', 'roles', 'saveState'];
+        const projectCopy = utils.pick(projectData, keys);
+        projectCopy.roles = Object.values(projectCopy.roles);
+        await this.ide.cloud.importProject(projectCopy);
+        this.ide.updateUrlQueryString();
+    }
+    const roleData = this.ide.sockets.getSerializedProject();
+    await this.ide.cloud.saveRole(roleData);
 };
 
 CloudProjectsSource.prototype.delete = async function(project) {
@@ -8312,6 +8271,10 @@ ProjectDialogMorph.prototype.initPreview = function () {
         this.preview.cachedTexture = thumbnail;
         this.preview.rerender();
     }
+};
+
+ProjectDialogMorph.prototype.getNewItemID = function () {
+    return this.ide.cloud.projectId;
 };
 
 ProjectDialogMorph.prototype.trySaveItem = function () {

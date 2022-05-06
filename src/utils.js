@@ -102,3 +102,10 @@ utils.partition = (array, predicate) => {
     });
     return result;
 };
+
+utils.pick = (obj, keys) => {
+    return keys.reduce((result, k) => {
+        result[k] = obj[k];
+        return result;
+    }, {});
+};

@@ -501,8 +501,7 @@ IDE_Morph.prototype.openRoleString = async function (role, parsed=false) {
         '</snapdata>'
     ].join('');
 
-    return SnapActions.openProject(projectXml)
-        .then(() => this.extensions.onOpenRole());
+    return SnapActions.openProject(projectXml);
 };
 
 // Events ///////////////////////////////////////////
@@ -758,6 +757,10 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
         this.labelString = 'Import Library';
         this.createLabel();
     }
+};
+
+LibraryDialogMorph.prototype.getNewItemID = async function() {
+    return Date.now();
 };
 
 LibraryDialogMorph.prototype.saveItem = async function(newItem) {
