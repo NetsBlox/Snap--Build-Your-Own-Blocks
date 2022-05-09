@@ -7112,6 +7112,7 @@ SaveOpenDialogMorph.prototype.init = function (task, itemName, sources, source, 
     this.publishButton = null;
     this.unpublishButton = null;
     this.recoverButton = null;
+    this.projectListUpdated = null;
 
     // initialize inherited properties:
     SaveOpenDialogMorph.uber.init.call(
@@ -7500,6 +7501,7 @@ SaveOpenDialogMorph.prototype.setSource = async function (newSource) {
         const itemsList = await newSource.list();
         if (this.source === newSource) {
             this.itemsList = itemsList;
+            this.projectListUpdated = Date.now();
         } else {
             msg.destroy();
             return;

@@ -458,25 +458,13 @@ SnapDriver.prototype.waitForDialogBox = function() {
 
 SnapDriver.prototype.waitUntilProjectsLoaded = async function() {
     const dialog = this.dialog();
-    const isUpdateTitle = title => title.includes('Updating\nproject');
-    const isShowingUpdateMsg = () => this.isShowingDialogTitle(isUpdateTitle);
 
     if (dialog && dialog.source.id.includes('cloud')) {
-        const oldProjectList = dialog.projectList;
+        const lastUpdate = dialog.projectListUpdated;
         await this.expect(
-            () => {
-                const hasLoadedProjects = dialog.projectList !== oldProjectList;
-                return isShowingUpdateMsg() || hasLoadedProjects;
-            },
-            'Did not see "update project list" message'
+            () => lastUpdate !== dialog.projectListUpdated,
+            'Project list not updated'
         );
-
-        await this.expect(
-            () => !isShowingUpdateMsg(),
-            '"update project list" message did not disappear'
-        );
-    } else {
-        return Promise.resolve();
     }
 };
 
