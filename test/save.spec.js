@@ -77,7 +77,7 @@ describe('save', function() {
                         await driver.saveProjectAs(saveAsName);
                     });
 
-                    it.only('should change name of current project', function() {
+                    it('should change name of current project', function() {
                         return driver.expect(
                             () => driver.ide().room.name === saveAsName,
                             `Project name not updated (expected ${saveAsName})`

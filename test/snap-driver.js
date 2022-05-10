@@ -413,7 +413,7 @@ SnapDriver.prototype.isShowingSavedMsg = function() {
     return false;
 };
 
-SnapDriver.prototype.saveProjectAs = function(name, waitForSave=true) {
+SnapDriver.prototype.saveProjectAs = async function(name, waitForSave=true) {
     // save as
     const controlBar = this.ide().controlBar;
     this.click(controlBar.projectButton);
@@ -425,20 +425,19 @@ SnapDriver.prototype.saveProjectAs = function(name, waitForSave=true) {
     this.click(saveAsBtn);
 
     // Wait for the project list to be updated
-    return this.waitUntilProjectsLoaded()
-        .then(() => {
-            // Enter the new project name
-            this.keys(name);
-            const dialog = this.dialog();
-            const saveBtn = dialog.buttons.children[0];
-            this.click(saveBtn);
-            if (waitForSave) {
-                return this.expect(
-                    () => this.isShowingSavedMsg(),
-                    `Did not see save message after "Save"`
-                );
-            }
-        });
+    await this.waitUntilProjectsLoaded()
+    // Enter the new project name
+    const dialog = this.dialog();
+    driver.click(dialog.nameField.contents());
+    this.keys(name);
+    const saveBtn = dialog.buttons.children[0];
+    this.click(saveBtn);
+    if (waitForSave) {
+        await this.expect(
+            () => this.isShowingSavedMsg(),
+            `Did not see save message after "Save"`
+        );
+    }
 };
 
 SnapDriver.prototype.getProjectList = function(projectDialog) {

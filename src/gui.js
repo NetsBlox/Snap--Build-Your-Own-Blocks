@@ -8074,7 +8074,6 @@ CloudProjectsSource.prototype.save = async function(newProject) {
 
     if (isSaveAs) {
         const projectData = await this.ide.cloud.exportProject();
-        console.log({projectData});
         await this.ide.cloud.renameProject(newProject.name);
         const keys = ['owner', 'name', 'roles', 'saveState'];
         const projectCopy = utils.pick(projectData, keys);
