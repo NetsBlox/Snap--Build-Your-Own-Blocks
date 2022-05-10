@@ -8072,6 +8072,12 @@ CloudProjectsSource.prototype.save = async function(newProject) {
     const deferred = utils.defer();
     const isSaveAs = newProject.name !== this.ide.room.name;
 
+    // TODO: overwrite existing projects with the same name
+    // If it is overwriting an existing
+    // We need to know:
+    //   - are we changing the project name?
+    //     - is the new name overwriting an existing?
+    //     - do we need to copy the current version of the project (ie, if it is already saved)?
     if (isSaveAs) {
         const projectData = await this.ide.cloud.exportProject();
         await this.ide.cloud.renameProject(newProject.name);

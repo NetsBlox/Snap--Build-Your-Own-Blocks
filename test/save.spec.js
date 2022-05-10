@@ -4,7 +4,6 @@ describe('save', function() {
     before(() => {
         cloud = driver.ide().cloud;
     });
-    this.timeout(15000);
 
     [
         //['w/o ws connection', () => driver.disconnect(), () => driver.connect()],
@@ -136,7 +135,8 @@ describe('save', function() {
                         });
                     });
 
-                    it('should prompt for overwrite if conflicting exists', async function() {
+                    it.only('should prompt for overwrite if conflicting exists', async function() {
+                        this.timeout(5000);
                         await driver.saveProjectAs(existingName, false);
                         await driver.expect(
                             () => driver.isShowingDialogKey(key => key.includes('decideReplace')),

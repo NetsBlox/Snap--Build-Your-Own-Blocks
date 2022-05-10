@@ -697,6 +697,7 @@ NetsBloxMorph.prototype.cloudSaveError = function () {
 };
 
 NetsBloxMorph.prototype.saveProjectToCloud = async function (name) {
+    // TODO: can we save this to just call save on the current source?
     var myself = this,
         overwriteExisting;
 
