@@ -11,6 +11,10 @@ var vrHelper;
 var roboscapeSimCanvasInstance;
 var shadowGenerator;
 var optimizer;
+var resetButton;
+var encryptButton;
+var claimButton;
+var claimLabel;
 
 var updateLoopFunctions = [];
 
@@ -23,7 +27,7 @@ function RoboScapeSimCanvasMorph(title = 'Not connected') {
 }
 
 RoboScapeSimCanvasMorph.prototype.init = function (title) {
-    this.minWidth = 600;
+    this.minWidth = 700;
     this.minHeight = 300;
 
     if (!canvas) {
@@ -64,42 +68,27 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
     this.robotRow.add(dividerMorph);
 
     spacerMorph = new Morph();
-    spacerMorph.setWidth(10);
+    spacerMorph.setWidth(5);
     spacerMorph.alpha = 0;
 
     this.robotRow.add(spacerMorph);
 
-    this.robotRow.add(new PushButtonMorph(null, () => {
+    resetButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             socket.emit('resetRobot', this.robotsList.getValue());
         } else {
             socket.emit('resetAll', this.robotsList.getValue());
         }
-    }, 'Reset'));
+    }, 'Reset');
+
+    this.robotRow.add(resetButton);
 
     spacerMorph = new Morph();
-    spacerMorph.setWidth(10);
+    spacerMorph.setWidth(5);
     spacerMorph.alpha = 0;
 
     this.robotRow.add(spacerMorph);
-
-    // this.robotRow.add(new PushButtonMorph(null, () => {
-    //     if (this.robotsList.getValue() != '') {
-    //         socket.emit('robotButton', this.robotsList.getValue(), true);
-
-    //         // Set unpress to happen automatically
-    //         setTimeout(() => {
-    //             socket.emit('robotButton', this.robotsList.getValue(), false);
-    //         }, 250);
-    //     }
-    // }, 'Encrypt'));
-
-    spacerMorph = new Morph();
-    spacerMorph.setWidth(10);
-    spacerMorph.alpha = 0;
-
-    this.robotRow.add(spacerMorph);
-
+    
     this.robotRow.add(new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             // Activate chase cam for robot
@@ -125,6 +114,52 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
         scene.activeCamera = camera;
     }, 'Free Cam'));
 
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(5);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+
+    encryptButton = new PushButtonMorph(null, () => {
+        if (this.robotsList.getValue() != '') {
+            socket.emit('robotButton', this.robotsList.getValue(), true);
+
+            // Set unpress to happen automatically
+            setTimeout(() => {
+                socket.emit('robotButton', this.robotsList.getValue(), false);
+            }, 250);
+        }
+    }, 'Encrypt');
+
+    this.robotRow.add(encryptButton);
+
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(5);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+
+    claimButton = new PushButtonMorph(null, () => {
+        if (this.robotsList.getValue() != '') {
+            if (claimButton.text == 'Claim') {
+                socket.emit('claimRobot', this.robotsList.getValue(), true);
+            } else {
+                socket.emit('claimRobot', this.robotsList.getValue(), false);
+            }
+        }
+    }, 'Claim');
+
+    this.robotRow.add(claimButton);
+
+    spacerMorph = new Morph();
+    spacerMorph.setWidth(5);
+    spacerMorph.alpha = 0;
+
+    this.robotRow.add(spacerMorph);
+
+    claimLabel = new TextMorph('Unclaimed');
+    this.robotRow.add(claimLabel);
+
     this.add(this.robotRow);
 
     this.labelString = title;
@@ -133,6 +168,17 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     this.fixLayout();
     this.rerender();
+
+    this.robotRow.reactToChoice = (robot) => {
+        console.log("robot " + robot + " selected");
+        if (robot == null || robot == '') {
+            claimButton.disable();
+            encryptButton.disable();
+        } else {
+            claimButton.enable();
+            encryptButton.enable();
+        }
+    };
 };
 
 RoboScapeSimCanvasMorph.prototype.fixLayout = function () {
