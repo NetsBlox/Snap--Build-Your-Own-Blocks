@@ -187,21 +187,26 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
             chaseCamButton.show();
             fpsCamButton.show();
             encryptButton.show();
-            encryptButton.enable();
 
             if (bodiesInfo['robot_' + robot].claimedBy != null) {
                 // If this is our robot, allow unclaim
                 if (bodiesInfo['robot_' + robot].claimedBy === (SnapCloud.username || SnapCloud.clientId)) {
                     claimButton.label.text = 'Unclaim';     
                     claimButton.enable();
+                    encryptButton.enable();
+                    resetButton.enable();
                 } else {
                     claimButton.label.text = 'Claim';     
                     claimButton.disable();
+                    encryptButton.disable();
+                    resetButton.disable();
                 }
             } else {
                 // No one claiming
                 claimButton.label.text = 'Claim';  
                 claimButton.enable();
+                encryptButton.enable();
+                resetButton.enable();
             }
             
             claimButton.show();
@@ -317,7 +322,7 @@ RoboScapeSimCanvasMorph.prototype.showCanvas = function () {
         this.setCanvasPosition();
         this.canvas.style.display = 'inline';
 
-        if (vrHelper) {
+        if (vrHelper && vrHelper.vrButton) {
             vrHelper.vrButton.style.display = 'inline';
         }
     }
@@ -400,7 +405,7 @@ RoboScapeSimCanvasMorph.prototype.popUp = function (world) {
             var stepFn = this.step;
             this.step = function () {
                 stepFn.apply(this, arguments);
-                
+
                 myself.fixClaimLabel();
 
                 if (!this.root().hand.mouseButton) {

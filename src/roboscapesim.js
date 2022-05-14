@@ -188,6 +188,11 @@ const connectToRoboScapeSim = function () {
                 updateRobotRowUI();
             });
 
+            // LED status change
+            socket.on('led', args => {
+                //console.log(args);
+            });
+
         });
 
         // Lost connection
