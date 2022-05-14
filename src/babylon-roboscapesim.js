@@ -172,6 +172,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     this.fixLayout();
     this.rerender();
+
     updateRobotRowUI = () => {
         let robot = this.robotsList.getValue();
         if (robot == null || robot == '') {
@@ -197,18 +198,24 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
                     claimButton.label.text = 'Claim';     
                     claimButton.disable();
                 }
-                
-                claimLabel.text = 'Claimed by ' + bodiesInfo['robot_' + robot].claimedBy;
             } else {
                 // No one claiming
-                claimLabel.text = 'Unclaimed';
+                claimButton.label.text = 'Claim';  
                 claimButton.enable();
             }
+            
+            claimButton.show();
+            claimButton.fixLayout();
+            claimButton.rerender();
+
+            claimLabel.show();
+            claimLabel.fixLayout();
             claimLabel.rerender();
+
+            this.robotRow.fixLayout();
             this.robotRow.rerender();
 
-            claimButton.show();
-            claimLabel.show();
+            this.fixClaimLabel();
         }
     };
 
@@ -216,6 +223,30 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
         console.log("robot " + robot + " selected");
         updateRobotRowUI();        
     };
+};
+
+RoboScapeSimCanvasMorph.prototype.fixClaimLabel = function () {
+
+    let robot = this.robotsList.getValue();
+
+    if (bodiesInfo['robot_' + robot].claimedBy != null) {
+        claimLabel.text = 'Claimed by ' + bodiesInfo['robot_' + robot].claimedBy;
+    } else {
+        claimLabel.text = 'Unclaimed';
+    }
+    
+    claimLabel.fixLayout();
+    claimLabel.rerender();
+
+    this.robotRow.fixLayout();
+    this.robotRow.rerender();
+
+    while (claimLabel.right() > this.right()) {
+        claimLabel.text = claimLabel.text.substr(0, claimLabel.text.length - 4) + '...';
+        claimLabel.fixLayout();
+        claimLabel.rerender();
+        this.robotRow.rerender();
+    }
 };
 
 RoboScapeSimCanvasMorph.prototype.fixLayout = function () {
@@ -369,12 +400,17 @@ RoboScapeSimCanvasMorph.prototype.popUp = function (world) {
             var stepFn = this.step;
             this.step = function () {
                 stepFn.apply(this, arguments);
+                
+                myself.fixClaimLabel();
+
                 if (!this.root().hand.mouseButton) {
                     myself.showCanvas();
 
                     if (engine) {
                         engine.resize();
                     }
+
+                    myself.fixClaimLabel();
                 }
             };
         };
