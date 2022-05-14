@@ -15,6 +15,7 @@ var resetButton;
 var encryptButton;
 var claimButton;
 var claimLabel;
+var updateRobotRowUI;
 
 var updateLoopFunctions = [];
 
@@ -75,9 +76,9 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     resetButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            socket.emit('resetRobot', this.robotsList.getValue());
+            socket.emit('resetRobot', this.robotsList.getValue(), SnapCloud.username || SnapCloud.clientId);
         } else {
-            socket.emit('resetAll', this.robotsList.getValue());
+            socket.emit('resetAll', SnapCloud.username || SnapCloud.clientId);
         }
     }, 'Reset');
 
@@ -89,7 +90,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     this.robotRow.add(spacerMorph);
     
-    this.robotRow.add(new PushButtonMorph(null, () => {
+    let chaseCamButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             // Activate chase cam for robot
             followCam.lockedTarget = bodyMeshes['robot_' + this.robotsList.getValue()];
@@ -98,9 +99,10 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
             // Reset to free camera
             scene.activeCamera = camera;
         }
-    }, 'Chase Cam'));
+    }, 'Chase Cam');
+    this.robotRow.add(chaseCamButton);
 
-    this.robotRow.add(new PushButtonMorph(null, () => {
+    let fpsCamButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             // Activate chase cam for robot
             firstPersonCam.targetRobot = this.robotsList.getValue();
@@ -109,7 +111,9 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
             // Reset to free camera
             scene.activeCamera = camera;
         }
-    }, 'First Person Cam'));
+    }, 'First Person Cam');
+    this.robotRow.add(fpsCamButton);
+    
     this.robotRow.add(new PushButtonMorph(null, () => {
         scene.activeCamera = camera;
     }, 'Free Cam'));
@@ -122,11 +126,11 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     encryptButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            socket.emit('robotButton', this.robotsList.getValue(), true);
+            socket.emit('robotButton', this.robotsList.getValue(), true, SnapCloud.username || SnapCloud.clientId);
 
             // Set unpress to happen automatically
             setTimeout(() => {
-                socket.emit('robotButton', this.robotsList.getValue(), false);
+                socket.emit('robotButton', this.robotsList.getValue(), false, SnapCloud.username || SnapCloud.clientId);
             }, 250);
         }
     }, 'Encrypt');
@@ -141,10 +145,10 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     claimButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
-            if (claimButton.text == 'Claim') {
-                socket.emit('claimRobot', this.robotsList.getValue(), true);
+            if (claimButton.label.text == 'Claim') {
+                socket.emit('claimRobot', this.robotsList.getValue(), true, SnapCloud.username || SnapCloud.clientId);
             } else {
-                socket.emit('claimRobot', this.robotsList.getValue(), false);
+                socket.emit('claimRobot', this.robotsList.getValue(), false, SnapCloud.username || SnapCloud.clientId);
             }
         }
     }, 'Claim');
@@ -168,16 +172,49 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     this.fixLayout();
     this.rerender();
+    updateRobotRowUI = () => {
+        let robot = this.robotsList.getValue();
+        if (robot == null || robot == '') {
+            chaseCamButton.hide();
+            fpsCamButton.hide();
+            claimButton.hide();
+            claimButton.disable();
+            claimLabel.hide();
+            encryptButton.hide();
+            encryptButton.disable();
+        } else {
+            chaseCamButton.show();
+            fpsCamButton.show();
+            encryptButton.show();
+            encryptButton.enable();
+
+            if (bodiesInfo['robot_' + robot].claimedBy != null) {
+                // If this is our robot, allow unclaim
+                if (bodiesInfo['robot_' + robot].claimedBy === (SnapCloud.username || SnapCloud.clientId)) {
+                    claimButton.label.text = 'Unclaim';     
+                    claimButton.enable();
+                } else {
+                    claimButton.label.text = 'Claim';     
+                    claimButton.disable();
+                }
+                
+                claimLabel.text = 'Claimed by ' + bodiesInfo['robot_' + robot].claimedBy;
+            } else {
+                // No one claiming
+                claimLabel.text = 'Unclaimed';
+                claimButton.enable();
+            }
+            claimLabel.rerender();
+            this.robotRow.rerender();
+
+            claimButton.show();
+            claimLabel.show();
+        }
+    };
 
     this.robotRow.reactToChoice = (robot) => {
         console.log("robot " + robot + " selected");
-        if (robot == null || robot == '') {
-            claimButton.disable();
-            encryptButton.disable();
-        } else {
-            claimButton.enable();
-            encryptButton.enable();
-        }
+        updateRobotRowUI();        
     };
 };
 
@@ -266,6 +303,7 @@ RoboScapeSimCanvasMorph.prototype.hideCanvas = function () {
 RoboScapeSimCanvasMorph.prototype.show = function () {
     RoboScapeSimCanvasMorph.uber.show.call(this);
     this.showCanvas();
+    this.robotRow.reactToChoice(this.robotsList.getValue());
 };
 
 RoboScapeSimCanvasMorph.prototype.hide = function () {

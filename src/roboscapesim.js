@@ -165,11 +165,27 @@ const connectToRoboScapeSim = function () {
 
             // Show message
             socket.on('showText', args => {
-                text = args[0];
-                id = args[1];
-                timeout = args[2];
+                let text = args[0];
+                let id = args[1];
+                let timeout = args[2];
 
                 addOrUpdateText(text, id, timeout);
+            });
+
+            // Robot claimed update
+            socket.on('robotClaimed', args => {
+                let robot = args[0];
+                let user = args[1];
+                let status = args[2];
+
+                console.log(`Robot ${robot} ${status ? '' : 'un'}claimed by ${user}`);
+                if (status) {
+                    bodiesInfo['robot_' + robot].claimedBy = user;
+                } else {
+                    bodiesInfo['robot_' + robot].claimedBy = null;
+                }
+
+                updateRobotRowUI();
             });
 
         });
@@ -400,6 +416,14 @@ setTimeout(() => {
                     }
 
                     // Extrapolate/Interpolate position and rotation
+                    if (body.vel == undefined) {
+                        body.vel = {};
+                    }
+                    
+                    if (nextBody.vel == undefined) {
+                        nextBody.vel = {};
+                    }
+
                     x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
                     y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
                     z = interpolate(z, nextBody.pos.z, body.vel.z || 0, nextBody.vel.z || 0, lastUpdateTime, tempNextTime, frameTime);
