@@ -172,6 +172,13 @@ const connectToRoboScapeSim = function () {
                 addOrUpdateText(text, id, timeout);
             });
 
+            socket.on('numeric', args => {
+                let id = args[0];
+                let num = args[1];
+
+                addOrUpdateText(num, id, 2000);
+            });
+
             // Robot claimed update
             socket.on('robotClaimed', args => {
                 let robot = args[0];
