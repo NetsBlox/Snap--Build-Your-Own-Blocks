@@ -239,7 +239,7 @@ RoboScapeSimCanvasMorph.prototype.fixClaimLabel = function () {
 
     let robot = this.robotsList.getValue();
 
-    if (bodiesInfo['robot_' + robot].claimedBy != null) {
+    if (bodiesInfo['robot_' + robot] != null && bodiesInfo['robot_' + robot].claimedBy != null) {
         claimLabel.text = 'Claimed by ' + bodiesInfo['robot_' + robot].claimedBy;
     } else {
         claimLabel.text = 'Unclaimed';
