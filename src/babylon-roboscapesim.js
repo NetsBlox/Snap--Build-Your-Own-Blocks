@@ -175,7 +175,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     updateRobotRowUI = () => {
         let robot = this.robotsList.getValue();
-        if (robot == null || robot == '' || bodiesInfo['robot_' + robot] != null) {
+        if (robot == null || robot == '' || bodiesInfo['robot_' + robot] == null) {
             
             if (robot != null && robot != '' && bodiesInfo['robot_' + robot] == null) {
                 this.robotsList.setChoice('');
@@ -457,7 +457,7 @@ const activateBabylon = async function () {
 
     engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
     engine.useReverseDepthBuffer = true;
-    
+
     stage = world.children[0].children.find(c => c.name == 'Stage');
 
     scene = new BABYLON.Scene(engine);
