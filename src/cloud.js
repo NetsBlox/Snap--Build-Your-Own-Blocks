@@ -249,12 +249,7 @@ Cloud.prototype.cloneRole = async function(roleId) {
     const projectId = this.projectId;
     const fetchRoleResponse = await this.fetch(`/projects/id/${projectId}/${roleId}/latest`);
     const {name, code, media} = await fetchRoleResponse.json();
-    const options = {
-        method: 'POST',
-        body: {name, code, media}
-    };
-    const response = await this.post(`/projects/id/${projectId}/`, options);
-    // TODO: check response code
+    const response = await this.post(`/projects/id/${projectId}/`, {name, code, media});
 };
 
 Cloud.prototype.inviteOccupant = async function (username, roleId) {

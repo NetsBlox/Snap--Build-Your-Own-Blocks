@@ -237,10 +237,10 @@ describe('room', function() {
             await driver.addBlock('forward');
             await driver.selectTab('Room');
 
-            await driver.expect(() => { // determine if the roleid update is recevied from the server
+            await driver.expect(() => { // determine if the role ID update is received from the server
                 const roleName = driver.ide().projectName;
                 const role = driver.ide().room.getRole(roleName);
-                return (role.id.match(/-\d{12,15}/) !== null); // FIXME
+                return role.id;
             }, 'didnt receive role update');
 
             // get a handle of the current/only role
@@ -334,7 +334,6 @@ describe('room', function() {
             const [messageType] = driver.ide().spriteEditor.palette.contents.children;
             const role = room.getRole(otherRole);
             driver.dragAndDrop(messageType, role.center());
-            console.log('moving to role', otherRole);
             await driver.moveToRole(otherRole);
             const shareMsgDialog = await driver.expect(
                 () => driver.dialogs().find(dialog => dialog.key?.includes(msgType)),
