@@ -564,7 +564,7 @@ Cloud.prototype.unlinkAccount = async function(account) {
     await this.request(`/api/v2/unlink/${this.username}`, account);
 };
 
-Cloud.prototype.exportProject = async function(projectId=this.projectId) {
+Cloud.prototype.getProjectData = async function(projectId=this.projectId) {
     const response = await this.fetch(`/projects/id/${projectId}/latest?clientId=${this.clientId}`);
     return await response.json();
 };

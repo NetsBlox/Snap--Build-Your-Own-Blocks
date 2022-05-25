@@ -483,7 +483,7 @@ NetsBloxMorph.prototype.exportProject = function () {
 };
 
 NetsBloxMorph.prototype.exportMultiRoleXml = async function () {
-    const xml = await this.cloud.exportProject();
+    const xml = await this.getProjectXML();
     this.exportRoom(xml);
 };
 
@@ -526,32 +526,42 @@ NetsBloxMorph.prototype.getSnapXml = function() {
     return str;
 };
 
-NetsBloxMorph.prototype.getSerializedRole = function () {
-    var data = this.sockets.getSerializedProject();
+NetsBloxMorph.prototype.getSerializedRole = function (role = this.sockets.getSerializedProject()) {
     return this.serializer.format(
         '<role name="@">%</role>',
-        this.room.getCurrentRoleName(),
-        data.SourceCode + data.Media
+        role.name,
+        role.code + role.media
     );
 
 };
 
 NetsBloxMorph.prototype.exportSingleRoleXml = function () {
-    // Get the role xml
+    return this.exportProjectXml(this.room.name, [this.getSerializedRole()]);
+};
+
+NetsBloxMorph.prototype.getProjectXML = async function () {
+    const projectData = await this.cloud.getProjectData();
+    const roles = Object.values(projectData.roles)
+        .map(role => this.getSerializedRole(role));
+
+    return this.exportProjectXml(projectData.name, roles);
+};
+
+NetsBloxMorph.prototype.exportProjectXml = function (name, roles) {
     try {
         var str = this.serializer.format(
             '<room name="@" app="@">%</room>',
-            this.room.name,
+            name,
             this.serializer.app,
-            this.getSerializedRole()
+            roles,
         );
         this.exportRoom(str);
     } catch (err) {
-        if (Process.prototype.isCatchingErrors) {
-            this.showMessage('Export failed: ' + err);
-        } else {
+        //if (Process.prototype.isCatchingErrors) {
+            //this.showMessage('Export failed: ' + err);
+        //} else {
             throw err;
-        }
+        //}
     }
 };
 
@@ -621,12 +631,8 @@ NetsBloxMorph.prototype.rawSaveProject = async function (name) {
     }
 
     // Trigger server export of all roles
-    const xml = await this.cloud.exportProject();
+    const xml = await this.getProjectXML();
     this.saveRoomLocal(xml);
-};
-
-NetsBloxMorph.prototype.getProjectXML = async function () {
-    return await this.cloud.exportProject();
 };
 
 NetsBloxMorph.prototype.saveRoomLocal = function (str) {
