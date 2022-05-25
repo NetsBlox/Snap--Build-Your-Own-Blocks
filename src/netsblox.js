@@ -536,7 +536,8 @@ NetsBloxMorph.prototype.getSerializedRole = function (role = this.sockets.getSer
 };
 
 NetsBloxMorph.prototype.exportSingleRoleXml = function () {
-    return this.exportProjectXml(this.room.name, [this.getSerializedRole()]);
+    const xml = this.exportProjectXml(this.room.name, [this.getSerializedRole()]);
+    this.exportRoom(xml);
 };
 
 NetsBloxMorph.prototype.getProjectXML = async function () {
@@ -555,13 +556,13 @@ NetsBloxMorph.prototype.exportProjectXml = function (name, roles) {
             this.serializer.app,
             roles,
         );
-        this.exportRoom(str);
+        return str;
     } catch (err) {
-        //if (Process.prototype.isCatchingErrors) {
-            //this.showMessage('Export failed: ' + err);
-        //} else {
+        if (Process.prototype.isCatchingErrors) {
+            this.showMessage('Export failed: ' + err);
+        } else {
             throw err;
-        //}
+        }
     }
 };
 
