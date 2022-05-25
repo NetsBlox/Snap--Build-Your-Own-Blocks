@@ -135,7 +135,7 @@ describe('save', function() {
                         });
                     });
 
-                    it.only('should prompt for overwrite if conflicting exists', async function() {
+                    it('should prompt for overwrite if conflicting exists', async function() {
                         this.timeout(5000);
                         await driver.saveProjectAs(existingName, false);
                         await driver.expect(
