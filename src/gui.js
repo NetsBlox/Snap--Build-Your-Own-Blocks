@@ -8307,8 +8307,8 @@ ProjectDialogMorph.prototype.trySaveItem = function () {
     ProjectDialogMorph.uber.trySaveItem.call(this, newProjectDetails);
 };
 
-ProjectDialogMorph.prototype.saveItem = function(newItem) {
-    ProjectDialogMorph.uber.saveItem.call(this, newItem);
+ProjectDialogMorph.prototype.saveItem = async function(newItem) {
+    await ProjectDialogMorph.uber.saveItem.call(this, newItem);
     this.ide.source = this.source.id;
 };
 
