@@ -494,38 +494,21 @@ describe('ide', function() {
             it('should load IDE w/o url anchors', async function() {
                 await reloadIframe(frame);
                 const {IDE_Morph} = driver.globals();
-                const ide = frame.contentWindow.world.children.find(morph => {
-                    return morph instanceof IDE_Morph;
-                });
+                const ide = frame.contentWindow.world.children
+                    .find(morph => morph instanceof IDE_Morph);
+
                 if (!ide) {
                     throw new Error('IDE not loaded!');
                 }
             });
 
-            it('should load IDE w/ url anchors', done => {
-                reloadIframe(frame, window.origin + '?action=example&ProjectName=Battleship');
-                frame.onload = () => {
-                    const {IDE_Morph} = driver.globals();
-                    const ide = frame.contentWindow.world.children.find(morph => {
-                        return morph instanceof IDE_Morph;
-                    });
-                    if (ide) {
-                        done();
-                    } else {
-                        done(new Error('IDE not loaded!'));
-                    }
-                };
+            it('should load IDE w/ url anchors', async () => {
+                await reloadIframe(frame, window.origin + '?action=example&ProjectName=Battleship');
+                assert(driver.ide(), 'IDE not loaded');
             });
 
             it('should import variable immediately (no url anchors)', async function() {
                 await reloadIframe(frame);
-                console.log('iframe reloaded');
-                const {IDE_Morph} = driver.globals();
-                const ide = frame.contentWindow.world.children
-                    .find(morph => morph instanceof IDE_Morph);
-
-                // TODO: we should wait for it to settle...
-                console.log('about to post message');
                 frame.contentWindow.postMessage({
                     type: 'import',
                     name: 'abc',
@@ -534,57 +517,48 @@ describe('ide', function() {
                 });
 
                 await driver.expect(
-                    () => ide.stage.globalVariables().allNames().includes('abc'),
+                    () => driver.ide().stage.globalVariables().allNames().includes('abc'),
                     'Imported variable not found.'
                 );
             });
 
-            it('should import CSV data', function(done) {
-                reloadIframe(frame);
-                frame.onload = async () => {
-                    frame.contentWindow.postMessage({
-                        type: 'import',
-                        name: 'csvData',
-                        content: 'a,b,c\n1,2,3',
-                        fileType: 'csv'
-                    });
+            it('should import CSV data', async () => {
+                await reloadIframe(frame);
+                frame.contentWindow.postMessage({
+                    type: 'import',
+                    name: 'csvData',
+                    content: 'a,b,c\n1,2,3',
+                    fileType: 'csv'
+                });
 
-                    const {IDE_Morph,List} = driver.globals();
-                    const ide = frame.contentWindow.world.children.find(morph => {
-                        return morph instanceof IDE_Morph;
-                    });
-                    await driver.expect(
-                        () => ide.stage.globalVariables().allNames().includes('csvData'),
-                        'Imported variable not found.'
-                    );
-                    const table = ide.stage.globalVariables().getVar('csvData');
-                    assert(typeof table !== 'string', 'CSV imported as string');
-                    const firstItem = table.asArray()[0];
-                    assert(
-                        table instanceof List && firstItem instanceof List,
-                        'CSV not imported as list of lists'
-                    );
-                    done();
-                };
+                await driver.expect(
+                    () => driver.ide().stage.globalVariables().allNames().includes('csvData'),
+                    'Imported variable not found.'
+                );
+                const {List} = driver.globals();
+                const table = driver.ide().stage.globalVariables().getVar('csvData');
+                assert(typeof table !== 'string', 'CSV imported as string');
+                const firstItem = table.asArray()[0];
+                assert(
+                    table instanceof List && firstItem instanceof List,
+                    'CSV not imported as list of lists'
+                );
             });
 
-            it('should set var immediately load IDE w/ url anchors', done => {
-                reloadIframe(frame, window.origin + '?action=example&ProjectName=Battleship');
-                frame.onload = async () => {
-                    const key = 'testVariable';
-                    const value = 'test variable value';
-                    frame.contentWindow.postMessage({
-                        type: 'set-variable',
-                        key: key,
-                        value: value,
-                    });
+            it('should set var immediately load IDE w/ url anchors', async () => {
+                await reloadIframe(frame, window.origin + '?action=example&ProjectName=Battleship');
+                const key = 'testVariable';
+                const value = 'test variable value';
+                frame.contentWindow.postMessage({
+                    type: 'set-variable',
+                    key: key,
+                    value: value,
+                });
 
-                    await driver.expect(
-                        () => driver.globals().externalVariables[key] === value,
-                        'Did not set external variable',
-                    );
-                    done();
-                };
+                await driver.expect(
+                    () => driver.globals().externalVariables[key] === value,
+                    'Did not set external variable',
+                );
             });
 
             function assert(cond, err) {
@@ -707,12 +681,21 @@ describe('ide', function() {
     });
 
     async function reloadIframe(frame, url=window.origin) {
+        const {utils} = driver.globals();
         driver.disableExitPrompt();
         driver.setWindow(frame.contentWindow);
         frame.setAttribute('src', url);
-        return new Promise(resolve => {
-            frame.onload = resolve;
-        });
+
+        const deferred = utils.defer();
+        const id = setInterval(() => {
+            const isLoaded = frame.contentWindow.world;
+            if (isLoaded) {
+                clearInterval(id);
+                deferred.resolve();
+            }
+        }, 150);
+
+        return deferred.promise;
     }
 });
 
