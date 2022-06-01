@@ -238,11 +238,12 @@ Cloud.prototype.renameProject = async function(name) {
 };
 
 Cloud.prototype.reportLatestRole = async function(id, data) {
+    const clientId = this.clientId;
     const options = {
         method: 'POST',
         body: JSON.stringify({id, data})
     };
-    await this.fetch(`/projects/id/${this.projectId}/${this.roleId}/latest`, options);
+    await this.fetch(`/projects/id/${this.projectId}/${this.roleId}/latest?clientId=${clientId}`, options);
 };
 
 Cloud.prototype.cloneRole = async function(roleId) {
