@@ -2088,7 +2088,7 @@ ActionManager.prototype.onAddVariable = function(name, ownerId) {
     if (!isGlobal) {
         owner = this._owners[ownerId];
     } else {
-        owner = this._owners[Object.keys(this._owners)[0]];
+        owner = this.ide().stage;
     }
 
     owner.addVariable(name, isGlobal);
