@@ -689,10 +689,11 @@ describe('ide', function() {
 
         const deferred = utils.defer();
         const id = setInterval(() => {
-            const isLoaded = frame.contentWindow.world;
+            const isLoaded = !!frame.contentWindow.world;
+            console.log({isLoaded});
             if (isLoaded) {
                 clearInterval(id);
-                deferred.resolve();
+                return deferred.resolve();
             }
         }, 150);
 

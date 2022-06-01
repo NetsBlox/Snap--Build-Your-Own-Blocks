@@ -381,12 +381,12 @@ Cloud.prototype.deleteProject = async function (projectId) {
 
 Cloud.prototype.publishProject = async function (projectId) {
     const method = 'POST';
-    await this.fetch(`/projects/${projectId}/publish`, {method});
+    await this.fetch(`/projects/id/${projectId}/publish`, {method});
 };
 
 Cloud.prototype.unpublishProject = async function (projectId) {
     const method = 'POST';
-    await this.fetch(`/projects/${projectId}/unpublish`, {method});
+    await this.fetch(`/projects/id/${projectId}/unpublish`, {method});
 };
 
 Cloud.prototype.reconnect = function (callback, errorCall) {

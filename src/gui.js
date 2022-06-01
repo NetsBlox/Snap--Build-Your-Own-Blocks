@@ -8031,13 +8031,13 @@ function CloudProjectsSource(ide) {
 CloudProjectsSource.prototype.publish = async function(proj, unpublish = false) {
     const cloud = this.ide.cloud;
     if (unpublish) {
-        await cloud.unpublishProject(proj.ID);
+        await cloud.unpublishProject(proj.id);
     } else {
-        await cloud.publishProject(proj.ID);
+        await cloud.publishProject(proj.id);
     }
 
     // Set the Shared URL if the project is currently open
-    if (!unpublish && proj.ID === cloud.projectId) {
+    if (!unpublish && proj.id === cloud.projectId) {
         var usr = cloud.username,
             projectId = 'Username=' +
                 encodeURIComponent(usr.toLowerCase()) +
@@ -8113,12 +8113,12 @@ SharedCloudProjectsSource.prototype.list = async function() {
 };
 
 SharedCloudProjectsSource.prototype.delete = function(project) {
-    this.ide.cloud.evictCollaborator(this.ide.cloud.username, project.ID);
+    this.ide.cloud.evictCollaborator(this.ide.cloud.username, project.id);
 };
 
 SharedCloudProjectsSource.prototype.open = function(project) {
     this.ide.cloud.joinActiveProject(
-        project.ID,
+        project.id,
         async xml => {
             this.ide.rawLoadCloudProject(xml, project.public);
         },
@@ -8340,7 +8340,7 @@ ProjectDialogMorph.prototype.shareItem = async function () {
 };
 
 ProjectDialogMorph.prototype.isCurrentProject = function (project) {
-    return project.ID === this.ide.cloud.projectId;
+    return project.id === this.ide.cloud.projectId;
 };
 
 ProjectDialogMorph.prototype.unshareItem = async function () {
