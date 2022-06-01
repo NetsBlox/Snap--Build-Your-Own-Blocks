@@ -617,6 +617,15 @@ describe('ide', function() {
                 api.import(name, content);
             });
 
+            it('should be able to get the username', async () => {
+                const [frame] = document.getElementsByTagName('iframe');
+
+                const api = new EmbeddedNetsBloxAPI(frame);
+                console.log('about to get the username');
+                const username = await api.getUsername();
+                expect(username).toBe('test');
+            });
+
             it('should be able to export the project', async () => {
                 const [frame] = document.getElementsByTagName('iframe');
 
@@ -632,14 +641,6 @@ describe('ide', function() {
                 const api = new EmbeddedNetsBloxAPI(frame);
                 const xml = await api.getProjectXML();
                 assert(xml.startsWith('<'), `Expected XML but found: ${xml}`);
-            });
-
-            it('should be able to get the username', async () => {
-                const [frame] = document.getElementsByTagName('iframe');
-
-                const api = new EmbeddedNetsBloxAPI(frame);
-                const username = await api.getUsername();
-                expect(username).toBe('test');
             });
 
             it('should be able to subscribe to actions', async () => {
