@@ -250,7 +250,7 @@ function joinRoom(room, env = '', password = '') {
         leaveRoom();
     }
 
-    socket.emit('joinRoom', { roomID: room, env, password, namespace: SnapCloud.username || SnapCloud.clientId });
+    socket.emit('joinRoom', { roomID: room, env, password, username: SnapCloud.username || SnapCloud.clientId, namespace: SnapCloud.username || SnapCloud.clientId });
 }
 
 /**
@@ -298,7 +298,7 @@ var interpolate = function (x1, x2, dx1, dx2, t1, t2, t) {
 };
 
 var interpolateRotation = function (q1, q2, dq1, dq2, t1, t2, t) {
-    if(q1.equalsWithEpsilon(q2, 0.01)){
+    if (q1.equalsWithEpsilon(q2, 0.01)) {
         return q1.normalize();
     }
 
@@ -431,7 +431,7 @@ setTimeout(() => {
                     if (body.vel == undefined) {
                         body.vel = {};
                     }
-                    
+
                     if (nextBody.vel == undefined) {
                         nextBody.vel = {};
                     }
