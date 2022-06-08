@@ -89,7 +89,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
     spacerMorph.alpha = 0;
 
     this.robotRow.add(spacerMorph);
-    
+
     let chaseCamButton = new PushButtonMorph(null, () => {
         if (this.robotsList.getValue() != '') {
             // Activate chase cam for robot
@@ -113,7 +113,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
         }
     }, 'First Person Cam');
     this.robotRow.add(fpsCamButton);
-    
+
     this.robotRow.add(new PushButtonMorph(null, () => {
         scene.activeCamera = camera;
     }, 'Free Cam'));
@@ -176,7 +176,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
     updateRobotRowUI = () => {
         let robot = this.robotsList.getValue();
         if (robot == null || robot == '' || bodiesInfo['robot_' + robot] == null) {
-            
+
             if (robot != null && robot != '' && bodiesInfo['robot_' + robot] == null) {
                 this.robotsList.setChoice('');
             }
@@ -196,24 +196,24 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
             if (bodiesInfo['robot_' + robot].claimedBy != null) {
                 // If this is our robot, allow unclaim
                 if (bodiesInfo['robot_' + robot].claimedBy === (SnapCloud.username || SnapCloud.clientId)) {
-                    claimButton.label.text = 'Unclaim';     
+                    claimButton.label.text = 'Unclaim';
                     claimButton.enable();
                     encryptButton.enable();
                     resetButton.enable();
                 } else {
-                    claimButton.label.text = 'Claim';     
+                    claimButton.label.text = 'Claim';
                     claimButton.disable();
                     encryptButton.disable();
                     resetButton.disable();
                 }
             } else {
                 // No one claiming
-                claimButton.label.text = 'Claim';  
+                claimButton.label.text = 'Claim';
                 claimButton.enable();
                 encryptButton.enable();
                 resetButton.enable();
             }
-            
+
             claimButton.show();
             claimButton.fixLayout();
             claimButton.rerender();
@@ -231,7 +231,7 @@ RoboScapeSimCanvasMorph.prototype.init = function (title) {
 
     this.robotRow.reactToChoice = (robot) => {
         console.log("robot " + robot + " selected");
-        updateRobotRowUI();        
+        updateRobotRowUI();
     };
 };
 
@@ -244,7 +244,7 @@ RoboScapeSimCanvasMorph.prototype.fixClaimLabel = function () {
     } else {
         claimLabel.text = 'Unclaimed';
     }
-    
+
     claimLabel.fixLayout();
     claimLabel.rerender();
 
@@ -462,19 +462,19 @@ const activateBabylon = async function () {
 
     scene = new BABYLON.Scene(engine);
 
-    
+
     // Optimizer
     var options = BABYLON.SceneOptimizerOptions.ModerateDegradationAllowed();
     optimizer = new BABYLON.SceneOptimizer(scene, options);
-    
+
     // GUI
     var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-    textStackPanel = new BABYLON.GUI.StackPanel();    
+    textStackPanel = new BABYLON.GUI.StackPanel();
     textStackPanel.setPadding(20, 20, 20, 20);
     textStackPanel.spacing = 20;
     textStackPanel.verticalAlignment = "top";
-    advancedTexture.addControl(textStackPanel);   
+    advancedTexture.addControl(textStackPanel);
 
     // Parameters : name, position, scene
     camera = new BABYLON.UniversalCamera('UniversalCamera', new BABYLON.Vector3(0, 6, -2), scene);
@@ -486,35 +486,35 @@ const activateBabylon = async function () {
     camera.attachControl(canvas, true);
     camera.setTarget(new BABYLON.Vector3(0, 0, 0));
 
-    
-	scene.onKeyboardObservable.add((kbInfo) => {
-		switch (kbInfo.type) {
+
+    scene.onKeyboardObservable.add((kbInfo) => {
+        switch (kbInfo.type) {
             case BABYLON.KeyboardEventTypes.KEYDOWN:
-                
+
                 const camSpeed = 0.005;
-                
+
                 // Keyboard camera controls for touchscreen usability
-				switch (kbInfo.event.key) {
+                switch (kbInfo.event.key) {
                     case "u":
                     case "U":
                         camera.cameraRotation.x -= camSpeed;
-                    break
+                        break
                     case "j":
                     case "J":
                         camera.cameraRotation.x += camSpeed;
-                    break
+                        break
                     case "h":
                     case "H":
                         camera.cameraRotation.y -= camSpeed;
-                    break
+                        break
                     case "k":
                     case "K":
                         camera.cameraRotation.y += camSpeed;
-                    break
+                        break
                 }
-			break;
-		}
-	});
+                break;
+        }
+    });
 
     followCam = new BABYLON.FollowCamera('followcam', new BABYLON.Vector3(5, 5, 5), scene);
     followCam.heightOffset = 1.25;
@@ -598,11 +598,14 @@ const addBlock = async function (width, height, depth = -1, castShadows = true, 
 
 
 var assetsDir;
+var apiServer;
 
 if (window.origin.includes('localhost')) {
     assetsDir = 'http://localhost:8080/src/';
+    apiServer = 'http://localhost:8000/';
 } else {
     assetsDir = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/assets/';
+    apiServer = 'http://roboscapeonlineapi.netsblox.org/';
 }
 
 /**
@@ -681,7 +684,7 @@ const createLabel = function (text, font = 'Arial', color = '#ffffff', outline =
 
     return plane;
 };
- 
+
 /**
  * Create a TextBlock in the 3D view's overlay.
  * If a TextBlock already has the id, that TextBlock's text and timeout will be updated.
@@ -738,7 +741,7 @@ const clearAllTextBlocks = function () {
 };
 
 // Load Babylon
-var babylonScripts = ['https://preview.babylonjs.com/babylon.js', 'https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js', 'https://preview.babylonjs.com/gui/babylon.gui.min.js'];
+var babylonScripts = ['https://cdn.jsdelivr.net/npm/babylonjs@5.9.1/babylon.min.js', 'https://cdn.jsdelivr.net/npm/babylonjs-loaders@5.9.1/babylonjs.loaders.min.js', 'https://cdn.jsdelivr.net/npm/babylonjs-gui@5.9.1/babylon.gui.min.js'];
 var scriptPromises = [];
 
 for (let file of babylonScripts) {
@@ -784,27 +787,27 @@ updateLoopFunctions.push(() => {
     }
 
     // Keep in-bounds
-    if(window.externalVariables.roboscapeSimCanvasInstance.width() > world.width()){
+    if (window.externalVariables.roboscapeSimCanvasInstance.width() > world.width()) {
         window.externalVariables.roboscapeSimCanvasInstance.setWidth(world.width());
         window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
     }
-    if(window.externalVariables.roboscapeSimCanvasInstance.height() > world.height()){
+    if (window.externalVariables.roboscapeSimCanvasInstance.height() > world.height()) {
         window.externalVariables.roboscapeSimCanvasInstance.setHeight(world.height());
         window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
     }
-    if(window.externalVariables.roboscapeSimCanvasInstance.left() < 0){
+    if (window.externalVariables.roboscapeSimCanvasInstance.left() < 0) {
         window.externalVariables.roboscapeSimCanvasInstance.setLeft(0);
         window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
     }
-    if(window.externalVariables.roboscapeSimCanvasInstance.right() > world.width()){
+    if (window.externalVariables.roboscapeSimCanvasInstance.right() > world.width()) {
         window.externalVariables.roboscapeSimCanvasInstance.setRight(world.width());
         window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
     }
-    if(window.externalVariables.roboscapeSimCanvasInstance.bottom() > world.height()){
+    if (window.externalVariables.roboscapeSimCanvasInstance.bottom() > world.height()) {
         window.externalVariables.roboscapeSimCanvasInstance.setBottom(world.height());
         window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
     }
-    if(window.externalVariables.roboscapeSimCanvasInstance.top() < 0){
+    if (window.externalVariables.roboscapeSimCanvasInstance.top() < 0) {
         window.externalVariables.roboscapeSimCanvasInstance.setTop(0);
         window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
     }

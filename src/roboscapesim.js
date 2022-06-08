@@ -31,11 +31,10 @@ const connectToRoboScapeSim = function () {
             socket = io('//3-222-232-255.nip.io', { secure: true, withCredentials: false });
         }
 
+        updateRoomsList();
+        updateEnvironmentsList();
+
         socket.on('connect', e => {
-
-            // Tell server who we are
-            socket.emit('getRooms', SnapCloud.username || SnapCloud.clientId);
-
             // Handle incremental updates
             socket.on('u', data => {
                 if (performance.now() - nextUpdateTime > 10) {
@@ -143,12 +142,6 @@ const connectToRoboScapeSim = function () {
                 setTimeout(() => {
                     resolve(socket);
                 }, 50);
-            });
-
-            // Update list of quick-join rooms
-            socket.on('availableRooms', info => {
-                ({ availableRooms } = info);
-                availableRooms = availableRooms.sort((room1, room2) => Date.parse(room2.lastInteractionTime) - Date.parse(room1.lastInteractionTime));
             });
 
             // Robot beeped
@@ -494,3 +487,14 @@ const playNote = function (robot, frequency, duration) {
     setTimeout(() => { n.stop(); }, duration);
     roboNotes[robot] = n;
 };
+
+const updateRoomsList = async function () {
+    let response = await fetch(apiServer + "rooms/list?user=" + (SnapCloud.username || SnapCloud.clientId));
+    availableRooms = await response.json();
+    availableRooms = availableRooms.sort((room1, room2) => Date.parse(room2.lastInteractionTime) - Date.parse(room1.lastInteractionTime));
+}
+
+const updateEnvironmentsList = async function () {
+    let response = await fetch(apiServer + "environments/list");
+    availableEnvironments = await response.json();
+}
