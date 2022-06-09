@@ -92,7 +92,7 @@
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');
                         const roomIdField = new InputFieldMorph(null, false, availableRooms.reduce((p, r) => {
                             console.log(r);
-                            p[r.name + ' (' + r.environment + ')'] = r.name;
+                            p[r.id + ' (' + r.environment + ')'] = r.id;
                             return p;
                         }, {}), false);
                         const roomPasswordField = new InputFieldMorph();
