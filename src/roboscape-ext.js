@@ -29,7 +29,7 @@
         getMenu() {
             return {
                 'New Room': function () {
-                    connectToRoboScapeSim().then(() => {
+                    updateEnvironmentsList().then(() => {
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('NewRoboScapeSimRoom');
                         const roomPasswordField = new InputFieldMorph();
@@ -40,9 +40,7 @@
                         }, {}), true);
                         const bdy = new AlignmentMorph('column', 2);
 
-
                         const row1 = new AlignmentMorph('row', 2);
-
 
                         row1.add(new TextMorph('Room Password:'));
                         row1.add(roomPasswordField);
@@ -84,10 +82,11 @@
                     });
                 },
                 'Join Room': async function () {
-                    connectToRoboScapeSim().then(async () => {
-                        window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
+                    window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
 
-                        await updateRoomsList();
+                    updateRoomsList().then(() => {
+
+                        console.log("updated rooms")
 
                         // Pause for response
                         const dialog = new DialogBoxMorph().withKey('JoinRoboScapeSimRoom');

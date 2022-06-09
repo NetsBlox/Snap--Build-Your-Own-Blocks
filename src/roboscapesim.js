@@ -135,15 +135,6 @@ const connectToRoboScapeSim = function () {
                 }
             });
 
-            // Update list of available environments
-            socket.on('availableEnvironments', list => {
-                availableEnvironments = list;
-
-                setTimeout(() => {
-                    resolve(socket);
-                }, 50);
-            });
-
             // Robot beeped
             socket.on('beep', args => {
                 beepData = args[0];
@@ -200,7 +191,9 @@ const connectToRoboScapeSim = function () {
             updateCanvasTitle('Not connected');
         });
 
-        setTimeout(reject, 3500);
+        setTimeout(() => {
+            resolve(socket);
+        }, 50);
     });
 };
 
@@ -237,7 +230,11 @@ function newRoom(environment = 'default', password = '') {
  * @param {string} room
  * @param {string} env
  */
-function joinRoom(room, env = '', password = '') {
+async function joinRoom(room, env = '', password = '') {
+    if (!socket || !socket.connected) {
+        await connectToRoboScapeSim();
+    }
+
     // Prevent joining a second room
     if (roomID != null && room != roomID) {
         leaveRoom();
