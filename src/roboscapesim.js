@@ -15,26 +15,37 @@ var nameTags = {};
 var availableEnvironments = [];
 var availableRooms = [];
 var material_count = 0;
+var connectedServer = null;
+var lastPassword = '';
 
-const connectToRoboScapeSim = function () {
+const connectToRoboScapeSim = function (server) {
     return new Promise((resolve, reject) => {
-        if (socket != undefined) {
+        if (socket != undefined && socket.connected && connectedServer == server) {
             console.log("Existing socket");
             return resolve(socket);
         }
 
-        console.log("Created new socket");
+        console.log("Creating new socket");
 
-        if (window.origin.includes('localhost')) {
-            socket = io('//localhost:9001', { secure: true, withCredentials: false });
-        } else {
-            socket = io('//3-222-232-255.nip.io', { secure: true, withCredentials: false });
+        if (socket != undefined && socket.connected && connectedServer != server) {
+            socket.disconnect();
         }
 
-        updateRoomsList();
-        updateEnvironmentsList();
+        // if (window.origin.includes('localhost')) {
+        //     socket = io('//localhost:9001', { secure: true, withCredentials: false });
+        // } else {
+        //     socket = io('//3-222-232-255.nip.io', { secure: true, withCredentials: false });
+        // }
+
+        // if IP, rewrite as domain to make usable
+        if (server.match(/(\d{1,3}\.){3}\d{1,3}/)) {
+            server += ".nip.io";
+        }
+
+        socket = io('//' + server + ":9001", { secure: true, withCredentials: false });
 
         socket.on('connect', e => {
+            connectedServer = server;
             // Handle incremental updates
             socket.on('u', data => {
                 if (performance.now() - nextUpdateTime > 10) {
@@ -117,7 +128,7 @@ const connectToRoboScapeSim = function () {
             socket.on('reconnect', attempt => {
                 console.log(`Reconnected after ${attempt} attempts!`);
                 //socket.emit('postReconnect', roomID);
-                joinRoom(roomID);
+                joinRoom(roomID, lastPassword);
             });
 
             // Room joined message
@@ -230,7 +241,7 @@ async function newRoom(environment = 'default', password = '') {
         body: `username=${encodeURI(SnapCloud.username || SnapCloud.clientId)}&namespace=${encodeURI(SnapCloud.username || SnapCloud.clientId)}&password=${encodeURI(password)}&environment=${encodeURI(environment)}`
     });
     const responseObject = await response.json();
-    joinRoom(responseObject.room);
+    joinRoom(responseObject.room, password, responseObject.server);
 }
 
 /**
@@ -238,9 +249,16 @@ async function newRoom(environment = 'default', password = '') {
  * @param {string} room
  * @param {string} env
  */
-async function joinRoom(room, env = '', password = '') {
-    if (!socket || !socket.connected) {
-        await connectToRoboScapeSim();
+async function joinRoom(room, password = '', server = '') {
+
+    // Look up server
+    if (server == '') {
+        let response = await fetch(apiServer + "rooms/info?id=" + encodeURIComponent(room));
+        server = (await response.json()).server;
+    }
+
+    if (!socket || !socket.connected || connectedServer != server) {
+        await connectToRoboScapeSim(server);
     }
 
     // Prevent joining a second room
@@ -248,7 +266,8 @@ async function joinRoom(room, env = '', password = '') {
         leaveRoom();
     }
 
-    socket.emit('joinRoom', { roomID: room, env, password, username: SnapCloud.username || SnapCloud.clientId, namespace: SnapCloud.username || SnapCloud.clientId });
+    socket.emit('joinRoom', { roomID: room, password, username: SnapCloud.username || SnapCloud.clientId, namespace: SnapCloud.username || SnapCloud.clientId });
+    lastPassword = password;
 }
 
 /**
