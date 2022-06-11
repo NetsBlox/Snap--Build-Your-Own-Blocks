@@ -39,10 +39,14 @@ const connectToRoboScapeSim = function (server) {
 
         // if IP, rewrite as domain to make usable
         if (server.match(/(\d{1,3}\.){3}\d{1,3}/)) {
+            server = server.replace('.', '-');
             server += ".nip.io";
         }
 
-        socket = io('//' + server + ":9001", { secure: true, withCredentials: false });
+        if (window.origin.includes('localhost')) {
+            server += ":9001";
+        }
+        socket = io('//' + server, { secure: true, withCredentials: false });
 
         socket.on('connect', e => {
             connectedServer = server;

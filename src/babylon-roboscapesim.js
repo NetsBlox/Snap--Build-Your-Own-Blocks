@@ -605,7 +605,7 @@ if (window.origin.includes('localhost')) {
     apiServer = 'http://localhost:5000/';
 } else {
     assetsDir = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/assets/';
-    apiServer = 'http://roboscapeonlineapi.netsblox.org/';
+    apiServer = 'https://roboscapeonlineapi.netsblox.org/';
 }
 
 /**
