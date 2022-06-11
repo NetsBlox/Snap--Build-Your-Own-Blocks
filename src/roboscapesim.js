@@ -221,8 +221,16 @@ function updateCanvasTitle(result) {
     window.externalVariables.roboscapeSimCanvasInstance.rerender();
 }
 
-function newRoom(environment = 'default', password = '') {
-    joinRoom('create', environment, password);
+async function newRoom(environment = 'default', password = '') {
+    const response = await fetch(apiServer + "rooms/create", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `username=${encodeURI(SnapCloud.username || SnapCloud.clientId)}&namespace=${encodeURI(SnapCloud.username || SnapCloud.clientId)}&password=${encodeURI(password)}&environment=${encodeURI(environment)}`
+    });
+    const responseObject = await response.json();
+    joinRoom(responseObject.room);
 }
 
 /**
