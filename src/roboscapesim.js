@@ -81,17 +81,7 @@ const connectToRoboScapeSim = function (server) {
 
 
                 // Create entries in dropdown
-                window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
-                    Object.keys(bodiesInfo).filter(label => label.startsWith('robot'))
-                        .reduce((prev, info) => {
-                            prev[info.replace('robot_', '')] = info.replace('robot_', '');
-                            return prev;
-                        }, {});
-
-                // Validate choice (if selected robot no longer exists, reset dropdown choice)
-                if (!(window.externalVariables.roboscapeSimCanvasInstance.robotsList.getValue() in window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices)) {
-                    window.externalVariables.roboscapeSimCanvasInstance.robotsList.setChoice('');
-                }
+                updateRobotsList(Object.keys(bodiesInfo).filter(label => label.startsWith('robot')));
             });
 
             // Handle room info
@@ -213,37 +203,13 @@ const connectToRoboScapeSim = function (server) {
     });
 };
 
-
-function updateCanvasTitle(result) {
-    window.externalVariables.roboscapeSimCanvasInstance.labelString = result;
-    window.externalVariables.roboscapeSimCanvasInstance.label.text = result;
-
-    // Hack to update label text without causing fixLayout to change the dialog size
-    let th = fontHeight(window.externalVariables.roboscapeSimCanvasInstance.titleFontSize) + window.externalVariables.roboscapeSimCanvasInstance.titlePadding * 2;
-    window.externalVariables.roboscapeSimCanvasInstance.label.measureCtx.font = window.externalVariables.roboscapeSimCanvasInstance.label.font();
-    let width = Math.max(
-        window.externalVariables.roboscapeSimCanvasInstance.label.measureCtx.measureText(result).width + Math.abs(window.externalVariables.roboscapeSimCanvasInstance.label.shadowOffset.x),
-        1
-    );
-
-    // Set label to be wide enough
-    window.externalVariables.roboscapeSimCanvasInstance.label.bounds.setWidth(width);
-    window.externalVariables.roboscapeSimCanvasInstance.label.fixLayout(true);
-
-    // Fix label position
-    window.externalVariables.roboscapeSimCanvasInstance.label.setCenter(window.externalVariables.roboscapeSimCanvasInstance.center());
-    window.externalVariables.roboscapeSimCanvasInstance.label.setTop(window.externalVariables.roboscapeSimCanvasInstance.top() + (th - window.externalVariables.roboscapeSimCanvasInstance.label.height()) / 2);
-    window.externalVariables.roboscapeSimCanvasInstance.label.fixLayout(true);
-    window.externalVariables.roboscapeSimCanvasInstance.rerender();
-}
-
 async function newRoom(environment = 'default', password = '') {
     const response = await fetch(apiServer + "rooms/create", {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `username=${encodeURI(SnapCloud.username || SnapCloud.clientId)}&namespace=${encodeURI(SnapCloud.username || SnapCloud.clientId)}&password=${encodeURI(password)}&environment=${encodeURI(environment)}`
+        body: `username=${encodeURI(getUsername())}&namespace=${encodeURI(getUsername())}&password=${encodeURI(password)}&environment=${encodeURI(environment)}`
     });
     const responseObject = await response.json();
     joinRoom(responseObject.room, password, responseObject.server);
@@ -498,24 +464,6 @@ setTimeout(() => {
 
 // Mapping of robots to currently playing notes (so robots can only play one at a time)
 let roboNotes = {};
-
-const playNote = function (robot, frequency, duration) {
-    // Stop an already playing note from this robot
-    if (roboNotes[robot]) {
-        roboNotes[robot].stop();
-        delete roboNotes[robot];
-    }
-
-    let n = new Note(69);
-    n.frequency = frequency;
-
-    let gainNode = n.audioContext.createGain();
-    gainNode.gain.value = 0.05;
-
-    n.play(2, gainNode);
-    setTimeout(() => { n.stop(); }, duration);
-    roboNotes[robot] = n;
-};
 
 const updateRoomsList = async function () {
     let response = await fetch(apiServer + "rooms/list?user=" + (SnapCloud.username || SnapCloud.clientId));

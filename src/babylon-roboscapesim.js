@@ -740,6 +740,64 @@ const clearAllTextBlocks = function () {
     }
 };
 
+function updateCanvasTitle(result) {
+    window.externalVariables.roboscapeSimCanvasInstance.labelString = result;
+    window.externalVariables.roboscapeSimCanvasInstance.label.text = result;
+
+    // Hack to update label text without causing fixLayout to change the dialog size
+    let th = fontHeight(window.externalVariables.roboscapeSimCanvasInstance.titleFontSize) + window.externalVariables.roboscapeSimCanvasInstance.titlePadding * 2;
+    window.externalVariables.roboscapeSimCanvasInstance.label.measureCtx.font = window.externalVariables.roboscapeSimCanvasInstance.label.font();
+    let width = Math.max(
+        window.externalVariables.roboscapeSimCanvasInstance.label.measureCtx.measureText(result).width + Math.abs(window.externalVariables.roboscapeSimCanvasInstance.label.shadowOffset.x),
+        1
+    );
+
+    // Set label to be wide enough
+    window.externalVariables.roboscapeSimCanvasInstance.label.bounds.setWidth(width);
+    window.externalVariables.roboscapeSimCanvasInstance.label.fixLayout(true);
+
+    // Fix label position
+    window.externalVariables.roboscapeSimCanvasInstance.label.setCenter(window.externalVariables.roboscapeSimCanvasInstance.center());
+    window.externalVariables.roboscapeSimCanvasInstance.label.setTop(window.externalVariables.roboscapeSimCanvasInstance.top() + (th - window.externalVariables.roboscapeSimCanvasInstance.label.height()) / 2);
+    window.externalVariables.roboscapeSimCanvasInstance.label.fixLayout(true);
+    window.externalVariables.roboscapeSimCanvasInstance.rerender();
+};
+
+const updateRobotsList = function (robots) {
+    window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices =
+        robots.reduce((prev, info) => {
+            prev[info.replace('robot_', '')] = info.replace('robot_', '');
+            return prev;
+        }, {});
+
+    // Validate choice (if selected robot no longer exists, reset dropdown choice)
+    if (!(window.externalVariables.roboscapeSimCanvasInstance.robotsList.getValue() in window.externalVariables.roboscapeSimCanvasInstance.robotsList.choices)) {
+        window.externalVariables.roboscapeSimCanvasInstance.robotsList.setChoice('');
+    }
+};
+
+const playNote = function (robot, frequency, duration) {
+    // Stop an already playing note from this robot
+    if (roboNotes[robot]) {
+        roboNotes[robot].stop();
+        delete roboNotes[robot];
+    }
+
+    let n = new Note(69);
+    n.frequency = frequency;
+
+    let gainNode = n.audioContext.createGain();
+    gainNode.gain.value = 0.05;
+
+    n.play(2, gainNode);
+    setTimeout(() => { n.stop(); }, duration);
+    roboNotes[robot] = n;
+};
+
+const getUsername = function () {
+    return SnapCloud.username || SnapCloud.clientId;
+}
+
 // Load Babylon
 var babylonScripts = ['https://cdn.jsdelivr.net/npm/babylonjs@5.9.1/babylon.min.js', 'https://cdn.jsdelivr.net/npm/babylonjs-loaders@5.9.1/babylonjs.loaders.min.js', 'https://cdn.jsdelivr.net/npm/babylonjs-gui@5.9.1/babylon.gui.min.js'];
 var scriptPromises = [];

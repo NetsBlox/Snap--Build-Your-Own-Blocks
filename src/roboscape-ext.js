@@ -135,7 +135,12 @@
                 },
                 'Open 3D View': function () {
                     _open3d();
-                }
+                },
+                'Copy Room ID': function () {
+                    if (roomID) {
+                        navigator.clipboard.writeText(roomID);
+                    }
+                },
             };
         }
 
