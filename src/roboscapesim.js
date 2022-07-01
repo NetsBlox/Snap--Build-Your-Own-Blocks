@@ -334,7 +334,7 @@ setTimeout(() => {
                             continue;
                         }
 
-                        if (bodiesInfo[label].visualInfo.model && bodiesInfo[label].visualInfo.model.endsWith('.gltf')) { // Mesh object
+                        if (bodiesInfo[label].visualInfo.model && (bodiesInfo[label].visualInfo.model.endsWith('.gltf') || bodiesInfo[label].visualInfo.model.endsWith('.glb'))) { // Mesh object
                             bodyMeshes[label] = addMesh(bodiesInfo[label].visualInfo.model).then(result => {
                                 bodyMeshes[label] = result;
 
