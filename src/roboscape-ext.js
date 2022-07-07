@@ -33,9 +33,17 @@
                         window.externalVariables.roboscapeSimCanvasInstance.hideCanvas();
                         const dialog = new DialogBoxMorph().withKey('NewRoboScapeSimRoom');
                         const roomPasswordField = new InputFieldMorph();
-                        const environmentField = new InputFieldMorph(null, false, availableEnvironments.reduce((p, c) => {
-                            console.log(c);
-                            p[c.Name] = c.ID;
+                        const environmentField = new DictMenuInputFieldMorph(null, false, availableEnvironments.reduce((p, c) => {
+
+                            if (c.Category) {
+                                if (!p[c.Category]) {
+                                    p[c.Category] = {};
+                                }
+
+                                p[c.Category][c.Name] = c.ID;
+                            } else {
+                                p[c.Name] = c.ID;
+                            }
                             return p;
                         }, {}), true);
                         const bdy = new AlignmentMorph('column', 2);

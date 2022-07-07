@@ -870,3 +870,114 @@ updateLoopFunctions.push(() => {
         window.externalVariables.roboscapeSimCanvasInstance.fixCanvasLayout();
     }
 });
+
+DictMenuInputFieldMorph.prototype = new InputFieldMorph();
+DictMenuInputFieldMorph.uber = InputFieldMorph.prototype;
+
+function DictMenuInputFieldMorph(text, isNumeric, choiceDict, isReadOnly) {
+    this.init(text, isNumeric, choiceDict, isReadOnly);
+}
+
+DictMenuInputFieldMorph.prototype.dropDownMenu = async function () {
+    var menu = await this.menuFromDict(this.choices, null);
+    if (!menu) { // has already happened
+        return;
+    }
+
+    if (menu.items.length > 0) {
+        menu.popUpAtHand(this.world());
+    }
+};
+
+DictMenuInputFieldMorph.prototype.userSetContents = function (aStringOrFloat) {
+    this.setChoice(aStringOrFloat);
+};
+
+DictMenuInputFieldMorph.prototype.menuFromDict = async function (choices, noEmptyOption) {
+    var key,
+        menu = new MenuMorph(
+            this.userSetContents,
+            null,
+            this,
+            this.fontSize
+        );
+
+    function getImg(block) {
+        return () => block.fullImage();
+    }
+
+    if (choices instanceof Function) {
+        choices = await choices.call(this);
+    } else if (isString(choices)) {
+        choices = await this[choices]();
+        if (!choices) { // menu has already happened
+            return;
+        }
+    }
+
+    if (!noEmptyOption) {
+        menu.addItem(' ', null);
+    }
+
+    for (key in choices) {
+        if (Object.prototype.hasOwnProperty.call(choices, key)) {
+            if (key[0] === '~') {
+                menu.addLine();
+            } else if (key.indexOf('§_def') === 0) {
+                menu.addItem(
+                    this.doWithAlpha(1, getImg(choices[key])),
+                    choices[key]
+                );
+            } else if (key.indexOf('§_') === 0) {
+                // prefixing a key with '§_' only makes the menu item
+                // appear when the user holds down the shift-key
+                // use with care because mobile devices might only
+                // have a "soft" keyboard that isn't always there
+                if (this.world().currentKey === 16) { // shift
+                    menu.addItem(
+                        key.slice(2),
+                        choices[key],
+                        null, // hint
+                        null, // color
+                        null, // bold
+                        true, // italic
+                        null, // doubleClickAction
+                        null, // shortcut
+                        !(choices[key] instanceof Array) &&
+                        typeof choices[key] !== 'function' // verbatim?
+                    );
+                }
+            } else if (choices[key] instanceof Object &&
+                !(choices[key] instanceof Array) &&
+                (typeof choices[key] !== 'function')) {
+                menu.addMenu(
+                    key,
+                    await this.menuFromDict(choices[key], true),
+                    null,  // indicator
+                );
+            } else if (choices[key] instanceof Array &&
+                choices[key][0] instanceof Object &&
+                typeof choices[key][0] !== 'function') {
+                menu.addMenu(
+                    key,
+                    await this.menuFromDict(choices[key][0], true),
+                    null,  // indicator
+                );
+            } else {
+                menu.addItem(
+                    key,
+                    choices[key],
+                    null, // hint
+                    null, // color
+                    null, // bold
+                    null, // italic
+                    null, // doubleClickAction
+                    null, // shortcut
+                    !(choices[key] instanceof Array) &&
+                    typeof choices[key] !== 'function' // verbatim?
+                );
+            }
+        }
+    }
+    return menu;
+};
