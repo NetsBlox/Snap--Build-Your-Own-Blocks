@@ -86,7 +86,7 @@ describe('ide', function() {
         it('should export correct xml locally', function(done) {
             var ide = driver.ide();
             var local = null;
-            ide.exportRoom = function(str) {
+            ide.exportRoom = str => {
                 // ignore the version number (client version may not match server version)
                 str = str.replace(/NetsBlox \d+\.\d+\.\d+,/, 'NetsBlox')
                     .replace(/ \(\d+\)" app="NetsBlox/, '" app="NetsBlox');
@@ -570,6 +570,7 @@ describe('ide', function() {
         });
 
         describe('api', function() {
+            before(() => driver.login('test'));
             after(() => delete driver.ide().droppedText);
 
             it('should be able to set variables', async function() {

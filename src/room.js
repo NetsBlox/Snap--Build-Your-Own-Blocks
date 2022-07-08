@@ -2205,7 +2205,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
     this.uncollaborateButton = this.addButton(() => {
-        this.cloud.evictCollaborator(myself.listField.selected.name);
+        this.cloud.removeCollaborator(myself.listField.selected.name);
         myself.destroy();
     }, 'Remove');
     this.collaborateButton = this.addButton('ok', 'Invite');

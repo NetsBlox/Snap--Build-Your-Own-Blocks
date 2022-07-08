@@ -8113,17 +8113,18 @@ SharedCloudProjectsSource.prototype.list = async function() {
 };
 
 SharedCloudProjectsSource.prototype.delete = function(project) {
-    this.ide.cloud.evictCollaborator(this.ide.cloud.username, project.id);
+    this.ide.cloud.removeCollaborator(this.ide.cloud.username, project.id);
 };
 
-SharedCloudProjectsSource.prototype.open = function(project) {
-    this.ide.cloud.joinActiveProject(
-        project.id,
-        async xml => {
-            this.ide.rawLoadCloudProject(xml, project.public);
-        },
-        this.ide.cloudError()
-    );
+SharedCloudProjectsSource.prototype.open = CloudProjectsSource.prototype.open;
+
+SharedCloudProjectsSource.prototype.getPreview = function(project) {
+    const updatedAt = new Date(project.updated.secs_since_epoch * 1000);
+    return {
+        thumbnail: project.thumbnail,
+        notes: project.notes,
+        details: localize('last changed') + '\n' + updatedAt
+    };
 };
 
 // BrowserProjectsSource ////////////////////////////////////////////////////
