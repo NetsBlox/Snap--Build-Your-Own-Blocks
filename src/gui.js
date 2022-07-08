@@ -250,7 +250,7 @@ IDE_Morph.prototype.init = function (isAutoFill, config) {
     this.applySavedSettings();
 
     // additional properties:
-    this.cloud = new Cloud(config.clientId, config.cloudUrl, config.username);
+    this.cloud = new Cloud(config.cloudUrl, config.clientId, config.username, localize);
     this.cloud.onerror = this.cloudError();
     this.cloudMsg = null;
     this.source = 'local';
@@ -323,7 +323,7 @@ IDE_Morph.prototype.openIn = function (world) {
     if (localStorage) {
         usr = localStorage['-snap-user'];
         if (usr) {
-            usr = this.cloud.parseSnapResponse(usr)[0];
+            usr = this.cloud.parseResponse(usr)[0];
             if (usr) {
                 this.cloud.username = usr.username || null;
                 this.cloud.password = usr.password || null;

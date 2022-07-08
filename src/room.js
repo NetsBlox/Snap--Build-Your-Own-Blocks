@@ -788,7 +788,6 @@ RoomMorph.prototype.respondToInvitation = function (id, role, accepted) {
             }
             msg.destroy();
             this.ide.silentSetProjectName(role);
-            cloud.disconnect();
         },
         err => this.ide.showMessage(err, 2)
     );
