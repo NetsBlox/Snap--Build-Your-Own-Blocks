@@ -257,7 +257,9 @@ function leaveRoom() {
 
     // Clean up meshes
     for (let mesh of Object.values(bodyMeshes)) {
-        mesh?.dispose();
+        if (mesh?.dispose) {
+            mesh?.dispose();
+        }
     }
     bodyMeshes = {};
 

@@ -173,10 +173,15 @@
     if (window.origin.includes('localhost')) {
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'http://localhost:8080/src/babylon-roboscapesim.js';
+        script.src = 'http://localhost:8080/src/roboscapesim-ui.js';
         script.async = false;
         document.body.appendChild(script);
 
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'http://localhost:8080/src/roboscapesim-babylon.js';
+        script.async = false;
+        document.body.appendChild(script);
 
         script = document.createElement('script');
         script.type = 'text/javascript';
@@ -186,10 +191,15 @@
     } else {
         script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/babylon-roboscapesim.js';
+        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/roboscapesim-ui.js';
         script.async = false;
         document.body.appendChild(script);
 
+        script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://extensions.netsblox.org/extensions/RoboScapeOnline/js/roboscapesim-babylon.js';
+        script.async = false;
+        document.body.appendChild(script);
 
         script = document.createElement('script');
         script.type = 'text/javascript';
