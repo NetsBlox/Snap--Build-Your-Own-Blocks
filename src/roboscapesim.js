@@ -1,6 +1,7 @@
 var socket;
 var bodies = {};
 var nextBodies = {};
+var bodiesInfo = {};
 var lastUpdateTime;
 var nextUpdateTime;
 var startServerTime = 0;

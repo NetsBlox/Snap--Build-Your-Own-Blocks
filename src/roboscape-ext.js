@@ -185,13 +185,13 @@
                     'network',
                     'robots in room',
                     [],
-                    () => (typeof bodiesInfo != "undefined" ? Object.keys(bodiesInfo).filter(label => label.startsWith('robot')) : [])
+                    () => Object.keys(bodiesInfo).filter(label => label.startsWith('robot'))
                 ).for(SpriteMorph, StageMorph),
                 new Extension.Block(
                     'inRoboScapeRoom',
                     'predicate',
                     'network',
-                    'in room',
+                    'in RoboScape room',
                     [],
                     () => !!roomID
                 ).for(SpriteMorph, StageMorph)];
