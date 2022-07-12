@@ -327,6 +327,7 @@ for (let file of babylonScripts) {
 }
 
 disableRetinaSupport(); // Need to find fix for this
+document.querySelector("body").style.overflow = 'hidden';
 
 // Wait for scripts to load
 Promise.all(scriptPromises).then(() => {
