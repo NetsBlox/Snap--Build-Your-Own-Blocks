@@ -185,7 +185,7 @@
                     'network',
                     'robots in room',
                     [],
-                    () => Object.keys(bodiesInfo).filter(label => label.startsWith('robot'))
+                    () => new List(Object.keys(bodiesInfo).filter(label => label.startsWith('robot')).map(label => label.slice(6)))
                 ).for(SpriteMorph, StageMorph),
                 new Extension.Block(
                     'inRoboScapeRoom',
