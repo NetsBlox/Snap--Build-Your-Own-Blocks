@@ -149,6 +149,19 @@
                         navigator.clipboard.writeText(roomID);
                     }
                 },
+                'Reset Cameras': function () {
+                    if (followCam) {
+                        followCam.heightOffset = 1.25;
+                        followCam.radius = 2;
+                        followCam.rotationOffset = 0;
+                    }
+
+                    if (camera) {
+                        camera.position = new BABYLON.Vector3(0, 6, -2)
+                        camera.setTarget(new BABYLON.Vector3(0, 0, 0));
+                        scene.activeCamera = camera;
+                    }
+                },
             };
         }
 
