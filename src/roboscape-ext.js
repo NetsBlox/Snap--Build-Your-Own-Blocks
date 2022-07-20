@@ -162,6 +162,9 @@
                         scene.activeCamera = camera;
                     }
                 },
+                'Disable/Enable Beeps': function () {
+                    beepsDisabled = !beepsDisabled;
+                },
             };
         }
 
