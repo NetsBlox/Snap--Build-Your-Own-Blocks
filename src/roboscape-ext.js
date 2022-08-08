@@ -188,6 +188,7 @@
                         new Extension.Palette.Block('roboScapeRoomID'),
                         new Extension.Palette.Block('show3Dview'),
                         new Extension.Palette.Block('hide3Dview'),
+                        new Extension.Palette.Block('joinRoom'),
                     ],
                     SpriteMorph
                 ),
@@ -199,6 +200,7 @@
                         new Extension.Palette.Block('roboScapeRoomID'),
                         new Extension.Palette.Block('show3Dview'),
                         new Extension.Palette.Block('hide3Dview'),
+                        new Extension.Palette.Block('joinRoom'),
                     ],
                     StageMorph
                 )
@@ -246,12 +248,45 @@
                     'hide 3D view',
                     [],
                     _close3d
+                ).for(SpriteMorph, StageMorph),
+                new Extension.Block(
+                    'joinRoom',
+                    'command',
+                    'network',
+                    'join RoboScape room %roomID with password %password',
+                    [],
+                    (roomID, password) => { joinRoom(roomID, password) }
                 ).for(SpriteMorph, StageMorph)
             ];
         }
 
         getLabelParts() {
-            return [];
+            return [
+                new Extension.LabelPart(
+                    '%roomID',
+                    () => {
+                        const part = new InputSlotMorph(
+                            null, // text
+                            false, // non-numeric
+                            null,
+                            false
+                        );
+                        return part;
+                    }
+                ),
+                new Extension.LabelPart(
+                    '%password',
+                    () => {
+                        const part = new InputSlotMorph(
+                            null, // text
+                            false, // non-numeric
+                            null,
+                            false
+                        );
+                        return part;
+                    }
+                ),
+            ];
         }
 
     }
