@@ -5,6 +5,7 @@ var encryptButton;
 var claimButton;
 var claimLabel;
 var updateRobotRowUI;
+var beepsDisabled = false;
 
 var updateLoopFunctions = [];
 
@@ -466,6 +467,11 @@ const updateRobotsList = function (robots) {
 };
 
 const playNote = function (robot, frequency, duration) {
+    if (beepsDisabled) {
+        console.log(`Rejected beep to robot ${robot} at freq ${frequency} for ${duration} ms`);
+        return;
+    }
+
     // Stop an already playing note from this robot
     if (roboNotes[robot]) {
         roboNotes[robot].stop();
