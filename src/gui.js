@@ -29,7 +29,7 @@
 
     prerequisites:
     --------------
-    needs blocks.js, threads.js, objects.js, cloud.jus and morphic.js
+    needs blocks.js, threads.js, objects.js, cloud.js and morphic.js
 
 
     toc
@@ -304,7 +304,7 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     // initialize inherited properties:
     IDE_Morph.uber.init.call(this);
 
-    // override inherited properites:
+    // override inherited properties:
     this.color = this.backgroundColor;
     this.activeEditor = this;
     this.extensions = NetsBloxExtensions;
@@ -478,6 +478,20 @@ IDE_Morph.prototype.interpretUrlAnchors = async function (loc) {
 
         dict = SnapCloud.parseDict(querystring);
     }
+    
+    if (dict.extensions) {
+        try {
+            const extensionUrls = JSON.parse(decodeURIComponent(dict.extensions));
+            extensionUrls.forEach(url => this.loadExtension(url));
+        } catch (err) {
+            this.inform(
+                'Unable to load extensions',
+                'The following error occurred while trying to load extensions:\n\n' +
+                err.message + '\n\n' +
+                'Perhaps the URL is malformed?'
+            );
+        }
+    }
 
     if (loc.hash.substr(0, 6) === '#open:') {
         hash = loc.hash.substr(6);
@@ -647,20 +661,6 @@ IDE_Morph.prototype.interpretUrlAnchors = async function (loc) {
 
     this.world().keyboardFocus = this.stage;
     this.warnAboutIE();
-
-    if (dict.extensions) {
-        try {
-            const extensionUrls = JSON.parse(decodeURIComponent(dict.extensions));
-            extensionUrls.forEach(url => this.loadExtension(url));
-        } catch (err) {
-            this.inform(
-                'Unable to load extensions',
-                'The following error occurred while trying to load extensions:\n\n' +
-                err.message + '\n\n' +
-                'Perhaps the URL is malformed?'
-            );
-        }
-    }
 
     if (dict.setVariable) {
         const [varName, value] = dict.setVariable.split('=');
@@ -2672,7 +2672,7 @@ IDE_Morph.prototype.refreshIDE = function () {
     }
 };
 
-// IDE_Morph settings persistance
+// IDE_Morph settings persistence
 
 IDE_Morph.prototype.applySavedSettings = function () {
     var design = this.getSetting('design'),
@@ -5287,7 +5287,7 @@ IDE_Morph.prototype.openProjectString = function (str) {
     ]);
 };
 
-IDE_Morph.prototype.rawOpenProjectString = function (str) {
+IDE_Morph.prototype.rawOpenProjectString = async function (str) {
     var project;
 
     this.toggleAppMode(false);
@@ -5303,7 +5303,7 @@ IDE_Morph.prototype.rawOpenProjectString = function (str) {
     if (Process.prototype.isCatchingErrors) {
         try {
             project = this.serializer.openProject(
-                this.serializer.load(str, this),
+                await this.serializer.load(str, this),
                 this
             );
         } catch (err) {
@@ -5311,7 +5311,7 @@ IDE_Morph.prototype.rawOpenProjectString = function (str) {
         }
     } else {
         project = this.serializer.openProject(
-            this.serializer.load(str, this),
+            await this.serializer.load(str, this),
             this
         );
     }
@@ -5328,43 +5328,44 @@ IDE_Morph.prototype.openCloudDataString = function (str) {
         .then(() => msg.destroy());
 };
 
-IDE_Morph.prototype.rawOpenCloudDataString = function (str) {
-    var model,
-        project;
+IDE_Morph.prototype.rawOpenCloudDataString = async function (model, parsed) {
+    var project;
     StageMorph.prototype.hiddenPrimitives = {};
     StageMorph.prototype.codeMappings = {};
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
-    StageMorph.prototype.enableInheritance = true;
+    StageMorph.prototype.enableInheritance = false;
     StageMorph.prototype.enableSublistIDs = false;
-    StageMorph.prototype.enablePenLogging = false;
     Process.prototype.enableLiveCoding = false;
+    Process.prototype.enablePenLogging = false;
     SnapActions.disableCollaboration();
     SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
-            model = this.serializer.parse(str);
+            model = parsed ? model : this.serializer.parse(model);
             this.serializer.loadMediaModel(model.childNamed('media'));
+            const projectModel = await this.serializer.loadProjectModel(
+                model.childNamed('project'),
+                this,
+                model.attributes.remixID
+            );
             project = this.serializer.openProject(
-                this.serializer.loadProjectModel(
-                    model.childNamed('project'),
-                    this,
-                    model.attributes.remixID
-                ),
+                projectModel,
                 this
             );
         } catch (err) {
             this.showMessage('Load failed: ' + err);
         }
     } else {
-        model = this.serializer.parse(str);
+        model = parsed ? model : this.serializer.parse(model);
         this.serializer.loadMediaModel(model.childNamed('media'));
+        const projectModel = await this.serializer.loadProjectModel(
+            model.childNamed('project'),
+            this,
+            model.attributes.remixID
+        );
         project = this.serializer.openProject(
-            this.serializer.loadProjectModel(
-                model.childNamed('project'),
-                this,
-                model.attributes.remixID
-            ),
+            projectModel,
             this
         );
     }
@@ -7179,7 +7180,7 @@ SaveOpenDialogMorph.prototype.init = function (task, itemName, sources, source, 
         null // environment
     );
 
-    // override inherited properites:
+    // override inherited properties:
     this.labelString = this.task === 'save' ? 'Save ' + itemName : 'Open ' + itemName;
     this.createLabel();
     this.key = task + itemName;
@@ -8610,7 +8611,7 @@ SpriteIconMorph.prototype.createRotationButton = function () {
 
     if (this.rotationButton) {
         this.rotationButton.destroy();
-        this.roationButton = null;
+        this.rotationButton = null;
     }
     if (!this.object.anchor) {
         return;
@@ -10260,7 +10261,7 @@ CamSnapshotDialogMorph.prototype.notSupportedMessage =
 	'and your camera is properly configured. \n\n' +
 	'Some browsers also require you to access Snap!\n' +
 	'through HTTPS to use the camera.\n\n' +
-    'Plase replace the "http://" part of the address\n' +
+    'Please replace the "http://" part of the address\n' +
     'in your browser by "https://" and try again.';
 
 // CamSnapshotDialogMorph instance creation

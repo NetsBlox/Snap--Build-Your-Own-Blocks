@@ -993,6 +993,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'url %s',
             defaults: ['snap.berkeley.edu']
         },
+        reportHTTPRequest: {
+            type: 'reporter',
+            category: 'sensing',
+            spec: '%httprt url: %s send: %s headers: %lists',
+            defaults: ['GET', 'https://snap.berkeley.edu'],
+        },
         doSetGlobalFlag: {
             type: 'command',
             category: 'sensing',
@@ -2551,6 +2557,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('reportThreadCount'));
             blocks.push(block('reportStackSize'));
             blocks.push(block('reportFrameCount'));
+
+            blocks.push(block('reportHTTPRequest'));
         }
 
 	/////////////////////////////////
@@ -3390,7 +3398,7 @@ SpriteMorph.prototype.reporterize = function (expressionString) {
     function parseInfix(expression, operator, already) {
         // very basic diadic infix parser for arithmetic expressions
         // with strict left-to-right operator precedence (as in Smalltalk)
-        // which can be overriden by - nested - parentheses.
+        // which can be overridden by - nested - parentheses.
         // assumes well-formed expressions, no graceful error handling yet.
 
         var inputs = ['', ''],
@@ -4260,7 +4268,7 @@ SpriteMorph.prototype.setVisibility = function (bool, noShadow) {
         }
     }
 
-    // progagate to parts
+    // propagate to parts
     this.parts.forEach(part => part.setVisibility(bool));
 
     // propagate to children that inherit my visibility
@@ -5134,7 +5142,7 @@ SpriteMorph.prototype.setEffect = function (effect, value) {
                 'pixelate',
                 'mosaic',
                 'negative',
-                // depracated, but still supported in legacy projects:
+                // deprecated, but still supported in legacy projects:
                 'duplicate',
                 'comic',
                 'confetti'
@@ -6851,7 +6859,7 @@ SpriteMorph.prototype.refreshInheritedAttribute = function (aName) {
             this.wearCostume(this.exemplar.costume, true);
         } else {
             // otherwise switch to the own costume of the
-            // corresponing number
+            // corresponding number
             this.doSwitchToCostume(this.getCostumeIdx(), true);
         }
         break;
@@ -7101,7 +7109,7 @@ SpriteMorph.prototype.inheritedMethods = function () {
 
 SpriteMorph.prototype.thumbnail = function (extentPoint, recycleMe) {
     // answer a new Canvas of extentPoint dimensions containing
-    // my thumbnail representation keeping the originial aspect ratio
+    // my thumbnail representation keeping the original aspect ratio
     // a "recycleMe canvas can be passed for re-use
     var src = this.getImage(), // at this time sprites aren't composite morphs
         w = this.width(),
@@ -8833,6 +8841,8 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('reportThreadCount'));
             blocks.push(block('reportStackSize'));
             blocks.push(block('reportFrameCount'));
+
+            blocks.push(block('reportHTTPRequest'));
         }
 
     /////////////////////////////////
@@ -9125,7 +9135,7 @@ StageMorph.prototype.fullImage = Morph.prototype.fullImage;
 
 StageMorph.prototype.thumbnail = function (extentPoint, recycleMe) {
     // answer a new Canvas of extentPoint dimensions containing
-    // my thumbnail representation keeping the originial aspect ratio
+    // my thumbnail representation keeping the original aspect ratio
     // a "recycleMe canvas can be passed for re-use
     return this.fancyThumbnail(extentPoint, null, false, recycleMe);
 };
@@ -9680,7 +9690,7 @@ StageMorph.prototype.reportPenTrailsAsCostume = function () {
 // SpriteBubbleMorph ////////////////////////////////////////////////////////
 
 /*
-    I am a sprite's scaleable speech bubble. I rely on SpriteMorph
+    I am a sprite's scalable speech bubble. I rely on SpriteMorph
     for my preferences settings
 */
 
@@ -10179,7 +10189,7 @@ Costume.prototype.shrinkToFit = function (extentPoint) {
 
 Costume.prototype.thumbnail = function (extentPoint, recycleMe) {
     // answer a new Canvas of extentPoint dimensions containing
-    // my thumbnail representation keeping the originial aspect ratio
+    // my thumbnail representation keeping the original aspect ratio
     // a "recycleMe canvas can be passed for re-use
     var src = this.contents, // at this time sprites aren't composite morphs
         scale = Math.min(
