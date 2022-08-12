@@ -2780,12 +2780,23 @@ Process.prototype.reportCombine = function (list, reporter) {
 
     var next, current, index, parms;
     this.assertType(list, 'list');
-    if (list.length() < 2) {
-        this.returnValueToParentContext(list.length() ? list.at(1) : 0);
-        return;
-    }
     if (list.isLinked) {
         if (this.context.accumulator === null) {
+            // check for special cases to speed up
+            if (this.canRunOptimizedForCombine(reporter)) {
+                return this.reportListAggregation(
+                    list,
+                    reporter.expression.selector
+                );
+            }
+
+            // test for base cases
+            if (list.length() < 2) {
+                this.returnValueToParentContext(list.length() ? list.at(1) : 0);
+                return;
+            }
+
+            // initialize the accumulator
             this.context.accumulator = {
                 source : list.cdr(),
                 idx : 1,
@@ -2806,6 +2817,21 @@ Process.prototype.reportCombine = function (list, reporter) {
         next = this.context.accumulator.source.at(1);
     } else { // arrayed
         if (this.context.accumulator === null) {
+            // check for special cases to speed up
+            if (this.canRunOptimizedForCombine(reporter)) {
+                return this.reportListAggregation(
+                    list,
+                    reporter.expression.selector
+                );
+            }
+
+            // test for base cases
+            if (list.length() < 2) {
+                this.returnValueToParentContext(list.length() ? list.at(1) : 0);
+                return;
+            }
+
+            // initialize the accumulator
             this.context.accumulator = {
                 idx : 1,
                 target : list.at(1)
@@ -2831,6 +2857,78 @@ Process.prototype.reportCombine = function (list, reporter) {
         parms.push(list);
     }
     this.evaluate(reporter, new List(parms));
+};
+
+Process.prototype.reportListAggregation = function (list, selector) {
+    // private - used by reportCombine to optimize certain commutative
+    // operations such as sum, product, min, max hyperized all at once
+    var len = list.length(),
+        result, i, op;
+    op = {
+        reportVariadicSum: 'reportSum',
+        reportVariadicProduct: 'reportProduct',
+        reportVariadicMin: 'reportMin',
+        reportVariadicMax: 'reportMax'
+    }[selector] || selector;
+    if (len === 0) {
+        switch (op) {
+        case 'reportProduct':
+            return 1;
+        case 'reportMin':
+            return Infinity;
+        case 'reportMax':
+            return -Infinity;
+        default: // reportSum
+            return 0;
+        }
+    }
+    result = list.at(1);
+    if (len > 1) {
+        for (i = 2; i <= len; i += 1) {
+            result = this[op](result, list.at(i));
+        }
+    }
+    return result;
+};
+
+Process.prototype.canRunOptimizedForCombine = function (aContext) {
+    // private - used by reportCombine to check for optimizable
+    // special cases
+    var op = aContext.expression.selector,
+        slots,
+        eligible;
+    if (!op) {
+        return false;
+    }
+    eligible = [
+        'reportVariadicSum',
+        'reportVariadicProduct',
+        'reportVariadicMin',
+        'reportVariadicMax'
+    ];
+    if (!contains(eligible, op)) {
+        return false;
+    }
+
+    // scan the expression's inputs,
+    // make sure there are exactly two and none is
+    // a non-empty input slot or a variable getter whose name doesn't
+    // correspond to an input of the context.
+    // make sure the context has either no or exactly two inputs.
+    slots = aContext.expression.inputs()[0].inputs();
+    if (slots.length !== 2) {
+        return false;
+    }
+    if (aContext.inputs.length === 0) {
+        return slots.every(each => each.bindingID);
+    }
+    if (aContext.inputs.length !== 2) {
+        return false;
+    }
+    return slots.every(each =>
+        each.selector === 'reportGetVar' &&
+            contains(aContext.inputs, each.blockSpec)
+    );
 };
 
 // Process interpolated primitives
@@ -3663,6 +3761,11 @@ Process.prototype.rank = function(data) {
 
 // Process math primtives - arithmetic
 
+Process.prototype.reportVariadicSum = function (numbers) {
+    this.assertType(numbers, 'list');
+    return this.reportListAggregation(numbers, 'reportSum');
+};
+
 Process.prototype.reportSum = function (a, b) {
     return this.hyperDyadic(this.reportBasicSum, a, b);
 };
@@ -3677,6 +3780,11 @@ Process.prototype.reportDifference = function (a, b) {
 
 Process.prototype.reportBasicDifference = function (a, b) {
     return +a - +b;
+};
+
+Process.prototype.reportVariadicProduct = function (numbers) {
+    this.assertType(numbers, 'list');
+    return this.reportListAggregation(numbers, 'reportProduct');
 };
 
 Process.prototype.reportProduct = function (a, b) {
@@ -3703,16 +3811,6 @@ Process.prototype.reportBasicPower = function (a, b) {
     return Math.pow(+a, +b);
 };
 
-Process.prototype.reportModulus = function (a, b) {
-    return this.hyperDyadic(this.reportBasicModulus, a, b);
-};
-
-Process.prototype.reportBasicModulus = function (a, b) {
-    var x = +a,
-        y = +b;
-    return ((x % y) + y) % y;
-};
-
 Process.prototype.reportRandom = function (a, b) {
     return this.hyperDyadic(this.reportBasicRandom, a, b);
 };
@@ -3726,10 +3824,78 @@ Process.prototype.reportBasicRandom = function (min, max) {
     return Math.floor(Math.random() * (ceil - floor + 1)) + floor;
 };
 
+// Process math primtives - arithmetic hyperdyadic
+
+Process.prototype.reportModulus = function (a, b) {
+    return this.hyperDyadic(this.reportBasicModulus, a, b);
+};
+
+Process.prototype.reportBasicModulus = function (a, b) {
+    var x = +a,
+        y = +b;
+    return ((x % y) + y) % y;
+};
+
+Process.prototype.reportAtan2 = function (a, b) {
+    return this.hyperDyadic(this.reportBasicAtan2, a, b);
+};
+
+Process.prototype.reportBasicAtan2 = function (a, b) {
+    return degrees(Math.atan2(+a, +b));
+};
+
+Process.prototype.reportVariadicMin = function (numbers) {
+    this.assertType(numbers, 'list');
+    return this.reportListAggregation(numbers, 'reportMin');
+};
+
+Process.prototype.reportMin = function (a, b) {
+    return this.hyperDyadic(this.reportBasicMin, a, b);
+};
+
+Process.prototype.reportBasicMin = function (a, b) {
+    // return Math.min(+a, +b); // enhanced to also work with text
+    var x = +a,
+        y = +b;
+    if (isNaN(x) || isNaN(y)) {
+        x = a;
+        y = b;
+    }
+    return x < y ? x : y;
+};
+
+Process.prototype.reportVariadicMax = function (numbers) {
+    this.assertType(numbers, 'list');
+    return this.reportListAggregation(numbers, 'reportMax');
+};
+
+Process.prototype.reportMax = function (a, b) {
+    return this.hyperDyadic(this.reportBasicMax, a, b);
+};
+
+Process.prototype.reportBasicMax = function (a, b) {
+    // return Math.max(+a, +b); // enhanced to also work with text
+    var x = +a,
+        y = +b;
+    if (isNaN(x) || isNaN(y)) {
+        x = a;
+        y = b;
+    }
+    return x > y ? x : y;
+};
+
 // Process logic primitives - hyper-diadic / monadic where applicable
 
 Process.prototype.reportLessThan = function (a, b) {
     return this.hyperDyadic(this.reportBasicLessThan, a, b);
+};
+
+Process.prototype.reportLessThanOrEquals = function (a, b) {
+    return this.hyperDyadic(
+        (a, b) => !this.reportBasicGreaterThan(a, b),
+        a,
+        b
+    );
 };
 
 Process.prototype.reportBasicLessThan = function (a, b) {
@@ -3742,18 +3908,16 @@ Process.prototype.reportBasicLessThan = function (a, b) {
     return x < y;
 };
 
-Process.prototype.reportNot = function (bool) {
-    if (this.enableHyperOps) {
-        if (bool instanceof List) {
-            return bool.map(each => this.reportNot(each));
-        }
-    }
-    // this.assertType(bool, 'Boolean');
-    return !bool;
-};
-
 Process.prototype.reportGreaterThan = function (a, b) {
     return this.hyperDyadic(this.reportBasicGreaterThan, a, b);
+};
+
+Process.prototype.reportGreaterThanOrEquals = function (a, b) {
+    return this.hyperDyadic(
+        (a, b) => !this.reportBasicLessThan(a, b),
+        a,
+        b
+    );
 };
 
 Process.prototype.reportBasicGreaterThan = function (a, b) {
@@ -3768,6 +3932,20 @@ Process.prototype.reportBasicGreaterThan = function (a, b) {
 
 Process.prototype.reportEquals = function (a, b) {
     return snapEquals(a, b);
+};
+
+Process.prototype.reportNotEquals = function (a, b) {
+    return !snapEquals(a, b);
+};
+
+Process.prototype.reportNot = function (bool) {
+    if (this.enableHyperOps) {
+        if (bool instanceof List) {
+            return bool.map(each => this.reportNot(each));
+        }
+    }
+    // this.assertType(bool, 'Boolean');
+    return !bool;
 };
 
 Process.prototype.reportIsIdentical = function (a, b) {
