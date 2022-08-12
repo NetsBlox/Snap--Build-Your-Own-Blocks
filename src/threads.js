@@ -1850,7 +1850,6 @@ Process.prototype.shadowListAttribute = function (list) {
 // Process accessing list elements - hyper dyadic
 
 Process.prototype.reportListItem = function (index, list) {
-    var rank;
     this.assertType(list, 'list');
     if (index === '') {
         return '';
@@ -1861,70 +1860,95 @@ Process.prototype.reportListItem = function (index, list) {
     if (this.inputOption(index) === 'last') {
         return list.at(list.length());
     }
-    rank = this.rank(index);
-    if (rank > 0 && this.enableHyperOps) {
-        if (rank === 1) {
-            if (index.isEmpty()) {
-                return list.map(item => item);
-            }
-            return index.map(idx => list.at(idx));
-        }
-        return this.reportItems(index, list);
+    if (index instanceof List && this.enableHyperOps) {
+        return list.query(index);
     }
     return list.at(index);
 };
 
-Process.prototype.reportItems = function (indices, list) {
-    // This. This is it. The pinnacle of my programmer's life.
-    // After days of roaming about my house and garden,
-    // of taking showers and rummaging through the fridge,
-    // of strumming the charango and the five ukuleles
-    // sitting next to my laptop on my desk,
-    // and of letting my mind wander far and wide,
-    // to come up with this design, always thinking
-    // "What would Brian do?".
-    // And look, Ma, it's turned out all beautiful! -jens
+// Process - tabular list ops
 
-    return makeSelector(
-        this.rank(list),
-        indices.cdr(),
-        makeLeafSelector(indices.at(1))
-    )(list);
+Process.prototype.reportTranspose = function (list) {
+    this.assertType(list, 'list');
+    return list.transpose();
+};
 
-    function makeSelector(rank, indices, next) {
-        if (rank === 1) {
-            return next;
-        }
-        return makeSelector(
-            rank - 1,
-            indices.cdr(),
-            makeBranch(
-                indices.at(1) || new List(),
-                next
-            )
-        );
+Process.prototype.reportCrossproduct = function (lists) {
+    this.assertType(lists, 'list');
+    if (lists.isEmpty()) {
+        return lists;
     }
+    this.assertType(lists.at(1), 'list');
+    return lists.crossproduct();
+};
 
-    function makeBranch(indices, next) {
-        return function(data) {
-            if (indices.isEmpty()) {
-                return data.map(item => next(item));
-            }
-            return indices.map(idx => next(data.at(idx)));
-        };
-    }
+Process.prototype.reportReshape = function (list, shape) {
+    this.assertType(shape, 'list');
+    list = list instanceof List ? list : new List([list]);
+    return list.reshape(shape);
+};
 
-    function makeLeafSelector(indices) {
-        return function (data) {
-            if (indices.isEmpty()) {
-                return data.map(item => item);
-            }
-            return indices.map(idx => data.at(idx));
-        };
-    }
+Process.prototype.reportSlice = function (list, indices) {
+    // currently not in use
+    this.assertType(list, 'list');
+    this.assertType(indices, 'list');
+    return list.slice(indices);
 };
 
 // Process - other basic list accessors
+
+Process.prototype.reportListAttribute = function (choice, list) {
+    var option = this.inputOption(choice);
+    switch (option) {
+    case 'length':
+        this.assertType(list, 'list');
+        return list.length();
+    case 'size':
+        this.assertType(list, 'list');
+        return list.size();
+    case 'rank':
+        return list instanceof List ? list.rank() : 0;
+    case 'dimensions':
+        return list instanceof List ? list.shape() : new List();
+    case 'flatten':
+        return list instanceof List ? list.ravel() : new List([list]);
+    case 'columns':
+        this.assertType(list, 'list');
+        return list.columns();
+    case 'transpose':
+        this.assertType(list, 'list');
+        return list.transpose();
+    case 'reverse':
+        this.assertType(list, 'list');
+        return list.reversed();
+    case 'lines':
+        this.assertType(list, 'list');
+        if (list.canBeTXT()) {
+            return list.asTXT();
+        }
+        throw new Error(
+            localize('unable to convert to') + ' ' + localize('lines')
+        );
+    case 'csv':
+        this.assertType(list, 'list');
+        if (list.canBeCSV()) {
+            return list.asCSV();
+        }
+        throw new Error(
+            localize('unable to convert to') + ' ' + localize('CSV')
+        );
+    case 'json':
+        this.assertType(list, 'list');
+        if (list.canBeJSON()) {
+            return list.asJSON();
+        }
+        throw new Error(
+            localize('unable to convert to') + ' ' + localize('JSON')
+        );
+    default:
+        return 0;
+    }
+};
 
 Process.prototype.reportListLength = function (list) {
     this.assertType(list, 'list');
@@ -4869,10 +4893,19 @@ Process.prototype.spritesAtPoint = function (point, stage) {
 };
 
 Process.prototype.reportRelationTo = function (relation, name) {
+	if (this.enableHyperOps) {
+        if (name instanceof List && !this.isCoordinate(name)) {
+            return name.map(each => this.reportRelationTo(relation, each));
+        }
+    }
+
 	var rel = this.inputOption(relation);
  	if (rel === 'distance') {
   		return this.reportDistanceTo(name);
   	}
+    if (rel === 'ray length') {
+        return this.reportRayLengthTo(name);
+    }
     if (rel === 'direction') {
     	return this.reportDirectionTo(name);
     }
@@ -4906,6 +4939,178 @@ Process.prototype.reportDistanceTo = function (name) {
         return rc.distanceTo(point) / stage.scale;
     }
     return 0;
+};
+
+Process.prototype.reportRayLengthTo = function (name) {
+    // raycasting edge detection - answer the distance between the asking
+    // sprite's rotation center to the target sprite's outer edge (the first
+    // opaque pixel) in the asking sprite's current direction
+    var thisObj = this.blockReceiver(),
+        thatObj,
+        stage,
+        rc,
+        targetBounds,
+        intersections = [],
+        dir,
+        a, b, x, y,
+        top, bottom, left, right,
+        circa, hSect, vSect,
+        point, hit,
+        temp,
+        width, imageData;
+
+    circa = (num) => Math.round(num * 10000000) / 10000000; // good enough
+
+    hSect = (yLevel) => {
+        var theta = radians(dir);
+        b = rc.y - yLevel;
+        a = b * Math.tan(theta);
+        x = rc.x + a;
+        if (
+            (circa(x) === circa(rc.x) &&
+                ((dir === 180 && rc.y < yLevel) ||
+                dir === 0 && rc.y > yLevel)
+            ) ||
+            (x > rc.x && dir >= 0 && dir < 180) ||
+            (circa(x) < circa(rc.x) &&
+                dir >= 180 && dir < 360)
+        ) {
+            if (x >= left && x <= right) {
+                intersections.push(new Point(x, yLevel));
+            }
+        }
+    };
+
+    vSect = (xLevel) => {
+        var theta = radians(360 - dir - 90);
+        b = rc.x - xLevel;
+        a = b * Math.tan(theta);
+        y = rc.y + a;
+        if (
+            (circa(y) === circa(rc.y) &&
+                ((dir === 90 && rc.x < xLevel) ||
+                dir === 270 && rc.x > xLevel)
+            ) ||
+            (y > rc.y && dir >= 90 && dir < 270) ||
+            (y < rc.y && (dir >= 270 || dir < 90))
+        ) {
+            if (y >= top && y <= bottom) {
+                intersections.push(new Point(xLevel, y));
+            }
+        }
+    };
+
+    if (!thisObj) {return -1; }
+    rc = thisObj.rotationCenter();
+    point = rc;
+    stage = thisObj.parentThatIsA(StageMorph);
+    thatObj = this.getOtherObject(name, thisObj, stage);
+    if (!(thatObj instanceof SpriteMorph)) {return -1; }
+
+    // determine intersections with the target's bounding box
+    dir = thisObj.heading;
+    targetBounds = thatObj.bounds;
+    top = targetBounds.top();
+    bottom = targetBounds.bottom();
+    left = targetBounds.left();
+    right = targetBounds.right();
+
+    // test if already inside the target
+    if (targetBounds.containsPoint(rc)) {
+        intersections.push(rc);
+        hSect(top);
+        hSect(bottom);
+        vSect(left);
+        vSect(right);
+        if (intersections.length < 2) {
+            return -1;
+        }
+    } else {
+        hSect(top);
+        hSect(bottom);
+        vSect(left);
+        vSect(right);
+        if (intersections.length < 2) {
+            return -1;
+        }
+        // sort
+        if (dir !== 90) {
+            if (Math.sign(rc.x - intersections[0].x) !==
+                Math.sign(intersections[0].x - intersections[1].x) ||
+                Math.sign(rc.y - intersections[0].y) !==
+                Math.sign(intersections[0].y - intersections[1].y)
+            ) {
+                temp = intersections[0];
+                intersections[0] = intersections[1];
+                intersections[1] = temp;
+            }
+        }
+    }
+
+    // for debugging:
+    /*
+    return new List(intersections)
+        .map(point => thisObj.snapPoint(point))
+        .map(point => new List([point.x, point.y]));
+    */
+
+    // convert intersections to local bitmap coordinates of the target
+    intersections = intersections.map(point =>
+        point.subtract(targetBounds.origin).floorDivideBy(stage.scale)
+    );
+
+    // get image data
+    width = Math.floor(targetBounds.width() / stage.scale);
+    imageData = thatObj.getImageData();
+
+    // scan the ray along the coordinates of a Bresenham line
+    // for the first opaque pixel
+    function alphaAt(imageData, width, x, y) {
+        var idx = y * width + x;
+        return imageData[idx] && 0x000000FF; // alpha
+    }
+
+    function isOpaque(x, y) {
+        return alphaAt(imageData, width, x, y) > 0;
+    }
+
+    function scan(testFunc, x0, y0, x1, y1) {
+        // Bresenham's algorithm
+        var dx = Math.abs(x1 - x0),
+            sx = x0 < x1 ? 1 : -1,
+            dy = -Math.abs(y1 - y0),
+            sy = y0 < y1 ? 1 : -1,
+            err = dx + dy,
+            e2;
+
+        while (true) {
+            if (testFunc(x0, y0)) {
+                return new Point(x0 * stage.scale, y0 * stage.scale);
+            }
+            if (x0 === x1 && y0 === y1) {
+                return -1; // not found
+            }
+            e2 = 2 * err;
+            if (e2 > dy) {
+                err += dy;
+                x0 += sx;
+            }
+            if (e2 < dx) {
+                err += dx;
+                y0 += sy;
+            }
+        }
+    }
+
+    hit = scan(
+        isOpaque,
+        intersections[0].x,
+        intersections[0].y,
+        intersections[1].x,
+        intersections[1].y
+    );
+    if (hit === -1) {return hit; }
+    return rc.distanceTo(hit.add(targetBounds.origin)) / stage.scale;
 };
 
 Process.prototype.reportDirectionTo = function (name) {

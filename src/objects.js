@@ -1315,10 +1315,16 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'lists',
             spec: 'all but first of %l'
         },
-        reportListLength: {
+        reportListLength: { // deprecated as of v6.6
             type: 'reporter',
             category: 'lists',
             spec: 'length of %l'
+        },
+        reportListAttribute: {
+            type: 'reporter',
+            category: 'lists',
+            spec: '%la of %l',
+            defaults: [['length']]
         },
         reportListContainsItem: {
             type: 'predicate',
@@ -1370,13 +1376,43 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'numbers from %n to %n',
             defaults: [1, 10]
         },
-
-        reportConcatenatedLists: { // only in dev mode - experimental
-            dev: true,
+    /*
+        reportListCombination: { // currently not in use
+            type: 'reporter',
+            category: 'lists',
+            spec: '%mlfunc %lists',
+            defaults: [['append']]
+        },
+    */
+        reportConcatenatedLists: {
             type: 'reporter',
             category: 'lists',
             spec: 'append %lists'
         },
+        reportCrossproduct: {
+            type: 'reporter',
+            category: 'lists',
+            spec: 'combinations %lists'
+        },
+        reportTranspose: { // deprecated
+            type: 'reporter',
+            category: 'lists',
+            spec: 'transpose %l'
+        },
+        reportReshape: {
+            type: 'reporter',
+            category: 'lists',
+            spec: 'reshape %l to %nums',
+            defaults: [null, [4, 3]]
+        },
+    /*
+        reportSlice: { // currently not in use
+            type: 'reporter',
+            category: 'lists',
+            spec: 'slice %l by %nums',
+            defaults: [null, [2, -1]]
+        },
+    */
 
         // HOFs
         reportMap: {
@@ -2801,7 +2837,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportListItem'));
         blocks.push(block('reportCDR'));
         blocks.push('-');
-        blocks.push(block('reportListLength'));
+        blocks.push(block('reportListAttribute'));
         blocks.push(block('reportListIndex'));
         blocks.push(block('reportListContainsItem'));
         blocks.push(block('reportListIsEmpty'));
@@ -2813,12 +2849,14 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doForEach'));
         blocks.push('-');
-        blocks.push(block('reportConcatenatedLists'));
-        blocks.push('-');
         blocks.push(block('doAddToList'));
         blocks.push(block('doDeleteFromList'));
         blocks.push(block('doInsertInList'));
         blocks.push(block('doReplaceInList'));
+        blocks.push('-');
+        blocks.push(block('reportConcatenatedLists'));
+        blocks.push(block('reportReshape'));
+        blocks.push(block('reportCrossproduct'));
 
     // for debugging: ///////////////
 
@@ -2951,7 +2989,7 @@ SpriteMorph.prototype.freshPalette = function (category) {
     palette.growth = new Point(0, MorphicPreferences.scrollBarSize);
 
     // toolbar:
-    
+
     palette.toolBar = new AlignmentMorph('column');
 
     searchButton = new PushButtonMorph(
@@ -9069,7 +9107,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportListItem'));
         blocks.push(block('reportCDR'));
         blocks.push('-');
-        blocks.push(block('reportListLength'));
+        blocks.push(block('reportListAttribute'));
         blocks.push(block('reportListIndex'));
         blocks.push(block('reportListContainsItem'));
         blocks.push(block('reportListIsEmpty'));
@@ -9081,12 +9119,14 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doForEach'));
         blocks.push('-');
-        blocks.push(block('reportConcatenatedLists'));
-        blocks.push('-');
         blocks.push(block('doAddToList'));
         blocks.push(block('doDeleteFromList'));
         blocks.push(block('doInsertInList'));
         blocks.push(block('doReplaceInList'));
+        blocks.push('-');
+        blocks.push(block('reportConcatenatedLists'));
+        blocks.push(block('reportReshape'));
+        blocks.push(block('reportCrossproduct'));
 
     // for debugging: ///////////////
 

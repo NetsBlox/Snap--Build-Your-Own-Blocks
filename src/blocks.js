@@ -1842,7 +1842,8 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                 info.collapse
             );
             part.maxInputs = info.max;
-            for (i = 0; i < info.defaults || 0; i += 1) {
+            const count = info.defaults || 0; // having this inline (even with parens) causes count errors - possibly due to var
+            for (i = 0; i < count; i += 1) {
                 part.addInput();
             }
             break;
