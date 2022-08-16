@@ -301,6 +301,20 @@
         return duration * (60 / getTempo(ide));
     }
 
+    const NOTE_FIXERS = [
+        [/^[bB]#(\d+)$/, m => `C${+m[1] + 1}`],
+        [/^[eE]#(\d+)$/, m => `F${m[1]}`],
+        [/^[fF]b(\d+)$/, m => `E${m[1]}`],
+        [/^[cC]b(\d+)$/, m => `B${+m[1] - 1}`],
+    ];
+    function correctNote(note) {
+        for (const [r, a] of NOTE_FIXERS) {
+            const m = note.match(r);
+            if (m) return a(m);
+        }
+        return note;
+    }
+
     // ----------------------------------------------------------------------
 
     class TuneScope extends Extension {
@@ -348,11 +362,10 @@
                 block('tuneScopeSetInstrumentVolume', 'command', 'music', 'set instrument %tuneScopeInstrument volume to %n %', ['Piano', '50'], setInstrumentVolume),
 
                 block('tuneScopePlayNoteForDuration', 'command', 'music', 'play note %tuneScopeNote for duration %tuneScopeDuration', ['C3', 'Quarter'], async (note, duration) => {
+                    note = correctNote(note);
                     duration = parseDuration(duration, this.ide);
                     playNote(note, duration);
-                    console.log('before wait');
                     await wait(duration); // TODO: fix this - doesn't pause process
-                    console.log('after wait');
                 }),
                 block('tuneScopeRestForDuration', 'command', 'music', 'rest for duration %tuneScopeDuration', ['Quarter'], async duration => {
                     duration = parseDuration(duration, this.ide);
@@ -362,7 +375,7 @@
                     duration = parseDuration(duration, this.ide);
                     chord = chord ? listToArray(chord) : [];
                     for (const note of chord) {
-                        playNote(note, duration);
+                        playNote(correctNote(note), duration);
                     }
                     await wait(duration); // TODO: fix this - doesn't pause process
                 }),
