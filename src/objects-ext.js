@@ -265,7 +265,7 @@ SpriteMorph.prototype.reportRPCError = function () {
     return this.parentThatIsA(StageMorph).rpcError;
 };
 
-StageMorph.prototype.rpcError = null;
+StageMorph.prototype.rpcError = '';
 
 StageMorph.prototype.reportRPCError = function () {
     return this.rpcError;
