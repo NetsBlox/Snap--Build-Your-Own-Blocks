@@ -268,7 +268,7 @@ Process.prototype.callRPC = function (baseUrl, params, noCache) {
             if (this.rpcRequest.status < 200 || this.rpcRequest.status > 299) {
                 stage.rpcError = response;
             } else {
-                stage.rpcError = null;
+                stage.rpcError = '';
             }
             this.rpcRequest = null;
             return response;
