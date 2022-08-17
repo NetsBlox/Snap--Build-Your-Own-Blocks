@@ -315,6 +315,8 @@
         return note;
     }
 
+    const I32_MAX = 2147483647;
+
     // ----------------------------------------------------------------------
 
     class TuneScope extends Extension {
@@ -341,6 +343,7 @@
 
                 new Extension.Palette.Block('tuneScopePlayNoteForDuration'),
                 new Extension.Palette.Block('tuneScopePlayChordForDuration'),
+                new Extension.Palette.Block('tuneScopeRestForDuration'),
 
                 new Extension.Palette.Block('tuneScopeInstrument'),
                 new Extension.Palette.Block('tuneScopeNote'),
@@ -356,28 +359,34 @@
             function block(name, type, category, spec, defaults, action) {
                 return new Extension.Block(name, type, category, spec, defaults, action).for(SpriteMorph, StageMorph)
             }
+            const self = this;
             return [
                 block('tuneScopeSetInstrument', 'command', 'music', 'set instrument to %tuneScopeInstrument', ['Piano'], setInstrument),
                 block('tuneScopeSetVolume', 'command', 'music', 'set volume to %n %', ['50'], setVolume),
                 block('tuneScopeSetInstrumentVolume', 'command', 'music', 'set instrument %tuneScopeInstrument volume to %n %', ['Piano', '50'], setInstrumentVolume),
 
-                block('tuneScopePlayNoteForDuration', 'command', 'music', 'play note %tuneScopeNote for duration %tuneScopeDuration', ['C3', 'Quarter'], async (note, duration) => {
-                    note = correctNote(note);
-                    duration = parseDuration(duration, this.ide);
-                    playNote(note, duration);
-                    await wait(duration); // TODO: fix this - doesn't pause process
-                }),
-                block('tuneScopeRestForDuration', 'command', 'music', 'rest for duration %tuneScopeDuration', ['Quarter'], async duration => {
-                    duration = parseDuration(duration, this.ide);
-                    await wait(duration); // TODO: fix this - doesn't pause process
-                }),
-                block('tuneScopePlayChordForDuration', 'command', 'music', 'play chord %l for duration %tuneScopeDuration', [null, 'Quarter'], async (chord, duration) => {
-                    duration = parseDuration(duration, this.ide);
-                    chord = chord ? listToArray(chord) : [];
-                    for (const note of chord) {
+                block('tuneScopePlayNoteForDuration', 'command', 'music', 'play note %tuneScopeNote for duration %tuneScopeDuration', ['C3', 'Quarter'], function (note, duration) {
+                    this.runAsyncFn(async () => {
+                        duration = parseDuration(duration, self.ide);
                         playNote(correctNote(note), duration);
-                    }
-                    await wait(duration); // TODO: fix this - doesn't pause process
+                        await wait(duration);
+                    }, { args: [], timeout: I32_MAX });
+                }),
+                block('tuneScopePlayChordForDuration', 'command', 'music', 'play chord %l for duration %tuneScopeDuration', [null, 'Quarter'], function (chord, duration) {
+                    this.runAsyncFn(async () => {
+                        duration = parseDuration(duration, self.ide);
+                        chord = chord ? listToArray(chord) : [];
+                        for (const note of chord) {
+                            playNote(correctNote(note), duration);
+                        }
+                        await wait(duration);
+                    }, { args: [], timeout: I32_MAX });
+                }),
+                block('tuneScopeRestForDuration', 'command', 'music', 'rest for duration %tuneScopeDuration', ['Quarter'], function (duration) {
+                    this.runAsyncFn(async () => {
+                        duration = parseDuration(duration, self.ide);
+                        await wait(duration);
+                    }, { args: [], timeout: I32_MAX });
                 }),
 
                 block('tuneScopeInstrument', 'reporter', 'music', 'instrument %tuneScopeInstrument', ['Piano'], x => x),
