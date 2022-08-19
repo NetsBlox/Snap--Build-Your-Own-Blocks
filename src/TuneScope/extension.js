@@ -11,7 +11,7 @@
     function playNote(note, duration) {
         window.playNote(note, duration);
     }
-    function playTracks(tracksList, timeSignature, tempo) {
+    function playTracksAsync(tracksList, timeSignature, tempo) {
         const multiplyArray = (arr, length) => Array.from({ length }, () => arr).flat()
 
         const playTrackMeasure = async (currTrack, measureIndex, beatsPerMeasure, tempo, instrument) => {
@@ -228,7 +228,7 @@
             }
         }
 
-        playTracks(tracksList, timeSignature, tempo);
+        return playTracks(tracksList, timeSignature, tempo);
     }
     function playMidi(controller_name, instrument) {
         let current_controller = controller_name;
@@ -322,6 +322,15 @@
 
     const I32_MAX = 2147483647;
 
+    function snapify(value) {
+        if (Array.isArray(value)) {
+            const res = [];
+            value.forEach(item => res.push(snapify(item)));
+            return new List(res);
+        }
+        return value;
+    }
+
     // ----------------------------------------------------------------------
 
     class TuneScope extends Extension {
@@ -350,9 +359,17 @@
                 new Extension.Palette.Block('tuneScopePlayChordForDuration'),
                 new Extension.Palette.Block('tuneScopeRestForDuration'),
 
+                new Extension.Palette.Block('tuneScopeNoteAndDuration'),
+                new Extension.Palette.Block('tuneScopeMeasure'),
+                new Extension.Palette.Block('tuneScopeSection'),
+                new Extension.Palette.Block('tuneScopeTrack'),
+                new Extension.Palette.Block('tuneScopePlayTracks'),
+
                 new Extension.Palette.Block('tuneScopeInstrument'),
                 new Extension.Palette.Block('tuneScopeNote'),
                 new Extension.Palette.Block('tuneScopeDuration'),
+                new Extension.Palette.Block('tuneScopeTrackType'),
+                new Extension.Palette.Block('tuneScopeTimeSignature'),
             ];
             return [
                 new Extension.PaletteCategory('music', blocks, SpriteMorph),
@@ -394,9 +411,31 @@
                     }, { args: [], timeout: I32_MAX });
                 }),
 
+                block('tuneScopeNoteAndDuration', 'reporter', 'music', 'note %tuneScopeNote duration %tuneScopeDuration', ['C3', 'Quarter'], (note, duration) => new List([note, duration])),
+                block('tuneScopeMeasure', 'reporter', 'music', 'measure %lists', [], x => x),
+                block('tuneScopeSection', 'reporter', 'music', 'section %lists', [], measures => {
+                    measures = measures ? listToArray(measures) : [];
+                    const res = [];
+                    measures.forEach(measure => measure.forEach(item => res.push(item)));
+                    return snapify(res);
+                }),
+                block('tuneScopeTrack', 'reporter', 'music', 'track %tuneScopeTrackType instrument %tuneScopeInstrument section %l', ['Melody', 'Piano'], (trackType, instrument, section) => {
+                    section = section ? listToArray(section) : [];
+                    const res = [[trackType, instrument]];
+                    section.forEach(measure => res.push(measure));
+                    return snapify(res);
+                }),
+                block('tuneScopePlayTracks', 'command', 'music', 'play tracks in %tuneScopeTimeSignature %lists', ['4/4'], function (timeSignature, tracks) {
+                    this.runAsyncFn(async () => {
+                        await playTracksAsync(tracks, timeSignature, getTempo(self.ide));
+                    }, { args: [], timeout: I32_MAX });
+                }),
+
                 block('tuneScopeInstrument', 'reporter', 'music', 'instrument %tuneScopeInstrument', ['Piano'], x => x),
                 block('tuneScopeNote', 'reporter', 'music', 'note %tuneScopeNote', ['C3'], x => x),
                 block('tuneScopeDuration', 'reporter', 'music', 'duration %tuneScopeDuration', ['Quarter'], x => x),
+                block('tuneScopeTrackType', 'reporter', 'music', 'track %tuneScopeTrackType', ['Melody'], x => x),
+                block('tuneScopeTimeSignature', 'reporter', 'music', 'time signature %tuneScopeTimeSignature', ['4/4'], x => x),
             ];
         }
 
@@ -446,6 +485,21 @@
                         { 'Triplet Notes':  identityMap(['Half Triplet', 'Quarter Triplet', 'Eighth Triplet', 'Sixteenth Triplet']) },
                     ]),
                     false, // readonly (no arbitrary text)
+                )),
+                new Extension.LabelPart('tuneScopeTrackType', () => new InputSlotMorph(
+                    null, // text
+                    false, // numeric
+                    unionMaps([
+                        identityMap(['Melody', 'Chords']),
+                        { 'Loops': identityMap(['Loop-Melody', 'Loop-Chords']) },
+                    ]),
+                    true, // readonly (no arbitrary text)
+                )),
+                new Extension.LabelPart('tuneScopeTimeSignature', () => new InputSlotMorph(
+                    null, // text
+                    false, // numeric
+                    identityMap(['4/4', '3/4', '5/4', '7/4', '6/8', '9/8', '12/8']),
+                    true, // readonly (no arbitrary text)
                 )),
             ];
         }
