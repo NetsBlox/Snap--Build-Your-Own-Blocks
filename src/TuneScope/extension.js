@@ -301,6 +301,11 @@
         return duration * (60 / getTempo(ide));
     }
 
+    const SYNC_INTERVAL_MS = 10;
+    function syncDelta() {
+        return -(+new Date() % SYNC_INTERVAL_MS) / 1000
+    }
+
     const NOTE_FIXERS = [
         [/^[bB]#(\d+)$/, m => `C${+m[1] + 1}`],
         [/^[eE]#(\d+)$/, m => `F${m[1]}`],
@@ -367,14 +372,14 @@
 
                 block('tuneScopePlayNoteForDuration', 'command', 'music', 'play note %tuneScopeNote for duration %tuneScopeDuration', ['C3', 'Quarter'], function (note, duration) {
                     this.runAsyncFn(async () => {
-                        duration = parseDuration(duration, self.ide);
+                        duration = parseDuration(duration, self.ide) + syncDelta();
                         playNote(correctNote(note), duration);
                         await wait(duration);
                     }, { args: [], timeout: I32_MAX });
                 }),
                 block('tuneScopePlayChordForDuration', 'command', 'music', 'play chord %l for duration %tuneScopeDuration', [null, 'Quarter'], function (chord, duration) {
                     this.runAsyncFn(async () => {
-                        duration = parseDuration(duration, self.ide);
+                        duration = parseDuration(duration, self.ide) + syncDelta();
                         chord = chord ? listToArray(chord) : [];
                         for (const note of chord) {
                             playNote(correctNote(note), duration);
@@ -384,7 +389,7 @@
                 }),
                 block('tuneScopeRestForDuration', 'command', 'music', 'rest for duration %tuneScopeDuration', ['Quarter'], function (duration) {
                     this.runAsyncFn(async () => {
-                        duration = parseDuration(duration, self.ide);
+                        duration = parseDuration(duration, self.ide) + syncDelta();
                         await wait(duration);
                     }, { args: [], timeout: I32_MAX });
                 }),
