@@ -307,6 +307,7 @@
     }
 
     const NOTE_FIXERS = [
+        [/^(?:rest)?$/i, m => 'R'],
         [/^[bB]#(\d+)$/, m => `C${+m[1] + 1}`],
         [/^[eE]#(\d+)$/, m => `F${m[1]}`],
         [/^[fF]b(\d+)$/, m => `E${m[1]}`],
@@ -411,7 +412,7 @@
                     }, { args: [], timeout: I32_MAX });
                 }),
 
-                block('tuneScopeNoteAndDuration', 'reporter', 'music', 'note %tuneScopeNote duration %tuneScopeDuration', ['C3', 'Quarter'], (note, duration) => new List([note, duration])),
+                block('tuneScopeNoteAndDuration', 'reporter', 'music', 'note %tuneScopeNote duration %tuneScopeDuration', ['C3', 'Quarter'], (note, duration) => new List([correctNote(note), duration])),
                 block('tuneScopeMeasure', 'reporter', 'music', 'measure %lists', [], x => x),
                 block('tuneScopeSection', 'reporter', 'music', 'section %lists', [], measures => {
                     measures = measures ? listToArray(measures) : [];
@@ -432,7 +433,7 @@
                 }),
 
                 block('tuneScopeInstrument', 'reporter', 'music', 'instrument %tuneScopeInstrument', ['Piano'], x => x),
-                block('tuneScopeNote', 'reporter', 'music', 'note %tuneScopeNote', ['C3'], x => x),
+                block('tuneScopeNote', 'reporter', 'music', 'note %tuneScopeNote', ['C3'], correctNote),
                 block('tuneScopeDuration', 'reporter', 'music', 'duration %tuneScopeDuration', ['Quarter'], x => x),
                 block('tuneScopeTrackType', 'reporter', 'music', 'track %tuneScopeTrackType', ['Melody'], x => x),
                 block('tuneScopeTimeSignature', 'reporter', 'music', 'time signature %tuneScopeTimeSignature', ['4/4'], x => x),
@@ -473,6 +474,7 @@
                         identityMap(['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4']),
                         { 'Sharps': identityMap(['C#3', 'D#3', 'E#3', 'F#3', 'G#3', 'A#3', 'B#3', 'C#4', 'D#4', 'E#4', 'F#4', 'G#4', 'A#4', 'B#4']) },
                         { 'Flats':  identityMap(['Cb3', 'Db3', 'Eb3', 'Fb3', 'Gb3', 'Ab3', 'Bb3', 'Cb4', 'Db4', 'Eb4', 'Fb4', 'Gb4', 'Ab4', 'Bb4']) },
+                        identityMap(['Rest']),
                     ]),
                     false, // readonly (no arbitrary text)
                 )),
