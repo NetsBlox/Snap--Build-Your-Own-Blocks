@@ -54,7 +54,7 @@ RoomMorph.prototype.init = function(ide) {
         null,
         WHITE
     );
-    this.roomName.mouseClickLeft = () => this.editRoomName();
+    this.roomName.mouseClickLeft = () => this.editRoomName(this.name);
     this.ownerLabel = new StringMorph(
         localize('Owner: myself'),
         false,
@@ -486,16 +486,18 @@ RoomMorph.prototype.mouseClickLeft = function() {
     }
 };
 
-RoomMorph.prototype.editRoomName = function () {
+RoomMorph.prototype.editRoomName = function (preset = '') {
     var myself = this;
     if (!this.isEditable()) {
         return;
     }
-    this.ide.prompt('New Room Name', function (name) {
+
+    (new DialogBoxMorph(null, function (name) {
         if (RoomMorph.isEmptyName(name)) return;  // empty name = cancel
 
         if (!RoomMorph.isValidName(name)) {
             // Error! name has a . or @
+            myself.editRoomName(name);
             new DialogBoxMorph().inform(
                 'Invalid Project Name',
                 'Could not set the project name because\n' +
@@ -505,7 +507,13 @@ RoomMorph.prototype.editRoomName = function () {
         } else {
             myself.setRoomName(name);
         }
-    }, null, 'editRoomName');
+    })).withKey('editRoomName').prompt(
+        'New Room Name',
+        preset,
+        this.world(),
+        null,
+        null
+    );
 };
 
 RoomMorph.prototype.validateRoleName = function (name, cb) {
