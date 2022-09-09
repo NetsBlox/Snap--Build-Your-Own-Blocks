@@ -49,31 +49,6 @@
         return handle;
     }
 
-    // Process.prototype._renderHands = async function (image) {
-    //     const data = await this._findHands(image);
-    //     const canvas = document.createElement('canvas');
-    //     canvas.width = image.width;
-    //     canvas.height = image.height;
-    //     const context = canvas.getContext('2d');
-
-    //     context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    //     for (const landmarks of data.multiHandLandmarks) {
-    //         drawConnectors(context, landmarks, HAND_CONNECTIONS, { color: '#00ff00', lineWidth: 3 });
-    //         drawLandmarks(context, landmarks, { color: '#ff0000', lineWidth: 1 });
-    //     }
-
-    //     return canvas;
-    // }
-
-    // Process.prototype.reportHandDetection = function (mode, img) {
-    //     else if (mode === 'render') {
-    //         const res = this.runAsyncFn(this._renderHands, { args: [img], timeout: 10000 });
-    //         if (res !== undefined) {
-    //             return new Costume(res);
-    //         }
-    //     }
-    // };
-
     // ----------------------------------------------------------------------------
 
     const I32_MAX = 2147483647;
@@ -111,6 +86,7 @@
         getPalette() {
             const blocks = [
                 new Extension.Palette.Block('mediapipeLocateHands'),
+                new Extension.Palette.Block('mediapipeRenderHands'),
             ];
             return [
                 new Extension.PaletteCategory('sensing', blocks, SpriteMorph),
@@ -130,17 +106,41 @@
                         const handle = getHandsHandle();
                         const raw = await handle.infer(img);
 
-                        const parseLandmarks = raw => raw.map(coords => coords.map(p => [p.x, p.y, p.z]));
-                        const res = {
-                            landmarks: parseLandmarks(raw.multiHandLandmarks),
-                            worldLandmarks: parseLandmarks(raw.multiHandWorldLandmarks),
-                            handedness: raw.multiHandedness.map(e => ({ index: e.index, score: e.score, label: e.label })),
-                        };
+                        const parseLandmarks = coords => coords.map(p => [p.x, p.y, p.z]);
 
-                        console.log('res', res);
+                        const res = [];
+                        for (let i = 0; i < raw.multiHandLandmarks.length; ++i) {
+                            res.push({
+                                cameraSpace: parseLandmarks(raw.multiHandLandmarks[i]),
+                                worldSpace: parseLandmarks(raw.multiHandWorldLandmarks[i]),
+                                hand: raw.multiHandedness[i].label,
+                                handConfidence: raw.multiHandedness[i].score,
+                            });
+                        }
 
                         return snapify(res);
                     }, { args: [img], timeout: I32_MAX });
+                }),
+                block('mediapipeRenderHands', 'reporter', 'sensing', 'render hands %l onto img %s', [], function (hands, img) {
+                    return this.runAsyncFn(async (hands, img) => {
+                        hands = listToArray(hands);
+                        img = prepImg(img);
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const context = canvas.getContext('2d');
+
+                        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        for (const hand of hands) {
+                            if (!hand) continue;
+                            const landmarks = hand[0][1].map(xyz => ({ x: xyz[0], y: xyz[1], z: xyz[2] }));
+                            drawConnectors(context, landmarks, HAND_CONNECTIONS, { color: '#00ff00', lineWidth: 3 });
+                            drawLandmarks(context, landmarks, { color: '#ff0000', lineWidth: 1 });
+                        }
+
+                        return new Costume(canvas);
+                    }, { args: [hands, img], timeout: I32_MAX });
                 }),
             ];
         }
