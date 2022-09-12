@@ -157,8 +157,10 @@ MessageCreatorMorph.prototype.init = function(target, action) {
 
         if (desc.name) {
             action(desc);
+            this.destroy();
+        } else {
+            world.inform('Message type must have a name');
         }
-        this.destroy();
     };
 
     this.addButton('ok', 'OK');
@@ -172,7 +174,7 @@ MessageCreatorMorph.prototype.popUp = function () {
     var world = this.target.world();
 
     if (world) {
-        BlockEditorMorph.uber.popUp.call(this, world);
+        MessageCreatorMorph.uber.popUp.call(this, world);
         this.handle = new HandleMorph(
             this,
             280,
