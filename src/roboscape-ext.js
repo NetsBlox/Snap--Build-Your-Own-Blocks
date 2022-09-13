@@ -227,7 +227,7 @@
                 ).for(SpriteMorph, StageMorph),
                 new Extension.Block(
                     'roboScapeRoomID',
-                    'predicate',
+                    'reporter',
                     'network',
                     'RoboScape room ID',
                     [],
