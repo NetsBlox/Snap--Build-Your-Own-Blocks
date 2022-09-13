@@ -144,7 +144,6 @@ MessageCreatorMorph.prototype.init = function(target, action) {
         this.parent.rerender();
         fixLayout.call(this);
         myself.fixLayout();
-        myself.handle.rerender();  // Should this be automatic?
         myself.rerender();
     };
 
@@ -175,13 +174,6 @@ MessageCreatorMorph.prototype.popUp = function () {
 
     if (world) {
         MessageCreatorMorph.uber.popUp.call(this, world);
-        this.handle = new HandleMorph(
-            this,
-            280,
-            220,
-            this.corner,
-            this.corner
-        );
     }
 };
 
