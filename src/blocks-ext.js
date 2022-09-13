@@ -526,6 +526,19 @@ HintInputSlotMorph.prototype.isEmptySlot = function() {
     return this.empty;
 };
 
+HintInputSlotMorph.prototype.updateFieldValue = function (newValue) {
+    var block = this.parentThatIsA(BlockMorph);
+
+    newValue = newValue !== undefined ? newValue : this.contents().text;
+    if (block.id) {  // not in the palette
+        this.setContents(this.lastValue);  // set to original value in case it fails
+        return SnapActions.setField(this, newValue);
+    } else {
+        // Handle use in message creation dialog
+        this.setContents(newValue);
+    }
+};
+
 var addStructReplaceSupport = function(fn) {
     return function(arg) {
         var structInput,

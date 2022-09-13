@@ -192,6 +192,9 @@ MessageDefinitionBlock.prototype.init = function() {
     this.category = 'network';
     this.setSpec('name: %hintname fields: %mhintfield');
     this.rerender();
+
+    // Fix for hint text display
+    this.inputs()[0].setContents('');
 };
 
 MessageDefinitionBlock.prototype.messageName = function() {
