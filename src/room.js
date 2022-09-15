@@ -516,7 +516,7 @@ RoomMorph.prototype.editRoomName = function (preset = '') {
     );
 };
 
-RoomMorph.prototype.validateRoleName = function (name, cb) {
+RoomMorph.prototype.validateRoleName = function (name, onValid, onInvalid) {
     if (RoomMorph.isEmptyName(name)) return;  // empty role name = cancel
 
     if (this.getRole(name)) {
@@ -527,6 +527,7 @@ RoomMorph.prototype.validateRoleName = function (name, cb) {
             'the provided name already exists.',
             this.world()
         );
+        onInvalid();
     } else if (!RoomMorph.isValidName(name)) {
         // Error! name has a . or @
         new DialogBoxMorph().inform(
@@ -535,12 +536,13 @@ RoomMorph.prototype.validateRoleName = function (name, cb) {
             'the provided name is invalid',
             this.world()
         );
+        onInvalid();
     } else {
-        cb();
+        onValid();
     }
 };
 
-RoomMorph.prototype.createNewRole = function () {
+RoomMorph.prototype.createNewRole = function (defaultName = '') {
     // Ask for a new role name
     var myself = this;
 
@@ -552,7 +554,7 @@ RoomMorph.prototype.createNewRole = function () {
                     myself.onRoomStateUpdate(state);
                 },
                 myself.ide.cloudError()
-            );
+            ), function () { myself.createNewRole(roleName)};
         });
     }, null, 'createNewRole');
 };
