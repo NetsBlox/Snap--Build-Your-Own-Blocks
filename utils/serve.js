@@ -15,7 +15,7 @@ const isDevMode = ENV !== "production";
 
 const file = new static.Server(path.join(__dirname, ".."));
 const server = http.createServer(async (req, res) => {
-  const [url, queryString] = req.url
+  const [url, queryString=''] = req.url
     .split("?")
     .map(url => url.replace(/#.*$/, ""));
   const isIndexHtml = url === "/" || url === "/index.html";
@@ -36,7 +36,6 @@ const server = http.createServer(async (req, res) => {
     };
 
     if (query.action === "present") {
-      // TODO: look up the project ID
       const url =
         CLOUD_URL + `/projects/user/${query.owner}/${query.name}/metadata`;
       const response = await fetch(url);
@@ -51,6 +50,7 @@ const server = http.createServer(async (req, res) => {
         };
       }
     } else if (query.action === "example") {
+      // TODO: add nice thumbnails for this, too
     }
 
     const userAgent = req.headers["user-agent"];
