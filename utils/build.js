@@ -1,9 +1,11 @@
 #! /usr/bin/env node
 
-const dot = require('dot');
-const inquirer = require('inquirer');
-const fs = require('fs');
-const path = require('path');
+import {fileURLToPath} from 'url';
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+import dot from 'dot';
+import inquirer from 'inquirer';
+import fs from 'fs';
+import path from 'path';
 const indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'index.dot')));
 
 const questions = [

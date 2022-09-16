@@ -1,11 +1,13 @@
-// TODO: start a static file server w/ an extra route for index.html
-const fs = require("fs");
-const http = require("http");
-const static = require("node-static");
-const fetch = require("node-fetch");
+// start a static file server w/ an extra route for index.html
+import {fileURLToPath} from 'url';
+import fs from "fs";
+import http from "http";
+import nodeStatic from "node-static";
+import fetch from "node-fetch";
+import dot from "dot";
+import path from "path";
 const port = process.env.PORT ? +process.env.PORT : 8000;
-const dot = require("dot");
-const path = require("path");
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const indexTpl = dot.template(
   fs.readFileSync(path.join(__dirname, "..", "index.dot"))
 );
@@ -13,7 +15,7 @@ const indexTpl = dot.template(
 const { CLOUD_URL = "https://alpha.netsblox.org", ENV = "dev" } = process.env;
 const isDevMode = ENV !== "production";
 
-const file = new static.Server(path.join(__dirname, ".."));
+const file = new nodeStatic.Server(path.join(__dirname, ".."));
 const server = http.createServer(async (req, res) => {
   const [url, queryString=''] = req.url
     .split("?")
