@@ -251,7 +251,7 @@ IDE_Morph.prototype.init = function (isAutoFill, config) {
 
     // additional properties:
     this.cloud = new Cloud(config.cloudUrl, config.clientId, config.username, localize);
-    this.cloud.onerror = this.cloudError();
+    this.cloud.onerror = error => this.cloudError()(error.message);
     this.cloudMsg = null;
     this.source = 'local';
     this.serializer = new SnapSerializer();
