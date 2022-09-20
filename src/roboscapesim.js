@@ -321,6 +321,116 @@ var hex2rgb = function (hexstring) {
     return { r, g, b };
 };
 
+var updateBody = function(label, frameTime, tempNextTime){
+    // Update position
+    let body = bodies[label];
+
+    if (!body.pos) {
+        return;
+    }
+
+    let { x, y, z } = body.pos;
+
+    let angle = { ...body.angle };
+    const nextBody = nextBodies[label];
+
+    if (!nextBody) {
+        return;
+    }
+
+    // Extrapolate/Interpolate position and rotation
+    if (body.vel == undefined) {
+        body.vel = {};
+    }
+
+    if (nextBody.vel == undefined) {
+        nextBody.vel = {};
+    }
+
+    x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
+    y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
+    z = interpolate(z, nextBody.pos.z, body.vel.z || 0, nextBody.vel.z || 0, lastUpdateTime, tempNextTime, frameTime);
+
+    angle = new BABYLON.Quaternion(
+        angle.X, angle.Y, angle.Z, angle.W
+    );
+
+    let nextAngle = new BABYLON.Quaternion(
+        nextBody.angle.X, nextBody.angle.Y, nextBody.angle.Z, nextBody.angle.W
+    );
+
+    bodyMeshes[label].position.x = x;
+    bodyMeshes[label].position.y = y;
+    bodyMeshes[label].position.z = z;
+
+    bodyMeshes[label].rotationQuaternion = interpolateRotation(angle, nextAngle, null, null, lastUpdateTime, tempNextTime, frameTime);
+};
+
+var createBody = function (label) {
+    if (!bodiesInfo[label].width || !bodiesInfo[label].visualInfo || bodiesInfo[label].visualInfo.modelScale == -1) {
+        return;
+    }
+
+    if (bodiesInfo[label].visualInfo.model && (bodiesInfo[label].visualInfo.model.endsWith('.gltf') || bodiesInfo[label].visualInfo.model.endsWith('.glb'))) { // Mesh object
+        bodyMeshes[label] = addMesh(bodiesInfo[label].visualInfo.model).then(result => {
+            bodyMeshes[label] = result;
+
+            if (label.startsWith('robot_')) {
+                let tag = createLabel(label.substring(label.length - 4));
+
+                // Move to position
+                tag.billboardMode = BABYLON.TransformNode.BILLBOARDMODE_ALL;
+                tag.setParent(result);
+                tag.scaling.x = -0.05;
+                tag.scaling.y = 0.05;
+                tag.position.y = -0.2;
+
+                nameTags[label] = tag;
+            } else {
+                if (bodiesInfo[label].visualInfo.modelScale) {
+                    bodyMeshes[label].scaling.x = bodiesInfo[label].visualInfo.modelScale;
+                    bodyMeshes[label].scaling.y = bodiesInfo[label].visualInfo.modelScale;
+                    bodyMeshes[label].scaling.z = bodiesInfo[label].visualInfo.modelScale;
+                }
+            }
+        });
+    } else {
+        bodyMeshes[label] = addBlock(bodiesInfo[label].width, bodiesInfo[label].height, bodiesInfo[label].depth).then(result => {
+            if (bodiesInfo[label].visualInfo.color && !bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.color[0] == '#') {
+                var material = new BABYLON.StandardMaterial('material' + material_count++);
+
+                let color = hex2rgb(bodiesInfo[label].visualInfo.color);
+
+                material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
+                material.specularColor.r = 0.5;
+                material.specularColor.g = 0.5;
+                material.specularColor.b = 0.5;
+
+                result.material = material;
+
+            } else if (bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.image.endsWith('.png')) {
+                var material = new BABYLON.StandardMaterial('material' + material_count++);
+                material.diffuseTexture = new BABYLON.Texture(assetsDir + bodiesInfo[label].visualInfo.image);
+                material.diffuseTexture.uScale = bodiesInfo[label].visualInfo.uScale ?? bodiesInfo[label].width;
+                material.diffuseTexture.vScale = bodiesInfo[label].visualInfo.vScale ?? bodiesInfo[label].height;
+
+                material.specularColor.r = 0.5;
+                material.specularColor.g = 0.5;
+                material.specularColor.b = 0.5;
+
+                if (bodiesInfo[label].visualInfo.color) {
+                    let color = hex2rgb(bodiesInfo[label].visualInfo.color);
+                    material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
+                }
+
+                result.material = material;
+            }
+
+            bodyMeshes[label] = result;
+        });
+    }
+}
+
 setTimeout(() => {
     updateLoopFunctions.push((frameTime) => {
 
@@ -329,72 +439,10 @@ setTimeout(() => {
         if (bodies) {
             // Show robots
             for (let label of Object.keys(bodies)) {
-                // create if new
+                // Create if new
                 if (!Object.keys(bodyMeshes).includes(label)) {
                     if (Object.keys(bodiesInfo).includes(label)) {
-
-                        if (!bodiesInfo[label].width || !bodiesInfo[label].visualInfo || bodiesInfo[label].visualInfo.modelScale == -1) {
-                            continue;
-                        }
-
-                        if (bodiesInfo[label].visualInfo.model && (bodiesInfo[label].visualInfo.model.endsWith('.gltf') || bodiesInfo[label].visualInfo.model.endsWith('.glb'))) { // Mesh object
-                            bodyMeshes[label] = addMesh(bodiesInfo[label].visualInfo.model).then(result => {
-                                bodyMeshes[label] = result;
-
-                                if (label.startsWith('robot_')) {
-                                    let tag = createLabel(label.substring(label.length - 4));
-
-                                    // Move to position
-                                    tag.billboardMode = BABYLON.TransformNode.BILLBOARDMODE_ALL;
-                                    tag.setParent(result);
-                                    tag.scaling.x = -0.05;
-                                    tag.scaling.y = 0.05;
-                                    tag.position.y = -0.2;
-
-                                    nameTags[label] = tag;
-                                } else {
-                                    if (bodiesInfo[label].visualInfo.modelScale) {
-                                        bodyMeshes[label].scaling.x = bodiesInfo[label].visualInfo.modelScale;
-                                        bodyMeshes[label].scaling.y = bodiesInfo[label].visualInfo.modelScale;
-                                        bodyMeshes[label].scaling.z = bodiesInfo[label].visualInfo.modelScale;
-                                    }
-                                }
-                            });
-                        } else {
-                            bodyMeshes[label] = addBlock(bodiesInfo[label].width, bodiesInfo[label].height, bodiesInfo[label].depth).then(result => {
-                                if (bodiesInfo[label].visualInfo.color && !bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.color[0] == '#') {
-                                    var material = new BABYLON.StandardMaterial('material' + material_count++);
-
-                                    let color = hex2rgb(bodiesInfo[label].visualInfo.color);
-
-                                    material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
-                                    material.specularColor.r = 0.5;
-                                    material.specularColor.g = 0.5;
-                                    material.specularColor.b = 0.5;
-
-                                    result.material = material;
-
-                                } else if (bodiesInfo[label].visualInfo.image && bodiesInfo[label].visualInfo.image.endsWith('.png')) {
-                                    var material = new BABYLON.StandardMaterial('material' + material_count++);
-                                    material.diffuseTexture = new BABYLON.Texture(assetsDir + bodiesInfo[label].visualInfo.image);
-                                    material.diffuseTexture.uScale = bodiesInfo[label].visualInfo.uScale ?? bodiesInfo[label].width;
-                                    material.diffuseTexture.vScale = bodiesInfo[label].visualInfo.vScale ?? bodiesInfo[label].height;
-
-                                    material.specularColor.r = 0.5;
-                                    material.specularColor.g = 0.5;
-                                    material.specularColor.b = 0.5;
-
-                                    if (bodiesInfo[label].visualInfo.color) {
-                                        let color = hex2rgb(bodiesInfo[label].visualInfo.color);
-                                        material.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b);
-                                    }
-
-                                    result.material = material;
-                                }
-
-                                bodyMeshes[label] = result;
-                            });
-                        }
+                        createBody(label);
                     }
                 } else {
                     // Detect not yet loaded mesh
@@ -402,48 +450,7 @@ setTimeout(() => {
                         continue;
                     }
 
-                    // Update position
-                    let body = bodies[label];
-
-                    if (!body.pos) {
-                        continue;
-                    }
-
-                    let { x, y, z } = body.pos;
-
-                    let angle = { ...body.angle };
-                    const nextBody = nextBodies[label];
-
-                    if (!nextBody) {
-                        continue;
-                    }
-
-                    // Extrapolate/Interpolate position and rotation
-                    if (body.vel == undefined) {
-                        body.vel = {};
-                    }
-
-                    if (nextBody.vel == undefined) {
-                        nextBody.vel = {};
-                    }
-
-                    x = interpolate(x, nextBody.pos.x, body.vel.x || 0, nextBody.vel.x || 0, lastUpdateTime, tempNextTime, frameTime);
-                    y = interpolate(y, nextBody.pos.y, body.vel.y || 0, nextBody.vel.y || 0, lastUpdateTime, tempNextTime, frameTime);
-                    z = interpolate(z, nextBody.pos.z, body.vel.z || 0, nextBody.vel.z || 0, lastUpdateTime, tempNextTime, frameTime);
-
-                    angle = new BABYLON.Quaternion(
-                        angle.X, angle.Y, angle.Z, angle.W
-                    );
-
-                    let nextAngle = new BABYLON.Quaternion(
-                        nextBody.angle.X, nextBody.angle.Y, nextBody.angle.Z, nextBody.angle.W
-                    );
-
-                    bodyMeshes[label].position.x = x;
-                    bodyMeshes[label].position.y = y;
-                    bodyMeshes[label].position.z = z;
-
-                    bodyMeshes[label].rotationQuaternion = interpolateRotation(angle, nextAngle, null, null, lastUpdateTime, tempNextTime, frameTime);
+                    updateBody(label, frameTime, tempNextTime);
                 }
             }
         }
