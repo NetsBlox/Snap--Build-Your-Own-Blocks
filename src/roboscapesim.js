@@ -331,9 +331,6 @@ var updateBody = function(label, frameTime, tempNextTime){
         return;
     }
 
-    let { x, y, z } = body.pos;
-
-    let angle = { ...body.angle };
     const nextBody = nextBodies[label];
 
     if (!nextBody) {
@@ -346,6 +343,10 @@ var updateBody = function(label, frameTime, tempNextTime){
         createBody(label, true);
         return;
     }
+
+    let { x, y, z } = body.pos;
+
+    let angle = { ...body.angle };
 
     // Extrapolate/Interpolate position and rotation
     if (!body.vel) {
@@ -381,6 +382,10 @@ var createBody = function (label, replaceExisting = false) {
     }
 
     if(replaceExisting){
+        if(nameTags[label]){
+            nameTags[label].dispose();
+            delete nameTags[label];
+        }
         bodyMeshes[label].dispose();
         delete bodyMeshes[label];
     }
@@ -400,12 +405,12 @@ var createBody = function (label, replaceExisting = false) {
                 tag.position.y = -0.2;
 
                 nameTags[label] = tag;
-            } else {
-                if (bodiesInfo[label].visualInfo.modelScale) {
-                    bodyMeshes[label].scaling.x = bodiesInfo[label].visualInfo.modelScale;
-                    bodyMeshes[label].scaling.y = bodiesInfo[label].visualInfo.modelScale;
-                    bodyMeshes[label].scaling.z = bodiesInfo[label].visualInfo.modelScale;
-                }
+            }
+
+            if (bodiesInfo[label].visualInfo.modelScale) {
+                bodyMeshes[label].scaling.x = (bodyMeshes[label].scaling.x ?? 1) * bodiesInfo[label].visualInfo.modelScale;
+                bodyMeshes[label].scaling.y = (bodyMeshes[label].scaling.y ?? 1) * bodiesInfo[label].visualInfo.modelScale;
+                bodyMeshes[label].scaling.z = (bodyMeshes[label].scaling.z ?? 1) * bodiesInfo[label].visualInfo.modelScale;
             }
         });
     } else {
