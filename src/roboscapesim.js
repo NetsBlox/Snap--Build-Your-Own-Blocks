@@ -56,7 +56,7 @@ const connectToRoboScapeSim = function (server) {
             socket.on('u', data => {
                 if (performance.now() - nextUpdateTime > 10) {
                     bodies = { ...nextBodies };
-                    nextBodies = { ...bodies, ...data };
+                    nextBodies = { ...data };
                     lastUpdateTime = nextUpdateTime;
                     nextUpdateTime = performance.now();
                     lastUpdateServerTime = nextUpdateServerTime;
@@ -321,6 +321,8 @@ var hex2rgb = function (hexstring) {
     return { r, g, b };
 };
 
+const shallowCompare = (obj1, obj2) => [...Object.keys(obj1), ...Object.keys(obj2)].every(key => obj1[key] === obj2[key]);
+
 var updateBody = function(label, frameTime, tempNextTime){
     // Update position
     let body = bodies[label];
@@ -338,12 +340,19 @@ var updateBody = function(label, frameTime, tempNextTime){
         return;
     }
 
+    if(nextBody.visualInfo && bodiesInfo[label].visualInfo && !shallowCompare(nextBody.visualInfo, bodiesInfo[label].visualInfo)){
+        // Need to update visual
+        bodiesInfo[label].visualInfo = nextBody.visualInfo;
+        createBody(label, true);
+        return;
+    }
+
     // Extrapolate/Interpolate position and rotation
-    if (body.vel == undefined) {
+    if (!body.vel) {
         body.vel = {};
     }
 
-    if (nextBody.vel == undefined) {
+    if (!nextBody.vel) {
         nextBody.vel = {};
     }
 
@@ -366,9 +375,14 @@ var updateBody = function(label, frameTime, tempNextTime){
     bodyMeshes[label].rotationQuaternion = interpolateRotation(angle, nextAngle, null, null, lastUpdateTime, tempNextTime, frameTime);
 };
 
-var createBody = function (label) {
+var createBody = function (label, replaceExisting = false) {
     if (!bodiesInfo[label].width || !bodiesInfo[label].visualInfo || bodiesInfo[label].visualInfo.modelScale == -1) {
         return;
+    }
+
+    if(replaceExisting){
+        bodyMeshes[label].dispose();
+        delete bodyMeshes[label];
     }
 
     if (bodiesInfo[label].visualInfo.model && (bodiesInfo[label].visualInfo.model.endsWith('.gltf') || bodiesInfo[label].visualInfo.model.endsWith('.glb'))) { // Mesh object
