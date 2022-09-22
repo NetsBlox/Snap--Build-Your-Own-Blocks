@@ -56,7 +56,7 @@ const connectToRoboScapeSim = function (server) {
             socket.on('u', data => {
                 if (performance.now() - nextUpdateTime > 10) {
                     bodies = { ...nextBodies };
-                    nextBodies = { ...data };
+                    nextBodies = { ...bodies, ...data };
                     lastUpdateTime = nextUpdateTime;
                     nextUpdateTime = performance.now();
                     lastUpdateServerTime = nextUpdateServerTime;
