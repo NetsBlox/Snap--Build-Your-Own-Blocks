@@ -45,6 +45,9 @@ BlockMorph.prototype.showHelp = async function() {
         metadata = isServiceURL ?
             await Services.getServiceMetadataFromURL(serviceName) :
             await Services.getServiceMetadata(serviceName);
+
+        const isFSService = !!metadata.servicePath;
+
         if (methodName !== '') {
             metadata = metadata.rpcs[methodName];
             help = metadata.description;
@@ -53,13 +56,19 @@ BlockMorph.prototype.showHelp = async function() {
                 var optionalStr = arg.optional ? '[optional]' : '';
                 help += `\n${arg.name}: ${arg.description} ${optionalStr}`;
             }
-            // add a direct link to the official docs page
-            const cat = metadata.categories && metadata.categories.length ? metadata.categories[0] : 'index';
-            help += `\n\nDocumentation can be found at:\n${SERVER_URL}/docs/services/${serviceName}/${cat}.html#${serviceName}.${methodName}`;
+
+            if (isFSService) {
+                // add a direct link to the official docs page
+                const cat = metadata.categories && metadata.categories.length ? metadata.categories[0] : 'index';
+                help += `\n\nDocumentation can be found at:\n${SERVER_URL}/docs/services/${serviceName}/${cat}.html#${serviceName}.${methodName}`;
+            }
         } else {  // get service description
             help = metadata.description;
-            // add a direct link to the official docs page
-            help += `\n\nDocumentation can be found at:\n${SERVER_URL}/docs/services/${serviceName}/index.html`;
+
+            if (isFSService) {
+                // add a direct link to the official docs page
+                help += `\n\nDocumentation can be found at:\n${SERVER_URL}/docs/services/${serviceName}/index.html`;
+            }
         }
         if (!help) help = 'Description not available';
     } else {
