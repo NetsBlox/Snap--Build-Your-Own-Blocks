@@ -12,7 +12,7 @@ const indexTpl = dot.template(
   fs.readFileSync(path.join(__dirname, "..", "index.dot"))
 );
 
-const { CLOUD_URL = "https://alpha.netsblox.org", ENV = "dev" } = process.env;
+const { CLOUD_URL = "https://cloud.netsblox.org", ENV = "dev" } = process.env;
 const isDevMode = ENV !== "production";
 
 const file = new nodeStatic.Server(path.join(__dirname, ".."));
