@@ -1268,47 +1268,6 @@ NetsBloxMorph.prototype.collabResponse = async function (invite, response) {
     }
 };
 
-NetsBloxMorph.prototype.createCloudAccount = function () {
-    var myself = this,
-        world = this.world();
-    /*
-    // force-logout, commented out for now:
-    delete localStorage['-snap-user'];
-    this.cloud.clear();
-*/
-    new DialogBoxMorph(
-        null,
-        function (user) {
-            myself.cloud.signup(
-                user.username,
-                user.email,
-                function (txt, title) {
-                    new DialogBoxMorph().inform(
-                        title,
-                        txt +
-                            '.\n\nAn e-mail with your password\n' +
-                            'has been sent to the address provided',
-                        world,
-                        myself.cloudIcon(null, new Color(0, 180, 0))
-                    );
-                },
-                myself.cloudError()
-            );
-        }
-    ).withKey('cloudsignup').promptCredentials(
-        'Sign up',
-        'signup',
-        '/tos.html',
-        'Terms of Service...',
-        '/privacy.html',
-        'Privacy...',
-        'I have read and agree\nto the Terms of Service',
-        world,
-        myself.cloudIcon(),
-        myself.cloudMsg
-    );
-};
-
 NetsBloxMorph.prototype.simpleNotification = function (msg, sticky) {
     var msgText = localize(msg);
     var notification = new MenuMorph(null, msgText);

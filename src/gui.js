@@ -6477,29 +6477,24 @@ IDE_Morph.prototype.initializeCloud = function () {
 };
 
 IDE_Morph.prototype.createCloudAccount = function () {
-    var world = this.world();
-
+    const world = this.world();
     new DialogBoxMorph(
         null,
-        user => this.cloud.signup(
-            user.username,
-            user.password,
-            user.passwordRepeat,
-            user.email,
-            (txt, title) => new DialogBoxMorph().inform(
-                title,
-                txt + '.\n\nYou can now log in.',
+        async user => {
+            await this.cloud.signup(user.username, user.password, user.email);
+            new DialogBoxMorph().inform(
+                'Account created',
+                'Account has been created. You can now log in.',
                 world,
                 this.cloudIcon(null, new Color(0, 180, 0))
-            ),
-            this.cloudError()
-        )
+            );
+        }
     ).withKey('cloudsignup').promptCredentials(
         'Sign up',
         'signup',
-        'https://snap.berkeley.edu/tos.html',
+        '/tos.html',
         'Terms of Service...',
-        'https://snap.berkeley.edu/privacy.html',
+        '/privacy.html',
         'Privacy...',
         'I have read and agree\nto the Terms of Service',
         world,
