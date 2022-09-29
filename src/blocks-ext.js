@@ -345,6 +345,10 @@ RPCInputSlotMorph.uber = StructInputSlotMorph.prototype;
 
 function RPCInputSlotMorph() {
     const getFields = rpcName => {
+        if (!rpcName) {
+            return [];
+        }
+
         if (!this.fieldsFor || !this.fieldsFor[rpcName]) {
             this.methodSignature();
             var isSupported = !!this.fieldsFor;
@@ -394,7 +398,16 @@ RPCInputSlotMorph.prototype.getServiceName = function () {
 
 RPCInputSlotMorph.prototype.getServiceMetadata = function () {
     const field = this.getServiceInputSlot();
-    const ide = this.parentThatIsA(IDE_Morph);  // FIXME: Is it possible that this is undefined?
+    const serviceName = field.constant ?
+        field.evaluate()[0] : field.evaluate();
+
+    // The IDE_Morph is undefined when cloning or dragging from the part browser.
+    // Collaborative edits result in the same issue.
+    let ide = this.parentThatIsA(IDE_Morph);
+    if (!ide) {  // FIXME: this is a bit of an ugly hack...
+        ide = world.children[0];
+    }
+
     const services = ide.services;
     const url = field.constant ? field.evaluate()[0] :
         services.defaultHost.url + '/' + field.evaluate();
