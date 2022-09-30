@@ -601,37 +601,21 @@ function CloudLibrarySource(ide) {
     this.init(ide, 'Cloud', 'cloud', 'cloud');
 }
 
-CloudLibrarySource.prototype.list = function() {
+CloudLibrarySource.prototype.list = async function() {
     const isLoggedIn = !!this.ide.cloud.username;
     if (!isLoggedIn) {
         this.ide.showMessage(localize('You are not logged in'));
     }
 
-    const deferred = utils.defer();
-    const url = `${SERVER_URL}/api/v2/libraries/user/`;
-    this.ide.getURL(
-        url,
-        libJSON => {
-            const libraries = JSON.parse(libJSON).map(lib => {
-                lib.public = lib.public || lib.needsApproval;
-                return lib;
-            });
-            deferred.resolve(libraries);
-        }
-    );
-    return deferred.promise;
+    const libs = await this.ide.cloud.getLibraryList();
+    libs.forEach(lib => lib.public = lib.state === 'Public' || lib.state === 'PendingApproval');
+    return libs;
 };
 
 CloudLibrarySource.prototype.save = async function(item) {
     const {name, blocks, notes} = item;
-    const request = new XMLHttpRequest();
-    const username = this.ide.cloud.username;
-    request.open('POST', `${SERVER_URL}/api/v2/libraries/user/${username}/${name}`, true);
-    request.withCredentials = true;
-
-    await utils.requestPromise(request, {blocks, notes});
-    const {needsApproval} = JSON.parse(request.responseText);
-    if (needsApproval) {
+    const publishState = await this.ide.cloud.saveLibrary(name, blocks, notes);
+    if (publishState === 'PendingApproval') {
         this.ide.inform(
             'Approval Required',
             'Approval is required to re-publish the given library.\n\n' +
@@ -641,41 +625,23 @@ CloudLibrarySource.prototype.save = async function(item) {
 };
 
 CloudLibrarySource.prototype.getContent = async function(item) {
-    const deferred = utils.defer();
     const {owner, name} = item;
-    const url = `${SERVER_URL}/api/v2/libraries/user/${owner}/${name}`;
-    this.ide.getURL(
-        url,
-        libXML => {
-            deferred.resolve(libXML);
-        }
-    );
-    return deferred.promise;
+    return await this.ide.cloud.getLibrary(owner, name);
 };
 
 CloudLibrarySource.prototype.delete = async function(item) {
     const {name} = item;
-    const request = new XMLHttpRequest();
-    const username = this.ide.cloud.username;
-    request.open('DELETE', `${SERVER_URL}/api/v2/libraries/user/${username}/${name}`, true);
-    request.withCredentials = true;
-
-    await utils.requestPromise(request);
+    return await this.ide.cloud.deleteLibrary(name);
 };
 
 CloudLibrarySource.prototype.publish = async function(item, unpublish) {
-    const action = unpublish ? 'unpublish' : 'publish';
-    const username = this.ide.cloud.username;
     const {name} = item;
-    const url = `${SERVER_URL}/api/v2/libraries/user/${username}/${name}/${action}`;
-    const request = new XMLHttpRequest();
-    request.open('POST', url, true);
-    request.withCredentials = true;
-
-    await utils.requestPromise(request);
-    if (!unpublish) {
-        const {needsApproval} = JSON.parse(request.responseText);
-        if (needsApproval) {
+    const action = unpublish ? 'unpublish' : 'publish';
+    if (unpublish) {
+        await this.ide.cloud.unpublishLibrary(name);
+    } else {
+        const publishState = await this.ide.cloud.publishLibrary(name);
+        if (publishState === 'PendingApproval') {
             this.ide.inform(
                 'Approval Required',
                 'Approval is required to publish the given library.\n\n' +
@@ -693,22 +659,13 @@ function CommunityLibrarySource(ide) {
     this.init(ide, 'Community', 'cloud', 'community');
 }
 
-CommunityLibrarySource.prototype.list = function() {
-    const deferred = utils.defer();
-    const url = `${SERVER_URL}/api/v2/libraries/community/`;
-    this.ide.getURL(
-        url,
-        libJSON => {
-            const libraries = JSON.parse(libJSON);
-            libraries.forEach(lib => {
-                lib.libraryName = lib.name;
-                lib.name = `${lib.name} (author: ${lib.owner})`;
-            });
-
-            deferred.resolve(libraries);
-        }
-    );
-    return deferred.promise;
+CommunityLibrarySource.prototype.list = async function() {
+    const libs = await this.ide.cloud.getCommunityLibraryList();
+    libs.forEach(lib => {
+        lib.libraryName = lib.name;
+        lib.name = `${lib.name} (author: ${lib.owner})`;
+    });
+    return libs;
 };
 
 CommunityLibrarySource.prototype.getContent = function(item) {
