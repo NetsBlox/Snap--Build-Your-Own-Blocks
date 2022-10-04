@@ -276,7 +276,6 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     StageMorph.prototype.enableInheritance = false;
     StageMorph.prototype.enableSublistIDs = false;
     Process.prototype.enableLiveCoding = false;
-    SnapActions.disableCollaboration();
     SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
@@ -1200,14 +1199,8 @@ NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, r
     var myself = this,
         // unpack the params
         roomName = params.roomName,
-        enabled = false,
         dialog,
         msg;
-
-    if (!SnapActions.isCollaborating()) {
-        SnapActions.enableCollaboration();
-        enabled = true;
-    }
 
     if (params.inviter === this.cloud.username) {
         msg = 'Would you like to collaborate at "' + roomName + '"?';
@@ -1223,9 +1216,6 @@ NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, r
 
     dialog.cancel = function() {
         myself.collabResponse(params, false);
-        if (enabled) {
-            SnapActions.disableCollaboration();
-        }
         dialog.destroy();
     };
 
