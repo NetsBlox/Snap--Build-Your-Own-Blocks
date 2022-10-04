@@ -603,13 +603,10 @@ NetsBloxMorph.prototype.openRoomString = async function (str) {
 
     const msg = this.showMessage(localize('Opening project...'));
     const {name} = room.attributes;
-    const state = await this.cloud.importProject({name, roles});
-    // TODO: open the new project
-    this.room.onRoomStateUpdate(state);
-    const [role] = room.children;
-    await this.openRoleString(role, true);
-    msg.destroy();
-    this.sockets.updateRoomInfo();
+    const metadata = await this.cloud.importProject({name, roles});
+
+    const cloudSource = new CloudProjectsSource(this);
+    await cloudSource.open(metadata);
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
@@ -837,7 +834,7 @@ NetsBloxMorph.prototype.rawLoadCloudRole = async function (project, roleData) {
 
     this.source = 'cloud';
     project.owner = project.owner || this.cloud.username;
-    this.updateUrlQueryString(project.name, project.public);
+    this.updateUrlQueryString(project.name, project.state === 'Public');
 
     const msg = this.showMessage('Opening project...');
     this.cloud.setLocalState(project.id, roleId);

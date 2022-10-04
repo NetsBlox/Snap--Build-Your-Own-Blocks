@@ -600,21 +600,28 @@ IDE_Morph.prototype.interpretUrlAnchors = async function (loc) {
     } else if (loc.hash.substr(0, 7) === '#signup') {
         this.createCloudAccount();
     } else if (loc.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
-        const example = dict ? dict.ProjectName : loc.hash.substr(9);
+        const exampleName = dict ? dict.ProjectName : loc.hash.substr(9);
 
         this.shield = new Morph();
         this.shield.alpha = 0;
         this.shield.setExtent(this.parent.extent());
         this.parent.add(this.shield);
 
-        const projectData = this.getURL(myself.resourceURL('Examples', example));
-        const msg = myself.showMessage('Opening ' + example + ' example...');
-        await this.droppedText(projectData);
-        myself.hasChangedMedia = true;
+        const source = new CloudProjectExamples(this);
+        const example = source.list().find(example => example.name === exampleName);
+        if (example) {
+            const msg = myself.showMessage('Opening ' + example + ' example...');
+            await source.open(example);
+            myself.hasChangedMedia = true;
+            msg.destroy();
+        } else {
+            myself.showMessage('Example not found: ' + exampleName);
+        }
+
         this.shield.destroy();
         this.shield = null;
-        msg.destroy();
         applyFlags(dict);
+
     } else if (loc.hash.substr(0, 9) === '#private:' || dict.action === 'private') {
         var name = dict ? dict.ProjectName : loc.hash.substr(9),
             isLoggedIn = this.cloud.username !== null;
