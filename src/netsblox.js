@@ -131,18 +131,8 @@ NetsBloxMorph.prototype.settingsMenu = function () {
 };
 
 NetsBloxMorph.prototype.newProject = async function (projectName) {
-    let projectInfo;
-    try {
-        projectInfo = await this.cloud.newProject(projectName);
-    } catch (err) {
-        projectInfo = {
-            name: projectName || 'untitled',
-            roleName: 'myRole',
-            projectId: this.cloud.projectId,
-            roleId: this.cloud.roleId,
-        };
-    }
-    await this.newProjectFromInfo(projectInfo, !projectName);
+    const metadata = await this.cloud.newProject(projectName);
+    await this.newProjectFromInfo(metadata, !projectName);
     this.extensions.onNewProject();
 };
 
@@ -153,7 +143,8 @@ NetsBloxMorph.prototype.newProjectFromInfo = async function (projectInfo, update
         this.updateUrlQueryString();
     }
     await SnapActions.openProject();
-    this.silentSetProjectName(projectInfo.roleName);
+    const [roleData] = Object.values(projectInfo.roles);
+    this.silentSetProjectName(roleData.name);
 };
 
 NetsBloxMorph.prototype.newRole = function (name) {
