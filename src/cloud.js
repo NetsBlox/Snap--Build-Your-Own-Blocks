@@ -854,7 +854,7 @@ Cloud.prototype.signup = function (
     var request = new XMLHttpRequest(),
         myself = this,
         data = 'Username=' + encodeURIComponent(username) + '&Email=' +
-            encodeURIComponent(email) + '&Password=' + encodeURIComponent(password);
+            encodeURIComponent(email) + '&Password=' + encodeURIComponent(hex_sha512(password));
     try {
         request.open(
             'POST',
