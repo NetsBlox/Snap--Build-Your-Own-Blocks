@@ -2161,11 +2161,11 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
             function (element) {
                 return element.name || element;
             } : null,
-        [ // format: display shared project names bold
+        [ // format: display collaborators names bold
             [
                 'bold',
                 function (user) {return user.collaborating; }
-            ]
+            ],
         ]//,
         //function () {myself.ok(); }
     );
@@ -2229,7 +2229,6 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
         () => this.target.sendFriendRequest(),
         'Add Friend'
     );
-    // TODO: add buttons on multiple lines
     this.inviteFriendButton.hint = localize('Send friend request to another user on NetsBlox. Only friends are shown in this window.');
     this.unfriendButton = this.addButton(
         () => this.target.unfriend(this.listField.selected.name),
