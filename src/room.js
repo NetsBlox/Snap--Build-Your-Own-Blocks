@@ -2011,6 +2011,13 @@ UserDialogMorph.prototype.fixLayout = function () {
 
     if (this.buttons && (this.buttons.children.length > 0)) {
         this.buttons.fixLayout();
+        this.bounds.setWidth(Math.max(
+                this.width(),
+                this.buttons.width()
+                        + (2 * this.padding)
+            )
+        );
+        this.buttons.setCenter(this.center());
     }
 
     if (this.body) {
@@ -2027,7 +2034,7 @@ UserDialogMorph.prototype.fixLayout = function () {
             this.body.width() -  this.padding * 6
         );
         inputField.setLeft(this.body.left() + this.padding * 3);
-        inputField.rerender();  // FIXME: what should I passjk:
+        inputField.rerender();
 
         this.listField.setLeft(this.body.left() + this.padding);
         this.listField.setWidth(
@@ -2053,12 +2060,18 @@ UserDialogMorph.prototype.fixLayout = function () {
     }
 
     if (this.buttons && (this.buttons.children.length > 0)) {
-        this.buttons.setCenter(this.center());
         this.buttons.setBottom(this.bottom() - this.padding);
+    }
+
+    if (this.handle) {
+        this.handle.fixLayout();
     }
 
     Morph.prototype.trackChanges = oldFlag;
     this.changed();
+
+    this.removeShadow();
+    this.addShadow();
 };
 
 UserDialogMorph.prototype.fixListFieldItemColors =
