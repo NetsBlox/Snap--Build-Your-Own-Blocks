@@ -1284,37 +1284,20 @@ NetsBloxMorph.prototype.respondToFriendRequest = async function (request) {
 };
 
 NetsBloxMorph.prototype.manageCollaborators = async function () {
-    // TODO: use this list for managing friends, too
-    // TODO: show offline friends & collaborators
-    // TODO: how to get two sections?
-    //const friends = await this.cloud.getCollaboratorList();
-    // TODO: create test user list
-    // TODO: make the UI elements
-    const friends = [
-        {
-            name: 'brian',
-            collaborating: true,
-            online: true
-        },
-        {
-            name: 'ledeczi',
-            collaborating: false,
-            online: true
-        },
-        {
-            name: 'hamid',
-            collaborating: true,
-            online: false
-        },
-        {
-            name: 'gordon',
-            collaborating: false,
-            online: false
-        },
-    ]
-    friends.sort(function(a, b) {
-        return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
-    });
+    const [friends, collaborators] = await Promise.all([
+        this.cloud.getFriendList(),
+        this.cloud.getCollaboratorList(),
+    ]);
+    const collaboratorSet = new Set(collaborators);
+    const possibleCollaborators = friends
+        .map(name => ({
+            name,
+            collaborating: collaboratorSet.has(name)
+        }))
+        .sort(function(a, b) {
+            return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
+        });
+
     new CollaboratorDialogMorph(
         this,
         user => {
