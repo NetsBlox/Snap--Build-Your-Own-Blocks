@@ -108,21 +108,31 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
         }
     }
 
-    if (this.cloud.username) {
+    if (isLoggedIn) {
         menu.addLine();
-        const friendMenu = new MenuMorph(this);
-        friendMenu.addItem('View Friends...', 'manageFriends');
-        friendMenu.addItem('Send Friend Request...', 'sendFriendRequest');
-        friendMenu.addItem('Blocked Users...', 'manageBlockedUsers');
-        menu.addMenu(
-            'Friends...',
-            friendMenu
-        );
-
         if (this.room.isOwner()) {
             menu.addItem(
                 'Collaborators...',
                 'manageCollaborators'
+            );
+        }
+
+        const friendMenu = new MenuMorph(this);
+        friendMenu.addItem('View Friends...', 'manageFriends');
+        friendMenu.addItem('Send Friend Request...', 'sendFriendRequest');
+        menu.addMenu(
+            'Friends...',
+            friendMenu
+        );
+        const invites = await this.cloud.getFriendRequestList();
+        if (invites.length) {
+            const friendRequestMenu = new MenuMorph(this);
+            invites.forEach(invite => {
+                friendRequestMenu.addItem(`${invite.sender}...`, () => this.respondToFriendRequest(invite));
+            });
+            menu.addMenu(
+                'Friend Requests...',
+                friendRequestMenu
             );
         }
     }
@@ -1200,51 +1210,122 @@ NetsBloxMorph.prototype.manageFriends = async function () {
     // TODO: Show a list of friends with options:
     //   - friends
     //     - view
-    //     - send request
     //     - unfriend
     //     - block
     //   - requests
-    //     - accept/reject/block
     //     - only matters when there are pending requests...
-    //   - blocked users
-    //     - unblock
-    //     - block
 };
 
 NetsBloxMorph.prototype.sendFriendRequest = async function () {
     this.prompt(localize('Send Friend Invitation to...'), async name => {
         await this.cloud.sendFriendRequest(name);
-        this.showMessage(localize('Request sent!'));
+        this.showMessage(localize('Friend request sent!'), 2);
     });
 };
 
-NetsBloxMorph.prototype.manageBlockedUsers = async function () {
-    // TODO: view the blocked users
+NetsBloxMorph.prototype.respondToFriendRequest = async function (request) {
+    const dialog = new DialogBoxMorph(
+        this,
+        () => this.cloud.respondToFriendRequest(request.sender, 'APPROVED'),
+    );
+    dialog.labelString = 'Respond to Friend Request';
+
+    const textString = localize('Received friend request from ') + request.sender +
+        '.\n\n' + localize('What would you like to do?');
+    const txt = new TextMorph(
+        textString,
+        dialog.fontSize,
+        dialog.fontStyle,
+        true,
+        false,
+        'center',
+        null,
+        null,
+        MorphicPreferences.isFlat ? null : new Point(1, 1),
+        WHITE
+    );
+    dialog.addBody(txt);
+    dialog.addButton('ok', localize('Accept'));
+    dialog.addButton(
+        () => {
+            this.cloud.respondToFriendRequest(request.sender, 'REJECTED');
+            dialog.destroy();
+        }, 
+        localize('Reject')
+    );
+    dialog.addButton(
+        async () => {
+            const confirmed = await this.confirm(
+                localize('Are you sure you would like to block ') + request.sender + '?',
+                localize('Block User?')
+            );
+            if (confirmed) {
+                this.cloud.respondToFriendRequest(request.sender, 'BLOCKED');
+            }
+            dialog.destroy();
+        }, 
+        localize('Block')
+    );
+    dialog.addButton('cancel', localize('Cancel'));
+    dialog.createLabel();
+    dialog.fixLayout = function() {
+        DialogBoxMorph.prototype.fixLayout.call(this);
+        horizontalCenter(this, this.label);
+        horizontalCenter(this, this.body);
+    };
+    function horizontalCenter(parent, child) {
+        const centerX = parent.center().x
+        const left = centerX - child.width()/2;
+        child.setLeft(left);
+    }
+
+    dialog.popUp(this.world());
+    dialog.fixLayout();
 };
 
 NetsBloxMorph.prototype.manageCollaborators = async function () {
-    var myself = this,
-        ownerId = this.room.ownerId,
-        name = this.room.name;
-
-    const friends = await this.cloud.getCollaboratorList();
+    // TODO: use this list for managing friends, too
+    // TODO: show offline friends & collaborators
+    // TODO: how to get two sections?
+    //const friends = await this.cloud.getCollaboratorList();
+    // TODO: create test user list
+    // TODO: make the UI elements
+    const friends = [
+        {
+            name: 'brian',
+            collaborating: true,
+            online: true
+        },
+        {
+            name: 'ledeczi',
+            collaborating: false,
+            online: true
+        },
+        {
+            name: 'hamid',
+            collaborating: true,
+            online: false
+        },
+        {
+            name: 'gordon',
+            collaborating: false,
+            online: false
+        },
+    ]
     friends.sort(function(a, b) {
-        return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
+        return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
     });
     new CollaboratorDialogMorph(
-        myself,
+        this,
         user => {
             if (user) {
-                this.cloud.inviteToCollaborate(
-                    this.cloud.clientId,
+                this.cloud.sendCollaborateRequest(
                     user.username,
-                    ownerId,
-                    name
                 );
+                this.showMessage(localize('Request sent!', 2));
             }
         },
         friends,
-        'Invite a Collaborator to the Project'
     ).popUp();
 };
 

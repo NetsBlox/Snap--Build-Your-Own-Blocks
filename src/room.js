@@ -2179,6 +2179,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
             myself.uncollaborateButton.hide();
             myself.collaborateButton.show();
         }
+        myself.unfriendButton.show();
         myself.buttons.fixLayout();
         myself.fixLayout();
         myself.edit();
@@ -2218,12 +2219,23 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
     this.uncollaborateButton = this.addButton(() => {
-        this.cloud.removeCollaborator(myself.listField.selected.name);
-        myself.destroy();
+        this.target.cloud.removeCollaborator(this.listField.selected.name);
+        this.destroy();
     }, 'Remove');
     this.collaborateButton = this.addButton('ok', 'Invite');
     this.uncollaborateButton.hide();
     this.collaborateButton.hide();
+    this.inviteFriendButton = this.addButton(
+        () => this.target.sendFriendRequest(),
+        'Add Friend'
+    );
+    // TODO: add buttons on multiple lines
+    this.inviteFriendButton.hint = localize('Send friend request to another user on NetsBlox. Only friends are shown in this window.');
+    this.unfriendButton = this.addButton(
+        () => this.target.unfriend(this.listField.selected.name),
+        'Unfriend'
+    );
+    this.unfriendButton.hide();
     this.addButton('cancel', 'Cancel');
 
     this.setHeight(300);
