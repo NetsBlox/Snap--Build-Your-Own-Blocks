@@ -9193,24 +9193,9 @@ InputSlotMorph.prototype.menuFromDict = async function (
     }
 
     if (choices instanceof Function) {
-        if (!Process.prototype.enableJS) {
-            menu.addItem('JavaScript extensions for Snap!\nare turned off');
-            return menu;
-        }
-        choices = choices.call(this);
+        choices = await choices.call(this);
     } else if (isString(choices)) {
-        if (choices.indexOf('ext_') === 0) {
-            selector = choices.slice(4);
-            choices = SnapExtensions.menus.get(selector);
-            if (choices) {
-                choices = choices.call(this);
-            } else {
-                menu.addItem('cannot find extension menu "' + selector + '"');
-                return menu;
-            }
-        } else {
-            choices = this[choices]();
-        }
+        choices = await this[choices](enableKeyboard);
         if (!choices) { // menu has already happened
             return;
         }
