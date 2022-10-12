@@ -304,7 +304,7 @@ InputSlotMorph.prototype.serviceNames = async function () {
 
         for (let j = categories.length; j--;) {
             const category = categories[j];
-            if (category.length === 1 && category[0] === 'global') {
+            if (category.length === 0) {
                 putGlobal();
                 continue;
             }
