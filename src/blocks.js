@@ -9193,9 +9193,24 @@ InputSlotMorph.prototype.menuFromDict = async function (
     }
 
     if (choices instanceof Function) {
-        choices = await choices.call(this);
+        if (!Process.prototype.enableJS) {
+            menu.addItem('JavaScript extensions for Snap!\nare turned off');
+            return menu;
+        }
+        choices = choices.call(this);
     } else if (isString(choices)) {
-        choices = await this[choices](enableKeyboard);
+        if (choices.indexOf('ext_') === 0) {
+            selector = choices.slice(4);
+            choices = SnapExtensions.menus.get(selector);
+            if (choices) {
+                choices = choices.call(this);
+            } else {
+                menu.addItem('cannot find extension menu "' + selector + '"');
+                return menu;
+            }
+        } else {
+            choices = this[choices]();
+        }
         if (!choices) { // menu has already happened
             return;
         }
@@ -9356,6 +9371,62 @@ InputSlotMorph.prototype.rpcActions = function () {
 
     return dict;
 };
+
+// InputSlotMorph special drop-down menus:
+// Note each function returning a drop-down menu
+// must accept a Boolean parameter enabling its
+// access for searching
+
+InputSlotMorph.prototype.keysMenu = function () {
+    return {
+        'any key' : ['any key'],
+        'up arrow': ['up arrow'],
+        'down arrow': ['down arrow'],
+        'right arrow': ['right arrow'],
+        'left arrow': ['left arrow'],
+        enter: ['enter'],
+        space : ['space'],
+        '+' : ['+'],
+        '-' : ['-'],
+        a : ['a'],
+        b : ['b'],
+        c : ['c'],
+        d : ['d'],
+        e : ['e'],
+        f : ['f'],
+        g : ['g'],
+        h : ['h'],
+        i : ['i'],
+        j : ['j'],
+        k : ['k'],
+        l : ['l'],
+        m : ['m'],
+        n : ['n'],
+        o : ['o'],
+        p : ['p'],
+        q : ['q'],
+        r : ['r'],
+        s : ['s'],
+        t : ['t'],
+        u : ['u'],
+        v : ['v'],
+        w : ['w'],
+        x : ['x'],
+        y : ['y'],
+        z : ['z'],
+        '0' : ['0'],
+        '1' : ['1'],
+        '2' : ['2'],
+        '3' : ['3'],
+        '4' : ['4'],
+        '5' : ['5'],
+        '6' : ['6'],
+        '7' : ['7'],
+        '8' : ['8'],
+        '9' : ['9']
+    };
+};
+
 InputSlotMorph.prototype.messagesMenu = function () {
     var dict = {},
         rcvr = this.parentThatIsA(BlockMorph).scriptTarget(),
