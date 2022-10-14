@@ -643,18 +643,9 @@ RoomMorph.prototype.setRoleName = function(roleId, name) {
     myself.validateRoleName(name, () => this.ide.cloud.renameRole(roleId, name));
 };
 
-RoomMorph.prototype.evictUser = function (user) {
-    var myself = this;
-    this.ide.cloud.evictUser(
-        user.id,
-        function(state) {
-            myself.onRoomStateUpdate(state);
-            myself.ide.showMessage('evicted ' + user.name + '!');
-        },
-        function (err, lbl) {
-            myself.ide.cloudError().call(null, err, lbl);
-        }
-    );
+RoomMorph.prototype.evictUser = async function (user) {
+    await this.ide.cloud.evictOccupant(user.id);
+    this.ide.showMessage('Evicted ' + user.name + '!');
 };
 
 RoomMorph.prototype.inviteUser = async function (role) {
@@ -671,11 +662,7 @@ RoomMorph.prototype.inviteUser = async function (role) {
 
     friends.unshift('myself');
     const world = this.world();
-    const dialog = new UserDialogMorph(this, user => {
-        if (user) {
-            this.inviteOccupant(user, role.id);
-        }
-    }, friends);
+    const dialog = new InviteOccupantDialogMorph(this.ide, role.id);
     dialog.popUp(world);
     dialog.setCenter(world.center());
     dialog.filterField.edit();
@@ -2283,3 +2270,101 @@ CollaboratorDialogMorph.prototype.refresh = async function () {
     this.showUserList(this.userList);
 };
 
+// InviteOccupantDialogMorph ////////////////////////////////////////////////////
+
+// InviteOccupantDialogMorph inherits from DialogBoxMorph:
+
+InviteOccupantDialogMorph.prototype = Object.create(UserDialogMorph.prototype);
+InviteOccupantDialogMorph.prototype.constructor = InviteOccupantDialogMorph;
+InviteOccupantDialogMorph.uber = UserDialogMorph.prototype;
+
+// InviteOccupantDialogMorph instance creation:
+
+function InviteOccupantDialogMorph(target, roleId, title='Invite a Friend to the Project') {
+    this.init(target, roleId, title);
+}
+
+InviteOccupantDialogMorph.prototype.init = function (target, roleId, title) {
+    this.roleId = roleId;
+    InviteOccupantDialogMorph.uber.init.call(this, target, title);
+};
+
+InviteOccupantDialogMorph.prototype.buildContents = function() {
+    var myself = this;
+
+    this.addBody(new Morph());
+    this.body.color = this.color;
+
+    this.buildFilterField();
+
+    this.listField = new ListMorph(
+        this.userList,
+        this.userList.length > 0 ?
+            function (element) {
+                return element.name || element;
+            } : null,
+    );
+
+    this.listField.action = function (item) {
+        if (item === undefined) {return; }
+        myself.inviteButton.show();
+        myself.unfriendButton.show();
+        myself.buttons.fixLayout();
+        myself.fixLayout();
+        myself.edit();
+    };
+
+    this.fixListFieldItemColors();
+    this.listField.fixLayout = nop;
+    this.listField.edge = InputFieldMorph.prototype.edge;
+    this.listField.fontSize = InputFieldMorph.prototype.fontSize;
+    this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    this.listField.contrast = InputFieldMorph.prototype.contrast;
+    this.listField.render = InputFieldMorph.prototype.render;
+    this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    this.body.add(this.listField);
+
+    // add buttons
+    this.createLabel();
+
+    this.inviteButton = this.addButton(() => {
+        this.target.cloud.sendOccupantInvite(this.listField.selected, this.roleId);
+        this.destroy();
+    }, 'Invite');
+    this.inviteButton.hide();
+
+    this.inviteFriendButton = this.addButton(
+        () => this.target.sendFriendRequest(),
+        'Add Friend'
+    );
+    this.inviteFriendButton.hint = localize('Send friend request to another user on NetsBlox. Only friends are shown in this window.');
+    this.unfriendButton = this.addButton(
+        async () => {
+            this.target.cloud.unfriend(this.listField.selected),
+            this.refresh();
+        },
+        'Unfriend'
+    );
+    this.unfriendButton.hide();
+    this.addButton('cancel', 'Close');
+
+    this.setHeight(300);
+    this.fixLayout();
+};
+
+
+InviteOccupantDialogMorph.prototype.refresh = async function () {
+    this.userList = (await this.target.cloud.getOnlineFriendList())
+        .map(name => ({id: name, name}))
+        .sort(function(a, b) {
+            return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
+        });
+
+    this.userList.unshift({
+        name: localize('myself'),
+        // TODO: add support for an "id" field to avoid collisions with "myself"
+        //id: this.target.cloud.username,
+    });
+    this.showUserList(this.userList);
+};

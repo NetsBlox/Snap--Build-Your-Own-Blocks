@@ -606,7 +606,7 @@ IDE_Morph.prototype.respondToCollaborateRequest = async function (request) {
     dialog.addBody(txt);
     dialog.addButton('ok', localize('Accept'));
     dialog.addButton(
-        () => {
+        async () => {
             await this.cloud.respondToCollaborateRequest(request.id, false);
             this.showMessage(localize('Invitation rejected.'));
             dialog.destroy();
