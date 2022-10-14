@@ -124,7 +124,10 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
             'Friends...',
             friendMenu
         );
-        const invites = await this.cloud.getFriendRequestList();
+        const [invites, collaborateInvites] = await Promise.all([
+            this.cloud.getFriendRequestList(),
+            this.cloud.getCollaboratorRequestList(),
+        ]);
         if (invites.length) {
             const friendRequestMenu = new MenuMorph(this);
             invites.forEach(invite => {
@@ -133,6 +136,17 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
             menu.addMenu(
                 'Friend Requests...',
                 friendRequestMenu
+            );
+        }
+
+        if (collaborateInvites.length) {
+            const inviteMenu = new MenuMorph(this);
+            collaborateInvites.forEach(invite => {
+                inviteMenu.addItem(`${invite.sender}...`, () => this.respondToCollaborateRequest(invite));
+            });
+            menu.addMenu(
+                'Collaboration Requests...',
+                inviteMenu
             );
         }
     }

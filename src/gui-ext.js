@@ -576,6 +576,61 @@ IDE_Morph.prototype.respondToFriendRequest = async function (request) {
     dialog.fixLayout();
 };
 
+IDE_Morph.prototype.respondToCollaborateRequest = async function (request) {
+    const dialog = new DialogBoxMorph(
+        this,
+        async () => {
+            await this.cloud.respondToCollaborateRequest(request.id, true);
+            // TODO: ask if you want to open it now
+        },
+    );
+    dialog.labelString = 'Respond to Collaborate Request';
+
+    // TODO: get the name of the project
+    //const metadata = await this.cloud.getProjectMetadata(request.projectId);
+    const textString = request.sender + localize(' has invited you to collaborate on') +
+        //'\n\n' + metadata.name + '.\n\n' + localize('What would you like to do?');
+        '\n\n' + request.projectId + '\n\n' + localize('What would you like to do?');
+    const txt = new TextMorph(
+        textString,
+        dialog.fontSize,
+        dialog.fontStyle,
+        true,
+        false,
+        'center',
+        null,
+        null,
+        MorphicPreferences.isFlat ? null : new Point(1, 1),
+        WHITE
+    );
+    dialog.addBody(txt);
+    dialog.addButton('ok', localize('Accept'));
+    dialog.addButton(
+        () => {
+            await this.cloud.respondToCollaborateRequest(request.id, false);
+            this.showMessage(localize('Invitation rejected.'));
+            dialog.destroy();
+        }, 
+        localize('Reject')
+    );
+    dialog.addButton('cancel', localize('Cancel'));
+    dialog.createLabel();
+    dialog.fixLayout = function() {
+        DialogBoxMorph.prototype.fixLayout.call(this);
+        horizontalCenter(this, this.label);
+        horizontalCenter(this, this.body);
+    };
+    function horizontalCenter(parent, child) {
+        const centerX = parent.center().x
+        const left = centerX - child.width()/2;
+        child.setLeft(left);
+    }
+
+    dialog.popUp(this.world());
+    dialog.fixLayout();
+
+};
+
 IDE_Morph.prototype.manageCollaborators = async function () {
     const dialog = new CollaboratorDialogMorph(
         this,
