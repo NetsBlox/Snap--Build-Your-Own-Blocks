@@ -504,6 +504,150 @@ IDE_Morph.prototype.openRoleString = async function (role, parsed=false) {
     return SnapActions.openProject(projectXml);
 };
 
+IDE_Morph.prototype.manageFriends = async function () {
+    const dialog = new UserDialogMorph(this);
+    dialog.popUp(this.world());
+};
+
+IDE_Morph.prototype.sendFriendRequest = async function () {
+    this.prompt(localize('Send Friend Invitation to...'), async name => {
+        await this.cloud.sendFriendRequest(name);
+        this.showMessage(localize('Friend request sent!'), 2);
+    });
+};
+
+IDE_Morph.prototype.respondToFriendRequest = async function (request) {
+    const dialog = new DialogBoxMorph(
+        this,
+        () => this.cloud.respondToFriendRequest(request.sender, 'APPROVED'),
+    );
+    dialog.labelString = 'Respond to Friend Request';
+
+    const textString = localize('Received friend request from ') + request.sender +
+        '.\n\n' + localize('What would you like to do?');
+    const txt = new TextMorph(
+        textString,
+        dialog.fontSize,
+        dialog.fontStyle,
+        true,
+        false,
+        'center',
+        null,
+        null,
+        MorphicPreferences.isFlat ? null : new Point(1, 1),
+        WHITE
+    );
+    dialog.addBody(txt);
+    dialog.addButton('ok', localize('Accept'));
+    dialog.addButton(
+        () => {
+            this.cloud.respondToFriendRequest(request.sender, 'REJECTED');
+            dialog.destroy();
+        }, 
+        localize('Reject')
+    );
+    dialog.addButton(
+        async () => {
+            const confirmed = await this.confirm(
+                localize('Are you sure you would like to block ') + request.sender + '?',
+                localize('Block User?')
+            );
+            if (confirmed) {
+                this.cloud.respondToFriendRequest(request.sender, 'BLOCKED');
+            }
+            dialog.destroy();
+        }, 
+        localize('Block')
+    );
+    dialog.addButton('cancel', localize('Cancel'));
+    dialog.createLabel();
+    dialog.fixLayout = function() {
+        DialogBoxMorph.prototype.fixLayout.call(this);
+        horizontalCenter(this, this.label);
+        horizontalCenter(this, this.body);
+    };
+    function horizontalCenter(parent, child) {
+        const centerX = parent.center().x
+        const left = centerX - child.width()/2;
+        child.setLeft(left);
+    }
+
+    dialog.popUp(this.world());
+    dialog.fixLayout();
+};
+
+IDE_Morph.prototype.manageCollaborators = async function () {
+    const dialog = new CollaboratorDialogMorph(
+        this,
+    );
+    dialog.popUp();
+};
+
+IDE_Morph.prototype.promptCollabInvite = function (params) {  // id, room, roomName, role
+    // Create a confirm dialog about joining the group
+    var myself = this,
+        // unpack the params
+        roomName = params.roomName,
+        dialog,
+        msg;
+
+    if (params.inviter === this.cloud.username) {
+        msg = 'Would you like to collaborate at "' + roomName + '"?';
+    } else {
+        msg = params.inviter + ' has invited you to collaborate with\nhim/her at "' + roomName +
+            '"\nAccept?';
+    }
+
+    dialog = new DialogBoxMorph(null, function() {
+        myself.collabResponse(params, true);
+        dialog.destroy();
+    });
+
+    dialog.cancel = function() {
+        myself.collabResponse(params, false);
+        dialog.destroy();
+    };
+
+    dialog.askYesNo(
+        'Collaboration Invitation',
+        localize(msg),
+        this.world()
+    );
+};
+
+IDE_Morph.prototype.collabResponse = async function (invite, response) {
+    var myself = this;
+
+    try {
+        await this.cloud.respondToCollaborationInvite(invite.id, response);
+        var dialog,
+            msg;
+
+        if (response) {
+            dialog = new DialogBoxMorph(null, () => {
+                // Open the given project
+                this.cloud.joinActiveProject(
+                    invite.projectId,
+                    function (xml) {
+                        myself.rawLoadCloudProject(xml);
+                    },
+                    myself.cloudError()
+                );
+                dialog.destroy();
+            });
+            msg = 'Would you like to open the shared project now?';
+            dialog.askYesNo(
+                localize('Open Shared Project?'),
+                localize(msg),
+                this.world()
+            );
+        }
+    } catch (err) {
+        this.showMessage(err.message, 2);
+    }
+};
+
+
 // Events ///////////////////////////////////////////
 
 class Events {

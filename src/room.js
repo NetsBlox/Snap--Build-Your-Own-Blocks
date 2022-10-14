@@ -1958,20 +1958,22 @@ UserDialogMorph.uber = DialogBoxMorph.prototype;
 
 // UserDialogMorph instance creation:
 
-function UserDialogMorph(target, action, users) {
-    this.init(target, action, users);
+function UserDialogMorph(target, title='Friends') {
+    this.init(target, title);
 }
 
-UserDialogMorph.prototype.init = function(target, action, users) {
-    this.key = 'inviteOccupant';
-    this.userList = users;
+UserDialogMorph.prototype.init = function(target, title) {
     UserDialogMorph.uber.init.call(
         this,
         target, // target
-        action, // function
+        nop, // function
         null // environment
     );
+    this.key = title;
+    this.labelString = localize(title);
+    this.userList = [];
     this.buildContents();
+    this.refresh();
 };
 
 UserDialogMorph.prototype.buildContents = function() {
@@ -1992,14 +1994,44 @@ UserDialogMorph.prototype.buildContents = function() {
 
     this.body.add(this.listField);
 
+    this.listField.action = item => {
+        if (item === undefined) {return; }
+        this.unfriendButton.show();
+        this.buttons.fixLayout();
+        this.fixLayout();
+        this.edit();
+    };
+
     // add buttons
-    this.labelString = 'Invite a Friend to the Room';
+    this.inviteFriendButton = this.addButton(
+        () => this.target.sendFriendRequest(),
+        'Add Friend'
+    );
+    this.inviteFriendButton.hint = localize('Send friend request to another user on NetsBlox. Only friends are shown in this window.');
+    this.unfriendButton = this.addButton(
+        async () => {
+            this.target.cloud.unfriend(this.listField.selected),
+            this.refresh();
+        },
+        'Unfriend'
+    );
+    this.unfriendButton.hide();
     this.createLabel();
-    this.addButton('ok', 'OK');
-    this.addButton('cancel', 'Cancel');
+
+    this.addButton('cancel', 'Close');
 
     this.setHeight(300);
     this.fixLayout();
+};
+
+UserDialogMorph.prototype.refresh = async function () {
+    const userList = (await this.target.cloud.getFriendList())
+        .sort((a, b) => a.toLowerCase() < b.toLowerCase() ? -1 : 1)
+        .map(name => ({name}));
+
+    console.log('refreshing friends to', userList);
+    this.userList = userList;
+    this.showUserList(userList);
 };
 
 UserDialogMorph.prototype.fixLayout = function () {
@@ -2100,23 +2132,26 @@ UserDialogMorph.prototype.buildFilterField = function () {
     this.filterField.reactToKeystroke = function () {
         var text = this.getValue();
 
-        myself.listField.elements =
-            // Netsblox addition: start
-            myself.userList.filter(function (username) {
-                return username.toLowerCase().indexOf(text.toLowerCase()) > -1;
-            });
-        // Netsblox addition: end
+        const matchingUsers = myself.userList
+            .filter(user => user.name.toLowerCase().includes(text.toLowerCase()));
 
-        if (myself.listField.elements.length === 0) {
-            myself.listField.elements.push('(no matches)');
+        if (matchingUsers.length === 0) {
+            myself.showUserList([{name: '(no matches)'}]);
+        } else {
+            myself.showUserList(matchingUsers);
         }
-
-        myself.listField.buildListContents();
-        myself.fixListFieldItemColors();
-        myself.listField.adjustScrollBars();
-        myself.listField.scrollY(myself.listField.top());
-        myself.fixLayout();
     };
+};
+
+UserDialogMorph.prototype.showUserList = function (users) {
+    console.log('showUserList', users);
+    this.listField.elements = users.map(user => user.name);
+
+    this.listField.buildListContents();
+    this.fixListFieldItemColors();
+    this.listField.adjustScrollBars();
+    this.listField.scrollY(this.listField.top());
+    this.fixLayout();
 };
 
 UserDialogMorph.prototype.popUp = function(wrrld) {
@@ -2137,14 +2172,14 @@ UserDialogMorph.prototype.popUp = function(wrrld) {
 
 // CollaboratorDialogMorph inherits from DialogBoxMorph:
 
-CollaboratorDialogMorph.prototype = new UserDialogMorph();
+CollaboratorDialogMorph.prototype = Object.create(UserDialogMorph.prototype);
 CollaboratorDialogMorph.prototype.constructor = CollaboratorDialogMorph;
 CollaboratorDialogMorph.uber = UserDialogMorph.prototype;
 
 // CollaboratorDialogMorph instance creation:
 
-function CollaboratorDialogMorph(target, action, users) {
-    this.init(target, action, users);
+function CollaboratorDialogMorph(target, title='Invite a Friend to Collaborate') {
+    this.init(target, title);
 }
 
 CollaboratorDialogMorph.prototype.buildContents = function() {
@@ -2185,25 +2220,6 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
         myself.edit();
     };
 
-    this.filterField.reactToKeystroke = function () {
-        var text = this.getValue();
-
-        myself.listField.elements =
-            myself.userList.filter(function (user) {
-                return user.name.toLowerCase().indexOf(text.toLowerCase()) > -1;
-            });
-
-        if (myself.listField.elements.length === 0) {
-            myself.listField.elements.push('(no matches)');
-        }
-
-        myself.listField.buildListContents();
-        myself.fixListFieldItemColors();
-        myself.listField.adjustScrollBars();
-        myself.listField.scrollY(myself.listField.top());
-        myself.fixLayout();
-    };
-
     this.fixListFieldItemColors();
     this.listField.fixLayout = nop;
     this.listField.edge = InputFieldMorph.prototype.edge;
@@ -2216,27 +2232,54 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.body.add(this.listField);
 
     // add buttons
-    this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
+
     this.uncollaborateButton = this.addButton(() => {
-        this.target.cloud.removeCollaborator(this.listField.selected.name);
+        this.target.cloud.removeCollaborator(this.listField.selected);
         this.destroy();
     }, 'Remove');
-    this.collaborateButton = this.addButton('ok', 'Invite');
+    this.collaborateButton = this.addButton(() => {
+        this.target.cloud.sendCollaborateRequest(this.listField.selected);
+        this.destroy();
+    }, 'Invite');
     this.uncollaborateButton.hide();
     this.collaborateButton.hide();
+
     this.inviteFriendButton = this.addButton(
         () => this.target.sendFriendRequest(),
         'Add Friend'
     );
     this.inviteFriendButton.hint = localize('Send friend request to another user on NetsBlox. Only friends are shown in this window.');
     this.unfriendButton = this.addButton(
-        () => this.target.unfriend(this.listField.selected.name),
+        async () => {
+            this.target.cloud.unfriend(this.listField.selected),
+            this.refresh();
+        },
         'Unfriend'
     );
     this.unfriendButton.hide();
-    this.addButton('cancel', 'Cancel');
+    this.addButton('cancel', 'Close');
 
     this.setHeight(300);
     this.fixLayout();
 };
+
+CollaboratorDialogMorph.prototype.refresh = async function () {
+    const [friends, collaborators] = await Promise.all([
+        this.target.cloud.getFriendList(),
+        this.target.cloud.getCollaboratorList(),
+    ]);
+    const collaboratorSet = new Set(collaborators);
+    const possibleCollaborators = friends
+        .map(name => ({
+            name,
+            collaborating: collaboratorSet.has(name)
+        }))
+        .sort(function(a, b) {
+            return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
+        });
+
+    this.userList = possibleCollaborators;
+    this.showUserList(this.userList);
+};
+
