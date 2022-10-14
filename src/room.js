@@ -2016,7 +2016,6 @@ UserDialogMorph.prototype.refresh = async function () {
         .sort((a, b) => a.toLowerCase() < b.toLowerCase() ? -1 : 1)
         .map(name => ({name}));
 
-    console.log('refreshing friends to', userList);
     this.userList = userList;
     this.showUserList(userList);
 };
@@ -2131,7 +2130,6 @@ UserDialogMorph.prototype.buildFilterField = function () {
 };
 
 UserDialogMorph.prototype.showUserList = function (users) {
-    console.log('showUserList', users);
     this.listField.elements = users.map(user => user.name);
 
     this.listField.buildListContents();
