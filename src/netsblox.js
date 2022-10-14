@@ -92,9 +92,20 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
     var menu = NetsBloxMorph.uber.cloudMenu.call(this);
 
     const isLoggedIn = this.cloud.username;
+    let user;
     if (isLoggedIn) {
-        const userData = await this.cloud.getUserData();
-        const linkedAccounts = userData ? userData.linkedAccounts : [];
+        const {userData, invites, collaborateInvites} = await Promise.all([
+            this.cloud.getUserData(),
+            this.cloud.getFriendRequestList(),
+            this.cloud.getCollaboratorRequestList(),
+        ]);
+        user.data = userData;
+        user.invites = invites;
+        user.collaborateInvites = collaborateInvites;
+    }
+
+    if (isLoggedIn) {
+        const linkedAccounts = user.data.linkedAccounts;
         if (linkedAccounts.length === 0) {
             menu.addItem(
                 'Link to Snap! account...',
@@ -103,7 +114,7 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
         } else {
             menu.addItem(
                 localize('Unlink Snap! account...'),
-                () => this.unlinkAccount(userData.linkedAccounts[0]),
+                () => this.unlinkAccount(user.data.linkedAccounts[0]),
             );
         }
     }
@@ -124,13 +135,9 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
             'Friends...',
             friendMenu
         );
-        const [invites, collaborateInvites] = await Promise.all([
-            this.cloud.getFriendRequestList(),
-            this.cloud.getCollaboratorRequestList(),
-        ]);
-        if (invites.length) {
+        if (user.invites.length) {
             const friendRequestMenu = new MenuMorph(this);
-            invites.forEach(invite => {
+            user.invites.forEach(invite => {
                 friendRequestMenu.addItem(`${invite.sender}...`, () => this.respondToFriendRequest(invite));
             });
             menu.addMenu(
@@ -139,9 +146,9 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
             );
         }
 
-        if (collaborateInvites.length) {
+        if (user.collaborateInvites.length) {
             const inviteMenu = new MenuMorph(this);
-            collaborateInvites.forEach(invite => {
+            user.collaborateInvites.forEach(invite => {
                 inviteMenu.addItem(`${invite.sender}...`, () => this.respondToCollaborateRequest(invite));
             });
             menu.addMenu(
