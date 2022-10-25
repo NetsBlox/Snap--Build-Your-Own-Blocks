@@ -1576,6 +1576,7 @@ EditRoleMorph.prototype.moveToRole = async function() {
                 ide.cloudError()(err.message);
             }
             dialog.destroy();
+            callback();
         };
 
         dialog.cancel = function() {  // don't overwrite
