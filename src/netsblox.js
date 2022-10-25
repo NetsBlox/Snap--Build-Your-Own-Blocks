@@ -92,9 +92,9 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
     var menu = NetsBloxMorph.uber.cloudMenu.call(this);
 
     const isLoggedIn = this.cloud.username;
-    let user;
+    let user = {};
     if (isLoggedIn) {
-        const {userData, invites, collaborateInvites} = await Promise.all([
+        const [userData, invites, collaborateInvites] = await Promise.all([
             this.cloud.getUserData(),
             this.cloud.getFriendRequestList(),
             this.cloud.getCollaboratorRequestList(),
