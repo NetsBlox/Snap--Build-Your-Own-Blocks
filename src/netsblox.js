@@ -92,9 +92,20 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
     var menu = NetsBloxMorph.uber.cloudMenu.call(this);
 
     const isLoggedIn = this.cloud.username;
+    let user = {};
     if (isLoggedIn) {
-        const userData = await this.cloud.getUserData();
-        const linkedAccounts = userData ? userData.linkedAccounts : [];
+        const [userData, invites, collaborateInvites] = await Promise.all([
+            this.cloud.getUserData(),
+            this.cloud.getFriendRequestList(),
+            this.cloud.getCollaboratorRequestList(),
+        ]);
+        user.data = userData;
+        user.invites = invites;
+        user.collaborateInvites = collaborateInvites;
+    }
+
+    if (isLoggedIn) {
+        const linkedAccounts = user.data.linkedAccounts;
         if (linkedAccounts.length === 0) {
             menu.addItem(
                 'Link to Snap! account...',
@@ -103,17 +114,48 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
         } else {
             menu.addItem(
                 localize('Unlink Snap! account...'),
-                () => this.unlinkAccount(userData.linkedAccounts[0]),
+                () => this.unlinkAccount(user.data.linkedAccounts[0]),
             );
         }
     }
 
-    if (this.cloud.username && this.room.isOwner()) {
+    if (isLoggedIn) {
         menu.addLine();
-        menu.addItem(
-            'Collaborators...',
-            'manageCollaborators'
+        if (this.room.isOwner()) {
+            menu.addItem(
+                'Collaborators...',
+                'manageCollaborators'
+            );
+        }
+
+        const friendMenu = new MenuMorph(this);
+        friendMenu.addItem('View Friends...', 'manageFriends');
+        friendMenu.addItem('Send Friend Request...', 'sendFriendRequest');
+        menu.addMenu(
+            'Friends...',
+            friendMenu
         );
+        if (user.invites.length) {
+            const friendRequestMenu = new MenuMorph(this);
+            user.invites.forEach(invite => {
+                friendRequestMenu.addItem(`${invite.sender}...`, () => this.respondToFriendRequest(invite));
+            });
+            menu.addMenu(
+                'Friend Requests...',
+                friendRequestMenu
+            );
+        }
+
+        if (user.collaborateInvites.length) {
+            const inviteMenu = new MenuMorph(this);
+            user.collaborateInvites.forEach(invite => {
+                inviteMenu.addItem(`${invite.sender}...`, () => this.respondToCollaborateRequest(invite));
+            });
+            menu.addMenu(
+                'Collaboration Requests...',
+                inviteMenu
+            );
+        }
     }
 
     return menu;
@@ -131,18 +173,8 @@ NetsBloxMorph.prototype.settingsMenu = function () {
 };
 
 NetsBloxMorph.prototype.newProject = async function (projectName) {
-    let projectInfo;
-    try {
-        projectInfo = await this.cloud.newProject(projectName);
-    } catch (err) {
-        projectInfo = {
-            name: projectName || 'untitled',
-            roleName: 'myRole',
-            projectId: this.cloud.projectId,
-            roleId: this.cloud.roleId,
-        };
-    }
-    await this.newProjectFromInfo(projectInfo, !projectName);
+    const metadata = await this.cloud.newProject(projectName);
+    await this.newProjectFromInfo(metadata, !projectName);
     this.extensions.onNewProject();
 };
 
@@ -153,7 +185,8 @@ NetsBloxMorph.prototype.newProjectFromInfo = async function (projectInfo, update
         this.updateUrlQueryString();
     }
     await SnapActions.openProject();
-    this.silentSetProjectName(projectInfo.roleName);
+    const [roleData] = Object.values(projectInfo.roles);
+    this.silentSetProjectName(roleData.name);
 };
 
 NetsBloxMorph.prototype.newRole = function (name) {
@@ -560,13 +593,10 @@ NetsBloxMorph.prototype.openRoomString = async function (str) {
 
     const msg = this.showMessage(localize('Opening project...'));
     const {name} = room.attributes;
-    const state = await this.cloud.importProject({name, roles});
-    // TODO: open the new project
-    this.room.onRoomStateUpdate(state);
-    const [role] = room.children;
-    await this.openRoleString(role, true);
-    msg.destroy();
-    this.sockets.updateRoomInfo();
+    const metadata = await this.cloud.importProject({name, roles});
+
+    const cloudSource = new CloudProjectsSource(this);
+    await cloudSource.open(metadata);
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
@@ -794,7 +824,7 @@ NetsBloxMorph.prototype.rawLoadCloudRole = async function (project, roleData) {
 
     this.source = 'cloud';
     project.owner = project.owner || this.cloud.username;
-    this.updateUrlQueryString(project.name, project.public);
+    this.updateUrlQueryString(project.name, project.state === 'Public');
 
     const msg = this.showMessage('Opening project...');
     this.cloud.setLocalState(project.id, roleId);
@@ -1125,105 +1155,6 @@ NetsBloxMorph.prototype.loadBugReport = function () {
 };
 
 // Collaboration
-NetsBloxMorph.prototype.manageCollaborators = async function () {
-    var myself = this,
-        ownerId = this.room.ownerId,
-        name = this.room.name;
-
-    const friends = await this.cloud.getCollaboratorList();
-    friends.sort(function(a, b) {
-        return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
-    });
-    new CollaboratorDialogMorph(
-        myself,
-        user => {
-            if (user) {
-                this.cloud.inviteToCollaborate(
-                    this.cloud.clientId,
-                    user.username,
-                    ownerId,
-                    name
-                );
-            }
-        },
-        friends,
-        'Invite a Collaborator to the Project'
-    ).popUp();
-};
-
-NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, roomName, role
-    // Create a confirm dialog about joining the group
-    var myself = this,
-        // unpack the params
-        roomName = params.roomName,
-        enabled = false,
-        dialog,
-        msg;
-
-    if (!SnapActions.isCollaborating()) {
-        SnapActions.enableCollaboration();
-        enabled = true;
-    }
-
-    if (params.inviter === this.cloud.username) {
-        msg = 'Would you like to collaborate at "' + roomName + '"?';
-    } else {
-        msg = params.inviter + ' has invited you to collaborate with\nhim/her at "' + roomName +
-            '"\nAccept?';
-    }
-
-    dialog = new DialogBoxMorph(null, function() {
-        myself.collabResponse(params, true);
-        dialog.destroy();
-    });
-
-    dialog.cancel = function() {
-        myself.collabResponse(params, false);
-        if (enabled) {
-            SnapActions.disableCollaboration();
-        }
-        dialog.destroy();
-    };
-
-    dialog.askYesNo(
-        'Collaboration Invitation',
-        localize(msg),
-        this.world()
-    );
-};
-
-NetsBloxMorph.prototype.collabResponse = async function (invite, response) {
-    var myself = this;
-
-    try {
-        await this.cloud.respondToCollaborationInvite(invite.id, response);
-        var dialog,
-            msg;
-
-        if (response) {
-            dialog = new DialogBoxMorph(null, () => {
-                // Open the given project
-                this.cloud.joinActiveProject(
-                    invite.projectId,
-                    function (xml) {
-                        myself.rawLoadCloudProject(xml);
-                    },
-                    myself.cloudError()
-                );
-                dialog.destroy();
-            });
-            msg = 'Would you like to open the shared project now?';
-            dialog.askYesNo(
-                localize('Open Shared Project?'),
-                localize(msg),
-                this.world()
-            );
-        }
-    } catch (err) {
-        this.showMessage(err.message, 2);
-    }
-};
-
 NetsBloxMorph.prototype.simpleNotification = function (msg, sticky) {
     var msgText = localize(msg);
     var notification = new MenuMorph(null, msgText);
