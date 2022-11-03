@@ -169,6 +169,8 @@ ActionManager.prototype.initializeEventMethods = function() {
         'toggleBoolean',
         'setColorField',
         'setField',
+
+        'openProject',
     );
 
     this.addUserActions(
