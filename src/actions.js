@@ -554,15 +554,15 @@ ActionManager.prototype.serializeBlock = function(block, force, justMe) {
     return serialized;
 };
 
-ActionManager.prototype.deserializeBlock = function(ser, owner) {
+ActionManager.prototype.deserializeBlock = function(serialized, owner) {
     this.serializer.project = this.ide();
 
-    if (ser[0] !== '<') {
-        return this.getBlockFromId(ser);
-    } else if (ser.indexOf('<script>') === 0) {
-        return this.serializer.loadScript(this.serializer.parse(ser), owner);
+    if (serialized[0] !== '<') {
+        return this.getBlockFromId(serialized);
+    } else if (serialized.indexOf('<script>') === 0) {
+        return this.serializer.loadScript(this.serializer.parse(serialized), owner);
     } else {  // Comment
-        return this.serializer.loadComment(this.serializer.parse(ser));
+        return this.serializer.loadComment(this.serializer.parse(serialized));
     }
 };
 
@@ -2581,7 +2581,7 @@ ActionManager.prototype.onImportBlocks = function(aString, lbl) {
     this.completeAction(null, blocks);
 };
 
-ActionManager.prototype.openProject = async function(str) {
+ActionManager.prototype.onOpenProject = async function (str) {
     var myself = this,
         project = null,
         ide = this.ide();
@@ -2592,13 +2592,13 @@ ActionManager.prototype.openProject = async function(str) {
 
     if (str) {
         if (str.indexOf('<project') === 0) {
-            project = this.ide().rawOpenProjectString(str);
+            project = await ide.rawOpenProjectString(str);
         } else if (str.indexOf('<snapdata') === 0) {
-            project = this.ide().rawOpenCloudDataString(str);
+            project = await ide.rawOpenCloudDataString(str);
         }
 
     } else {
-        this.ide().newRole();
+        ide.newRole();
     }
 
     // Load the owners
@@ -2608,22 +2608,31 @@ ActionManager.prototype.openProject = async function(str) {
 
     this.lastSeen = lastSeen;
 
-    // Load the replay and action manager state from project
-    var len = SnapUndo.allEvents.length;
+    if (!ide.isReplayMode) {
+        // Load the replay and action manager state from project
+        var len = SnapUndo.allEvents.length;
 
-    // Remove the openProject event from the replay history.
-    // In the future, this information would be good to collect
-    // but it will not be recorded for now since it will exponentially
-    // inflate the project size...
-    if (event === SnapUndo.allEvents[len-1]) {
-        SnapUndo.allEvents.pop();
+        // Remove the openProject event from the replay history.
+        // In the future, this information would be good to collect
+        // but it will not be recorded for now since it will exponentially
+        // inflate the project size...
+        if (event === SnapUndo.allEvents[len-1]) {
+            SnapUndo.allEvents.pop();
+        }
+
+        if (project && project.collabStartIndex !== undefined) {
+            this.lastSeen = project.collabStartIndex;
+        }
+
+        var roomName = ide.room.name,
+            roleName = ide.projectName;
+
+        await SnapCloud.setClientState(roomName, roleName, this.lastSeen);
+        this.requestMissingActions();
+
+        ide.extensions.onOpenRole();
     }
 
-    if (project && project.collabStartIndex !== undefined) {
-        this.lastSeen = project.collabStartIndex;
-    }
-
-    ide.extensions.onOpenRole();
     return project;
 };
 

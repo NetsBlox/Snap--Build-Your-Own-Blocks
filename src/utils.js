@@ -109,3 +109,7 @@ utils.pick = (obj, keys) => {
         return result;
     }, {});
 };
+
+utils.isNetsBloxDomain = function (url) {
+    return !!url.match(/^(?:\w+:\/+)?[^/]*\bnetsblox\.org\b\/?/i)
+};

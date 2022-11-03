@@ -441,7 +441,14 @@ IDE_Morph.prototype.initializeEmbeddedAPI = function () {
             const {id, eventType, listenerId} = data;
             this.events.removeEventListener(eventType, listenerId);
             event.source.postMessage({id, type: 'reply'}, event.origin);
+            break;
         }
+        case 'run-scripts':
+            this.runScripts();
+            break;
+        case 'stop-all-scripts':
+            this.stopAllScripts();
+            break;
         }
     };
 
@@ -739,7 +746,7 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
     // initialize inherited properties:
     this.ide = ide;
     this.libraryXML = xml;
-    // I contain a cached version of the libaries I have displayed,
+    // I contain a cached version of the libraries I have displayed,
     // because users may choose to explore a library many times before
     // importing.
     this.libraryCache = {}; // {fileName: [blocks-array] }

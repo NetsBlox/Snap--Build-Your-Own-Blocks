@@ -54,7 +54,7 @@ RoomMorph.prototype.init = function(ide) {
         null,
         WHITE
     );
-    this.roomName.mouseClickLeft = () => this.editRoomName();
+    this.roomName.mouseClickLeft = () => this.editRoomName(this.name);
     this.ownerLabel = new StringMorph(
         localize('Owner: myself'),
         false,
@@ -498,16 +498,18 @@ RoomMorph.prototype.mouseClickLeft = function() {
     }
 };
 
-RoomMorph.prototype.editRoomName = function () {
+RoomMorph.prototype.editRoomName = function (preset = '') {
     var myself = this;
     if (!this.isEditable()) {
         return;
     }
-    this.ide.prompt('New Room Name', function (name) {
+
+    (new DialogBoxMorph(null, function (name) {
         if (RoomMorph.isEmptyName(name)) return;  // empty name = cancel
 
         if (!RoomMorph.isValidName(name)) {
             // Error! name has a . or @
+            myself.editRoomName(name);
             new DialogBoxMorph().inform(
                 'Invalid Project Name',
                 'Could not set the project name because\n' +
@@ -517,13 +519,21 @@ RoomMorph.prototype.editRoomName = function () {
         } else {
             myself.setRoomName(name);
         }
-    }, null, 'editRoomName');
+    })).withKey('editRoomName').prompt(
+        'New Room Name',
+        preset,
+        this.world(),
+        null,
+        null
+    );
 };
 
-RoomMorph.prototype.validateRoleName = function (name, cb) {
+RoomMorph.prototype.validateRoleName = function (name, onValid, onInvalid) {
     if (RoomMorph.isEmptyName(name)) return;  // empty role name = cancel
 
     if (this.getRole(name)) {
+        onInvalid();
+
         // Error! Role exists
         new DialogBoxMorph().inform(
             'Existing Role Name',
@@ -532,6 +542,8 @@ RoomMorph.prototype.validateRoleName = function (name, cb) {
             this.world()
         );
     } else if (!RoomMorph.isValidName(name)) {
+        onInvalid();
+
         // Error! name has a . or @
         new DialogBoxMorph().inform(
             'Invalid Role Name',
@@ -540,18 +552,24 @@ RoomMorph.prototype.validateRoleName = function (name, cb) {
             this.world()
         );
     } else {
-        cb();
+        onValid();
     }
 };
 
-RoomMorph.prototype.createNewRole = function () {
+RoomMorph.prototype.createNewRole = function (defaultName = '') {
     // Ask for a new role name
-    this.ide.prompt('New Role Name', roleName => {
-        this.validateRoleName(
-            roleName,
-            () => this.ide.cloud.addRole(roleName)
+    (new DialogBoxMorph(null, roleName => {
+        this.validateRoleName(roleName,
+            () => this.ide.cloud.addRole(roleName),
+            () => this.createNewRole(roleName),
         );
-    }, null, 'createNewRole');
+    })).withKey('createNewRole').prompt(
+        'New Role Name',
+        defaultName,
+        this.world(),
+        null,
+        null
+    );
 };
 
 RoomMorph.prototype.editRole = function(role) {
@@ -572,12 +590,25 @@ RoomMorph.prototype.editRole = function(role) {
     dialog.setCenter(world.center());
 };
 
-RoomMorph.prototype.editRoleName = function(roleId) {
+RoomMorph.prototype.editRoleName = function(roleId, roleName = '') {
     // Ask for a new role name
     var myself = this;
-    this.ide.prompt('New Role Name', function (roleName) {
-        myself.setRoleName(roleId, roleName);
-    }, null, 'editRoleName');
+
+    (new DialogBoxMorph(null, function (roleName) {
+        myself.validateRoleName(roleName, 
+            function() {
+                myself.setRoleName(roleId, roleName);
+            }, 
+            function () { 
+                myself.editRoleName(roleId, roleName);
+            });
+    })).withKey('editRoleName').prompt(
+        'Change Role Name',
+        roleName,
+        this.world(),
+        null,
+        null
+    );
 };
 
 RoomMorph.prototype.moveToRole = async function(role) {
@@ -603,7 +634,7 @@ RoomMorph.prototype.moveToRole = async function(role) {
 
     if (roleData.code) {
         // TODO: add media
-        this.ide.droppedText(roleData.code);
+        this.ide.droppedText(roleData.code + roleData.media);
     } else {  // newly created role
         await SnapActions.openProject();
     }
@@ -1318,7 +1349,7 @@ RoleMorph.prototype.init = function(id, name, users) {
     this.label.mouseClickLeft = function() {
         var room = this.parentThatIsA(RoomMorph);
         if (room.isEditable()) {
-            room.editRoleName(id);
+            room.editRoleName(id, this.parent.name);
         }
     };
 

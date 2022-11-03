@@ -487,7 +487,7 @@ SnapSerializer.prototype.getPortableXML = function (object) {
     return xml;
 };
 
-SnapSerializer.prototype.loadProjectModel = function (xmlNode, ide, remixID) {
+SnapSerializer.prototype.loadProjectModelSync = function (xmlNode, ide, remixID) {
     // public - answer a new Project represented by the given XML top node
     // show a warning if the origin apps differ
 
@@ -505,6 +505,27 @@ SnapSerializer.prototype.loadProjectModel = function (xmlNode, ide, remixID) {
     }
     model = this.rawLoadProjectModel(xmlNode, remixID);
     this.objects = {};
+    return model;
+};
+
+SnapSerializer.prototype.loadProjectModel = async function (xmlNode, ide, remixID) {
+    const model = this.loadProjectModelSync(xmlNode, ide, remixID);
+    function waitForCallback(obj, name) {
+        const cb = obj[name];
+        if (!cb) return;
+
+        const deferred = utils.defer();
+        obj[name] = function() {
+            cb(...arguments);
+            deferred.resolve();
+        }
+
+        return deferred.promise;
+    }
+
+    if (model.pentrails) {
+        await waitForCallback(model.pentrails, 'onload');
+    }
     return model;
 };
 
@@ -1354,7 +1375,7 @@ SnapSerializer.prototype.loadScripts = function (object, scripts, model) {
 };
 
 SnapSerializer.prototype.loadScriptsArray = function (model, object) {
-    // private - answer an array containting the model's scripts
+    // private - answer an array containing the model's scripts
     var scale = SyntaxElementMorph.prototype.scale,
         scripts = [];
     model.children.forEach(child => {
