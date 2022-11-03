@@ -2629,7 +2629,7 @@ ActionManager.prototype.onOpenProject = async function (str) {
         var roomName = ide.room.name,
             roleName = ide.projectName;
 
-        await SnapCloud.setClientState(roomName, roleName, this.lastSeen);
+        await ide.cloud.setClientState(roomName, roleName, this.lastSeen);
         this.requestMissingActions();
 
         ide.extensions.onOpenRole();
