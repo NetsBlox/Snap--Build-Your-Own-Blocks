@@ -169,8 +169,6 @@ ActionManager.prototype.initializeEventMethods = function() {
         'toggleBoolean',
         'setColorField',
         'setField',
-
-        'openProject',
     );
 
     this.addUserActions(
@@ -2583,7 +2581,7 @@ ActionManager.prototype.onImportBlocks = function(aString, lbl) {
     this.completeAction(null, blocks);
 };
 
-ActionManager.prototype.onOpenProject = async function (str) {
+ActionManager.prototype.openProject = async function (str) {
     var myself = this,
         project = null,
         ide = this.ide();
@@ -2610,30 +2608,13 @@ ActionManager.prototype.onOpenProject = async function (str) {
 
     this.lastSeen = lastSeen;
 
-    if (!ide.isReplayMode) {
-        // Load the replay and action manager state from project
-        var len = SnapUndo.allEvents.length;
-
-        // Remove the openProject event from the replay history.
-        // In the future, this information would be good to collect
-        // but it will not be recorded for now since it will exponentially
-        // inflate the project size...
-        if (event === SnapUndo.allEvents[len-1]) {
-            SnapUndo.allEvents.pop();
-        }
-
-        if (project && project.collabStartIndex !== undefined) {
-            this.lastSeen = project.collabStartIndex;
-        }
-
-        var roomName = ide.room.name,
-            roleName = ide.projectName;
-
-        await ide.cloud.setClientState(roomName, roleName, this.lastSeen);
-        this.requestMissingActions();
-
-        ide.extensions.onOpenRole();
+    if (project && project.collabStartIndex !== undefined) {
+        this.lastSeen = project.collabStartIndex;
     }
+
+    this.requestMissingActions();
+
+    ide.extensions.onOpenRole();
 
     return project;
 };

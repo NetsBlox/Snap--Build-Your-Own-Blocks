@@ -174,19 +174,17 @@ NetsBloxMorph.prototype.settingsMenu = function () {
 
 NetsBloxMorph.prototype.newProject = async function (projectName) {
     const metadata = await this.cloud.newProject(projectName);
-    await this.newProjectFromInfo(metadata, !projectName);
-    this.extensions.onNewProject();
-};
-
-NetsBloxMorph.prototype.newProjectFromInfo = async function (projectInfo, updateUrl) {
     this.createRoom();
-    this.room.silentSetRoomName(projectInfo.name);
+    this.room.silentSetRoomName(metadata.name);
+    const updateUrl = !projectName;
     if (updateUrl) {
         this.updateUrlQueryString();
     }
     await SnapActions.openProject();
-    const [roleData] = Object.values(projectInfo.roles);
+    const [roleData] = Object.values(metadata.roles);
     this.silentSetProjectName(roleData.name);
+
+    this.extensions.onNewProject();
 };
 
 NetsBloxMorph.prototype.newRole = function (name) {
