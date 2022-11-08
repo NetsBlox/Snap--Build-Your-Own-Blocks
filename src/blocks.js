@@ -1749,7 +1749,8 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         info = this.labelParts[spec];
         if (!info) {
             info = NetsBloxExtensions.getLabelPart(spec);
-            if (!info) throw new Error('label part spec not found: "' + spec + '"');
+            // if (!info) throw new Error('label part spec not found: "' + spec + '"');
+            if (!info) return null;
 
             const tags = [];
             if (info.isNumeric) tags.push('numeric');
