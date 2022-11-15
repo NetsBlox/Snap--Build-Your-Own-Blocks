@@ -827,7 +827,7 @@ NetsBloxMorph.prototype.rawLoadCloudRole = async function (project, roleData) {
     const msg = this.showMessage('Opening project...');
     this.cloud.setLocalState(project.id, roleId);
 
-    await SnapActions.openProject(roleData.code);
+    await SnapActions.openProject(`<snapdata>${roleData.code}${roleData.media}</snapdata>`);
     const isLoadInterrupted = this.cloud.projectId !== project.id || this.cloud.roleId !== roleId;
     if (isLoadInterrupted) return;
 
