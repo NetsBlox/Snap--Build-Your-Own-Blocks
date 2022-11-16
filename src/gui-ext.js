@@ -482,7 +482,61 @@ IDE_Morph.prototype.extensionsMenu = function() {
         return menu;
     };
 
-    return menuFromDict(dict);
+    let menu = menuFromDict(dict);
+
+    const on = new SymbolMorph(
+        'checkedBox',
+        MorphicPreferences.menuFontSize * 0.75
+    ),
+    off = new SymbolMorph(
+        'rectangle',
+        MorphicPreferences.menuFontSize * 0.75
+    );
+                    
+    // Add preferences
+    this.extensions.registry
+        .filter(ext => ext.getPreferences())
+        .forEach(ext => {
+            const name = ext.name || ext.constructor.name;
+            let thisExtMenu = menu.items.find(item => item[0] == name);
+
+            let prefs = ext.getPreferences();
+
+            if(thisExtMenu){
+                thisExtMenu = thisExtMenu[1];
+
+                // Only show menu if there is a non-hidden option available
+                if(prefs.find(pref => !pref.hide || world.currentKey == 16) !== undefined){
+                    let newOptionsMenu = new MenuMorph(this);
+                    thisExtMenu.addMenu('Options', newOptionsMenu);
+                    
+                    // Add each preference as a toggle
+                    prefs.forEach(pref => {
+
+                        let test = pref.test;
+                        
+                        // Allow test to be boolean or function
+                        if(typeof(test) == 'function'){
+                            test = test();
+                        }
+
+                        if (!pref.hide || world.currentKey == 16) {
+                            newOptionsMenu.addItem(
+                                [
+                                    (test? on : off),
+                                    pref.label
+                                ],
+                                pref.toggle,
+                                test ? pref.onHint : pref.offHint,
+                                pref.hide ? new Color(100, 0, 0) : null
+                            );
+                        }
+                    });
+                }
+            }
+        });
+
+    return menu;
 };
 
 IDE_Morph.prototype.requestProjectReload = async function (reason) {

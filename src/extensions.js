@@ -162,6 +162,10 @@
         return null;
     };
 
+    Extension.prototype.getPreferences = function() {
+        return null;
+    };
+
     Extension.prototype.getCategories = function() {
         return [];
     };
