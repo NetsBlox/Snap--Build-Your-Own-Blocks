@@ -166,6 +166,41 @@ MultiHintArgMorph.prototype.addInput = function () {
     this.fixLayout();
 };
 
+MultiHintArgMorph.prototype.mouseClickLeft = function (pos) {
+    
+    // if the <shift> key is pressed, repeat action 3 times
+    var target = this.selectForEdit(),
+        arrows = target.arrows(),
+        leftArrow = arrows.children[0],
+        rightArrow = arrows.children[1],
+        repetition = target.world().currentKey === 16 ? 3 : 1,
+        i;
+
+    if (rightArrow.bounds.containsPoint(pos)) {
+        for (i = 0; i < repetition; i += 1) {
+            if (rightArrow.isVisible) {
+                target.addInput();
+            }
+        }
+        // if (ide) {
+        //     ide.recordUnsavedChanges();
+        // }
+    } else if (
+        leftArrow.bounds.expandBy(this.fontSize / 3).containsPoint(pos)
+    ) {
+        for (i = 0; i < repetition; i += 1) {
+            if (leftArrow.isVisible) {
+                target.removeInput();
+            }
+        }
+        // if (ide) {
+        //     ide.recordUnsavedChanges();
+        // }
+    } else {
+        target.escalateEvent('mouseClickLeft', pos);
+    }
+};
+
 StructInputSlotMorph.prototype = new InputSlotMorph();
 StructInputSlotMorph.prototype.constructor = StructInputSlotMorph;
 StructInputSlotMorph.uber = InputSlotMorph.prototype;
@@ -290,39 +325,40 @@ StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value, meta) 
 };
 
 InputSlotMorph.prototype.serviceNames = async function () {
-    var services = await Services.getServicesMetadata(),
-        hasAuthoredServices,
-        menuDict = {},
-        category,
-        subMenu,
-        name;
+    const services = await Services.getServicesMetadata();
+    let menuDict = {};
 
-    for (var i = services.length; i--;) {
-        name = services[i].name;
-        const url = services[i].url;
-        if (services[i].categories.length) {
-            for (var j = services[i].categories.length; j--;) {
-                category = services[i].categories[j];
-                subMenu = menuDict;
-                for (var c = 0; c < category.length; c++) {
-                    if (!subMenu[category[c]]) {
-                        subMenu[category[c]] = {};
-                    }
-                    subMenu = subMenu[category[c]];
-                }
-                subMenu[name] = url ? [url + '/' + name] : name;
+    for (let i = services.length; i--;) {
+        const {name, url, categories} = services[i];
+        const putGlobal = () => { menuDict[name] = url ? [url + '/' + name] : name; };
+
+        if (categories.length === 0) {
+            putGlobal();
+            continue;
+        }
+
+        for (let j = categories.length; j--;) {
+            const category = categories[j];
+            if (category.length === 0) {
+                putGlobal();
+                continue;
             }
-        } else {
-            menuDict[name] = url ? [url + '/' + name] : name;
+
+            let subMenu = menuDict;
+            for (const c of category) {
+                if (!subMenu[c]) { subMenu[c] = {}; }
+                subMenu = subMenu[c];
+            }
+            subMenu[name] = url ? [url + '/' + name] : name;
         }
     }
 
     menuDict = sortDict(menuDict);
 
-    hasAuthoredServices = SnapCloud.username && menuDict.Community &&
+    const hasAuthoredServices = SnapCloud.username && menuDict.Community &&
         menuDict.Community[SnapCloud.username];
     if (hasAuthoredServices) {
-        subMenu = {};
+        const subMenu = {};
         subMenu[SnapCloud.username] = menuDict.Community[SnapCloud.username];
         Object.keys(menuDict.Community).forEach(function(key) {
             if (key !== SnapCloud.username) {
@@ -519,15 +555,24 @@ HintInputSlotMorph.prototype.setContents = function(value) {
 
 // Check if the given morph has been changed
 HintInputSlotMorph.prototype.changed = function() {
-    var txtMorph = this.contents();
-    if (txtMorph) {
-        this.empty = txtMorph.text === this.hintText;
-    }
     return InputSlotMorph.prototype.changed.call(this);
 };
 
 HintInputSlotMorph.prototype.isEmptySlot = function() {
     return this.empty;
+};
+
+HintInputSlotMorph.prototype.updateFieldValue = function (newValue) {
+    var block = this.parentThatIsA(BlockMorph);
+
+    newValue = newValue !== undefined ? newValue : this.contents().text;
+    if (block.id) {  // not in the palette
+        this.setContents(this.lastValue);  // set to original value in case it fails
+        return SnapActions.setField(this, newValue);
+    } else {
+        // Handle use in message creation dialog
+        this.setContents(newValue);
+    }
 };
 
 var addStructReplaceSupport = function(fn) {

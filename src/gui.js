@@ -482,7 +482,7 @@ IDE_Morph.prototype.interpretUrlAnchors = async function (loc) {
     if (dict.extensions) {
         try {
             const extensionUrls = JSON.parse(decodeURIComponent(dict.extensions));
-            extensionUrls.forEach(url => this.loadExtension(url));
+            await Promise.all(extensionUrls.map(url => this.loadExtension(url)));
         } catch (err) {
             this.inform(
                 'Unable to load extensions',
@@ -3888,6 +3888,9 @@ IDE_Morph.prototype.loadExtension = async function (url) {
         const node = document.createElement('script');
         node.setAttribute('src', url);
         node.setAttribute('type', 'text/javascript');
+        node.onerror = () => {
+            this.inform('Error Loading Extension', 'The extension at: \n\n' + url + '\n\ncould not be loaded.');
+        };
         document.body.appendChild(node);
     }
 };
@@ -6530,25 +6533,32 @@ IDE_Morph.prototype.createCloudAccount = function () {
 
     new DialogBoxMorph(
         null,
-        user => this.cloud.signup(
-            user.username,
-            user.password,
-            user.passwordRepeat,
-            user.email,
-            (txt, title) => new DialogBoxMorph().inform(
-                title,
-                txt + '.\n\nYou can now log in.',
-                world,
-                this.cloudIcon(null, new Color(0, 180, 0))
-            ),
-            this.cloudError()
-        )
+        user => {
+            this.cloud.signup(
+                user.username,
+                user.password,
+                user.email,
+                (txt, title) => {
+                    const message = !!user.password ?
+                        'You can now log in.' :
+                        'An e-mail with your password\n' +
+                        'has been sent to the address provided';
+                    new DialogBoxMorph().inform(
+                        title,
+                        txt + '.\n\n' + message,
+                        world,
+                        this.cloudIcon(null, new Color(0, 180, 0))
+                    );
+                },
+                this.cloudError()
+            );
+        }
     ).withKey('cloudsignup').promptCredentials(
         'Sign up',
         'signup',
-        'https://snap.berkeley.edu/tos.html',
+        '/tos.html',
         'Terms of Service...',
-        'https://snap.berkeley.edu/privacy.html',
+        '/privacy.html',
         'Privacy...',
         'I have read and agree\nto the Terms of Service',
         world,
@@ -8858,6 +8868,12 @@ SpriteIconMorph.prototype.wantsDropOf = function (morph) {
 
 SpriteIconMorph.prototype.reactToDropOf = function (morph, hand) {
     if (morph instanceof BlockMorph) {
+        // Prevent dropping message type blocks into sprites
+	    if (morph instanceof ReporterBlockMorph && morph.forMsg) {
+            morph.slideBackTo(hand.grabOrigin);
+            return;
+        }
+	
         this.copyStack(morph);
     } else if (morph instanceof CostumeIconMorph) {
         this.copyCostume(morph.object);
