@@ -163,7 +163,7 @@
     };
 
     Extension.prototype.getPreferences = function() {
-        return null;
+        return [];
     };
 
     Extension.prototype.getCategories = function() {
