@@ -514,20 +514,15 @@ IDE_Morph.prototype.extensionsMenu = function() {
                     prefs.forEach(pref => {
 
                         let test = pref.test;
-                        
-                        // Allow test to be boolean or function
-                        if(typeof(test) == 'function'){
-                            test = test();
-                        }
 
                         if (!pref.hide || world.currentKey == 16) {
                             newOptionsMenu.addItem(
                                 [
-                                    (test? on : off),
+                                    (test() ? on : off),
                                     pref.label
                                 ],
                                 pref.toggle,
-                                test ? pref.onHint : pref.offHint,
+                                test() ? pref.onHint : pref.offHint,
                                 pref.hide ? new Color(100, 0, 0) : null
                             );
                         }
