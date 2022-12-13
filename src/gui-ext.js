@@ -495,12 +495,12 @@ IDE_Morph.prototype.extensionsMenu = function() {
                     
     // Add preferences
     this.extensions.registry
-        .filter(ext => ext.getPreferences())
+        .filter(ext => ext.getSettings())
         .forEach(ext => {
             const name = ext.name || ext.constructor.name;
             let thisExtMenu = menu.items.find(item => item[0] == name);
 
-            let prefs = ext.getPreferences();
+            let prefs = ext.getSettings();
 
             if(thisExtMenu){
                 thisExtMenu = thisExtMenu[1];
@@ -510,7 +510,7 @@ IDE_Morph.prototype.extensionsMenu = function() {
                     let newOptionsMenu = new MenuMorph(this);
                     thisExtMenu.addMenu('Options', newOptionsMenu);
                     
-                    // Add each preference as a toggle
+                    // Add each setting as a toggle
                     prefs.forEach(pref => {
 
                         let test = pref.test;
