@@ -171,15 +171,16 @@ describe('extensions', function() {
             driver.selectCategory('TEST!');
             assert.equal(
                 driver.palette().contents.children.length,
-                2
+                5
             );
         });
 
         it('should show new blocks on the stage', function() {
             driver.selectStage();
             driver.selectCategory('TEST!');
-            assert(
-                driver.palette().contents.children.length > 1
+            assert.equal(
+                driver.palette().contents.children.length,
+                4
             );
         });
 
@@ -211,7 +212,7 @@ describe('extensions', function() {
             driver.selectCategory('TEST!');
             const block = driver.palette().contents.children.find(child => child.selector === 'spriteBlock');
             const [inputSlot] = block.inputs();
-            assert.equal(inputSlot.evaluate(), 'this is a second test');
+            assert(Object.keys(inputSlot.choices).includes('this is a second test'));
         });
 
         it('should hide sprite block on stage', function() {
