@@ -8,8 +8,15 @@ describe('extensions', function() {
         TestExtension.prototype = new Extension('TestExt');
         TestExtension.prototype.getMenu = () => {
             return {
-                'hello!': function() {},
+                'TestMenuItem': function() {},
             };
+        };
+        TestExtension.prototype.getSettings = () => {
+            return [new Extension.ExtensionSetting(
+                'Test Setting',
+                () => {},
+                () => false
+            )];
         };
         TestExtension.prototype.getCategories = () => [
             new Extension.Category(
@@ -104,6 +111,27 @@ describe('extensions', function() {
         driver.click(driver.ide().controlBar.extensionsButton);
         const menuItems = driver.dialog().children.map(c => c.labelString);
         assert(menuItems.includes('TestExt'));
+        driver.dialog().destroy();
+    });
+
+    it('should create menu item', function() {
+        driver.click(driver.ide().controlBar.extensionsButton);
+        driver.click(driver.dialog().children[1]);
+        const subMenuItems = driver.dialog().children[2].children.map(c => c.labelString);
+        assert(subMenuItems.includes('TestMenuItem'));
+        driver.dialog().destroy();
+    });
+
+    it('should create settings', function() {
+        driver.click(driver.ide().controlBar.extensionsButton);
+        driver.click(driver.dialog().children[1]);
+        const subMenuItems = driver.dialog().children[2].children.map(c => c.labelString);
+        assert(subMenuItems.includes('Options'));
+        driver.click(driver.dialog().children[2].children[2]);
+        
+        const optionMenuItems = driver.dialog().children[2].children[3].children.map(c => c.labelString);
+        assert(optionMenuItems.find(item => item && item[1] == 'Test Setting'));
+
         driver.dialog().destroy();
     });
 
