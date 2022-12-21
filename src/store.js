@@ -2673,8 +2673,6 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
 
     xml += '>%%</block>';
 
-    console.log(xml);
-
     return serializer.format(
         xml,
         this.id,
