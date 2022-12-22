@@ -990,6 +990,7 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
         url = this.cloud.url + '/BugReport';
 
     request.open('post', url);
+    request.withCredentials = true;
     request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
     request.onreadystatechange = function () {
         if (request.readyState === 4 && !silent) {

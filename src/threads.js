@@ -3494,6 +3494,7 @@ Process.prototype.reportURL = function (url) {
         }
         this.httpRequest = new XMLHttpRequest();
         this.httpRequest.open("GET", url, true);
+        this.httpRequest.withCredentials = true;
         if (utils.isNetsBloxDomain(url)) {
             this.httpRequest.setRequestHeader('X-Source', 'NetsBlox'); // flag this as coming from the NetsBlox client
         }
