@@ -2887,6 +2887,10 @@ IDE_Morph.prototype.makeSureRecordingIsMono = function (sound) {
         if (sound.audioBuffer) {
             return callback (sound);
         }
+
+        if (!sound.audio) sound.audio = {};
+        if (!sound.audio.src) sound.audio.src = sound.attributes?.src?.value;
+
         base64 = sound.audio.src.split(',')[1];
         binaryString = window.atob(base64);
         len = binaryString.length;
