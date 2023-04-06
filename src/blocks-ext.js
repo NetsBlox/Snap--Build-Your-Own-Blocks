@@ -18,10 +18,37 @@ function sortDict(dict) {
     return sortedDict;
 }
 
+BlockMorph.prototype.showCustomHelp = function (help) {
+    if (typeof(help) === 'function') help = help(this);
+    if (typeof(help) !== 'object') help = { msg: help };
+    const { msg, keptInputs = [] } = help;
+
+    const cpy = this.fullCopy();
+    const inputs = cpy.inputs();
+    for (let i = 0; i < inputs.length; ++i) {
+        if (keptInputs.includes(i)) continue;
+        const input = inputs[i];
+
+        if (input.setContents) {
+            input.setContents('');
+        } else {
+            input.userDestroy();
+        }
+    }
+
+    new DialogBoxMorph().inform(
+        'Help',
+        msg,
+        this.world(),
+        cpy.fullImage()
+    );
+};
 
 // support for help dialogbox on service blocks
 BlockMorph.prototype._showHelp = BlockMorph.prototype.showHelp;
 BlockMorph.prototype.showHelp = async function() {
+    const blockInfo = SpriteMorph.prototype.blocks[this.selector];
+    if (blockInfo && blockInfo.help) return this.showCustomHelp(blockInfo.help);
     if (!this.isServiceBlock()) return this._showHelp();
     var myself = this,
         help,
