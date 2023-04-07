@@ -18,12 +18,17 @@ function sortDict(dict) {
     return sortedDict;
 }
 
-BlockMorph.prototype.showCustomHelp = function (help) {
-    if (typeof(help) === 'function') help = help(this);
+BlockMorph.prototype.showCustomHelp = async function (help) {
+    if (typeof(help) === 'function') help = await help(this);
     if (typeof(help) !== 'object') help = { msg: help };
     const { msg, keptInputs = [] } = help;
 
     const cpy = this.fullCopy();
+    if (cpy instanceof CommandBlockMorph) {
+        const next = cpy.nextBlock();
+        if (next) next.destroy();
+    }
+
     const inputs = cpy.inputs();
     for (let i = 0; i < inputs.length; ++i) {
         if (keptInputs.includes(i)) continue;
@@ -50,10 +55,7 @@ BlockMorph.prototype.showHelp = async function() {
     const blockInfo = SpriteMorph.prototype.blocks[this.selector];
     if (blockInfo && blockInfo.help) return this.showCustomHelp(blockInfo.help);
     if (!this.isServiceBlock()) return this._showHelp();
-    var myself = this,
-        help,
-        block,
-        nb,
+    var help,
         inputs = this.inputs(),
         serviceName = inputs[0].evaluate(),
         methodName = inputs[1].evaluate()[0],
@@ -94,29 +96,7 @@ BlockMorph.prototype.showHelp = async function() {
             + serviceNames.join(', ') + ' ...';
     }
 
-    // Get a copy of the block to display to the user
-    block = this.fullCopy();
-    if (block instanceof CommandBlockMorph) {
-        nb = block.nextBlock();
-        if (nb) {
-            nb.destroy();
-        }
-    }
-    block.inputs().slice(2).forEach(function(child) {  // clear rpc args
-        if (child instanceof HintInputSlotMorph) {
-            child.setContents('');
-        } else {
-            child.userDestroy();
-        }
-    })
-    block.addShadow();
-
-    new DialogBoxMorph().inform(
-        'Help',
-        help,
-        myself.world(),
-        block.fullImage()
-    );
+    return this.showCustomHelp({ msg: help, keptInputs: [0, 1] });
 };
 
 BlockMorph.prototype.isServiceBlock = function() {

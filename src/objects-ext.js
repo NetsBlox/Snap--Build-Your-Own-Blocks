@@ -74,7 +74,8 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype.blocks.doSocketResponse = {
         type: 'command',
         category: 'network',
-        spec: 'send response %s'
+        spec: 'send response %s',
+        help: 'This block can be used from within a red When I Receive block from the Network tab.\nThis allows you to send a response back to a "send msg and wait" block that sent you the current message.'
     };
 
     SpriteMorph.prototype.blocks.doSocketMessage = {
