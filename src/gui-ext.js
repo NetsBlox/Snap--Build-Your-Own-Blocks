@@ -735,15 +735,11 @@ IDE_Morph.prototype.collabResponse = async function (invite, response) {
             msg;
 
         if (response) {
-            dialog = new DialogBoxMorph(null, () => {
-                // Open the given project
-                this.cloud.joinActiveProject(
-                    invite.projectId,
-                    function (xml) {
-                        myself.rawLoadCloudProject(xml);
-                    },
-                    myself.cloudError()
-                );
+            dialog = new DialogBoxMorph(null, async () => {
+                const {projectId} = invite;
+                const metadata = await this.cloud.getProjectMetadata(projectId);
+                const source = new CloudProjectsSource(this);
+                await source.open(metadata);
                 dialog.destroy();
             });
             msg = 'Would you like to open the shared project now?';
