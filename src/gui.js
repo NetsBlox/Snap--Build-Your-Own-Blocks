@@ -6702,13 +6702,12 @@ IDE_Morph.prototype.saveProjectToCloud = async function (name) {
     const contentName = this.room.hasMultipleRoles() ?
         this.room.getCurrentRoleName() : this.room.name;
 
-    if (name) {
-        this.showMessage('Saving ' + contentName + '\nto the cloud...');
-        this.room.name = name;
-        const roleData = this.sockets.getSerializedProject();
-        await this.cloud.saveRole(roleData);
-        this.showMessage('Saved ' + contentName + ' to the cloud!', 2);
-    }
+    this.showMessage('Saving ' + contentName + '\nto the cloud...');
+    this.room.name = name;
+    const roleData = this.sockets.getSerializedProject();
+    const project = await this.cloud.saveRole(roleData);
+    this.showMessage('Saved ' + contentName + ' to the cloud!', 2);
+    return project;
 };
 
 IDE_Morph.prototype.exportProjectMedia = function (name) {
