@@ -8579,6 +8579,11 @@ StageMorph.prototype.runStopScripts = function () {
             morph.receiveUserInteraction('stopped', true, true);
         }
     });
+
+    var ide = this.parentThatIsA(IDE_Morph);
+    if (ide) {
+        ide.extensions.onStopAllScripts();
+    }
 };
 
 StageMorph.prototype.removeAllClones = function () {

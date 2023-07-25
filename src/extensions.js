@@ -48,6 +48,30 @@
             this.registry.forEach(ext => ext.onOpenRole());
         }
 
+        onRunScripts() {
+            this.registry.forEach(ext => ext.onRunScripts());
+        }
+
+        onStopAllScripts() {
+            this.registry.forEach(ext => ext.onStopAllScripts());
+        }
+
+        onPauseAll() {
+            this.registry.forEach(ext => ext.onPauseAll());
+        }
+
+        onResumeAll() {
+            this.registry.forEach(ext => ext.onResumeAll());
+        }
+
+        onNewSprite() {
+            this.registry.forEach(ext => ext.onNewSprite());
+        }
+
+        onSetStageSize() {
+            this.registry.forEach(ext => ext.onSetStageSize());
+        }
+
         register(Extension) {
             if (this.isReady()) {
                 this.load(Extension);
@@ -183,6 +207,12 @@
         return [];
     };
 
+    Extension.prototype.onRunScripts =
+    Extension.prototype.onStopAllScripts =
+    Extension.prototype.onPauseAll =
+    Extension.prototype.onResumeAll =
+    Extension.prototype.onNewSprite =
+    Extension.prototype.onSetStageSize = 
     Extension.prototype.onNewProject =
     Extension.prototype.onOpenRole = function() {
     };

@@ -2348,6 +2348,9 @@ ActionManager.prototype.onAddSprite = function(serialized, creatorId) {
     if (creatorId === this.id) {
         ide.selectSprite(sprite);
     }
+
+    ide.extensions.onNewSprite();
+
     this.completeAction(null, sprite);
 };
 
@@ -2559,6 +2562,7 @@ ActionManager.prototype.onRemoveSound = function(id) {
 
 ActionManager.prototype.onSetStageSize = function(width, height) {
     this.ide().setStageExtent(new Point(width, height));
+    this.ide().extensions.onSetStageSize();
     this.completeAction();
 };
 
