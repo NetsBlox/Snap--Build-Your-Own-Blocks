@@ -217,6 +217,21 @@
     Extension.prototype.onOpenRole = function() {
     };
 
+    Extension.prototype.triggerHatBlock = function(selector) {
+        let stage = NetsBloxExtensions.ide.stage;
+        stage.children.concat(stage).forEach(morph => {
+            if (isSnapObject(morph)) {
+                morph.allHatBlocksFor(selector, true).forEach(block =>
+                    stage.threads.startProcess(
+                        block,
+                        morph,
+                        stage.isThreadSafe
+                    )
+                );
+            }
+        });
+    }
+
     class ExtensionSetting {
         constructor(label, toggle, test, onHint = '', offHint = '', hide = false) {
             this.label = label;
