@@ -297,8 +297,9 @@ describe('extensions', function() {
                 deferred.resolve();
             };
             let block = await driver.addBlock("doPauseAll", new Point(300, 300));
+            await driver.sleep(100);
             driver.click(block);
-            
+
             await deferred.promise;
         });
     });
@@ -312,7 +313,9 @@ describe('extensions', function() {
             const deferred = utils.defer();
 
             let block = await driver.addBlock("doPauseAll", new Point(300, 300));
+            await driver.sleep(100);
             driver.click(block);
+            await driver.sleep(100);
 
             TestExtension.prototype.onResumeAll = () => {
                 delete TestExtension.prototype.onResumeAll;
