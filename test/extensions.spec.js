@@ -359,10 +359,4 @@ describe('extensions', function() {
             assert(w == 123 && h == 456);
         });
     });
-
-
-    /*
-    
-    onResumeAll
-    */
 });
