@@ -2562,7 +2562,7 @@ ActionManager.prototype.onRemoveSound = function(id) {
 
 ActionManager.prototype.onSetStageSize = function(width, height) {
     this.ide().setStageExtent(new Point(width, height));
-    this.ide().extensions.onSetStageSize();
+    this.ide().extensions.onSetStageSize(width, height);
     this.completeAction();
 };
 

@@ -68,8 +68,8 @@
             this.registry.forEach(ext => ext.onNewSprite());
         }
 
-        onSetStageSize() {
-            this.registry.forEach(ext => ext.onSetStageSize());
+        onSetStageSize(width, height) {
+            this.registry.forEach(ext => ext.onSetStageSize(width, height));
         }
 
         register(Extension) {
