@@ -339,6 +339,20 @@ describe('extensions', function() {
         });
     });
 
+    describe('onRenameSprite', function() {
+        it('should call function on rename sprite', async function() {
+            const {utils, SnapActions} = driver.globals();
+            const deferred = utils.defer();
+            TestExtension.prototype.onRenameSprite = (spriteId, name) => {
+                delete TestExtension.prototype.onRenameSprite;
+                deferred.resolve(name);
+            };
+            SnapActions.renameSprite(driver.ide().currentSprite, "newName");
+            let name = await deferred.promise;
+            assert(name == "newName");
+        });
+    });
+
     describe('onSetStageSize', function() {
         it('should call function on pause button', async function() {
             const {utils} = driver.globals();
