@@ -2349,7 +2349,7 @@ ActionManager.prototype.onAddSprite = function(serialized, creatorId) {
         ide.selectSprite(sprite);
     }
 
-    ide.extensions.onNewSprite();
+    ide.extensions.onNewSprite(sprite);
 
     this.completeAction(null, sprite);
 };
@@ -2396,6 +2396,9 @@ ActionManager.prototype.onRenameSprite = function(spriteId, name) {
     if (ide.currentSprite === sprite) {
         ide.spriteBar.nameField.setContents(name);
     }
+
+    ide.extensions.onRenameSprite(spriteId, name);
+    
     this.completeAction(null, name);
 };
 

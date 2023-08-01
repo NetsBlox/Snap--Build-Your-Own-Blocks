@@ -64,8 +64,12 @@
             this.registry.forEach(ext => ext.onResumeAll());
         }
 
-        onNewSprite() {
-            this.registry.forEach(ext => ext.onNewSprite());
+        onNewSprite(sprite) {
+            this.registry.forEach(ext => ext.onNewSprite(sprite));
+        }
+
+        onRenameSprite(spriteId, name) {
+            this.registry.forEach(ext => ext.onRenameSprite(spriteId, name));
         }
 
         onSetStageSize(width, height) {
@@ -212,6 +216,7 @@
     Extension.prototype.onPauseAll =
     Extension.prototype.onResumeAll =
     Extension.prototype.onNewSprite =
+    Extension.prototype.onRenameSprite =
     Extension.prototype.onSetStageSize = 
     Extension.prototype.onNewProject =
     Extension.prototype.onOpenRole = function() {
