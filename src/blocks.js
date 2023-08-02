@@ -159,7 +159,7 @@ SnapActions, SnapUndo, NetsBloxExtensions*/
 
 // Global stuff ////////////////////////////////////////////////////////
 
-modules.blocks = '2021-November-27';
+modules.blocks = '2024-October-23';
 
 /*
 var SyntaxElementMorph;
@@ -926,6 +926,11 @@ SyntaxElementMorph.prototype.labelParts = {
     '%turtleOutline': {
         type: 'symbol',
         name: 'turtleOutline',
+        tags: 'protected'
+    },
+    '%pipette': {
+        type: 'symbol',
+        name: 'pipette',
         tags: 'protected'
     },
     '%clockwise': {
@@ -1730,7 +1735,11 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
     if (spec[0] === '%' &&
             spec.length > 1 &&
             (this.selector !== 'reportGetVar' ||
-                (spec === '%turtleOutline' && this.isObjInputFragment()))) {
+                (['%turtleOutline', '%pipette'].includes(spec) &&
+                    this.isObjInputFragment()
+                )
+            )
+    ) {
 
         // check for variable multi-arg-slot:
         if ((spec.length > 5) && (spec.slice(0, 5) === '%mult')) {
@@ -2007,7 +2016,7 @@ SyntaxElementMorph.prototype.isObjInputFragment = function () {
     // private - for displaying a symbol in a variable block template
     return (this.selector === 'reportGetVar') &&
         (this.getSlotSpec() === '%t') &&
-        (this.parent.fragment.type === '%obj');
+        (['%obj', '%clr'].includes(this.parent.fragment.type));
 };
 
 // SyntaxElementMorph layout:

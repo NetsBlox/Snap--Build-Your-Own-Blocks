@@ -108,7 +108,7 @@ BooleanSlotMorph, XML_Serializer, SnapTranslator, SnapActions*/
 
 // Global stuff ////////////////////////////////////////////////////////
 
-modules.byob = '2020-July-24';
+modules.byob = '2024-October-23';
 
 // Declarations
 
@@ -2568,6 +2568,8 @@ BlockLabelFragment.prototype.defTemplateSpecFragment = function () {
         suff = ' \uFE19';
     } else if (this.type === '%obj') {
         suff = ' %turtleOutline';
+    } else if (this.type === '%clr') {
+        suff = ' %pipette';
     } else if (contains(
             ['%cmdRing', '%repRing', '%predRing', '%anyUE', '%boolUE'],
             this.type
@@ -3650,6 +3652,7 @@ InputSlotDialogMorph.prototype.specialSlotsMenu = function () {
 
     addSpecialSlotType('multi-line', '%mlt');
     addSpecialSlotType('code', '%code');
+    addSpecialSlotType('color', '%clr');
     return menu;
 };
 
