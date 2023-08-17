@@ -76,6 +76,13 @@
             this.registry.forEach(ext => ext.onSetStageSize(width, height));
         }
 
+        onIDEMessage(name, data) {
+            const ext = this.registry.find(ext => ext.name === name);
+            if (ext) {
+                ext.onIDEMessage(data);
+            }
+        }
+
         register(Extension) {
             if (this.isReady()) {
                 this.load(Extension);
@@ -211,6 +218,23 @@
         return [];
     };
 
+    /**
+     * Send a message to other open NetsBlox clients (IDEs). Messages will only
+     * be accessible to NetsBlox IDEs and not programs written in NetsBlox.
+     * 
+     * Message data can be anything and will be handled only if the extension is
+     * loaded by the recipient, too.
+     */
+    Extension.prototype.sendIDEMessage = function(msgData, ...clientIds) {
+        const msg = {
+            type: 'extension',
+            name: this.name,
+            data: msgData,
+        };
+        return NetsBloxExtensions.ide.sockets.sendIDEMessage(msg, ...clientIds);
+    };
+
+    Extension.prototype.onIDEMessage =
     Extension.prototype.onRunScripts =
     Extension.prototype.onStopAllScripts =
     Extension.prototype.onPauseAll =

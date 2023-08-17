@@ -47,6 +47,10 @@ class MessageHandler {
 }
 
 WebSocketManager.IDEMessageHandlers = {
+    'extension': function(msg) {
+        const {name, data} = msg;
+        NetsBloxExtensions.onIDEMessage(name, data);
+    },
     'action-rejected': function(msg) {
         if (msg.reason) {
             this.ide.showMessage(localize(msg.reason));

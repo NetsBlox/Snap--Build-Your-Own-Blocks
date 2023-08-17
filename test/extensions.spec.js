@@ -373,4 +373,38 @@ describe('extensions', function() {
             assert(w == 123 && h == 456);
         });
     });
+
+    describe('IDE messages', function () {
+        it('should send IDE messages', function(done) {
+            const {NetsBloxExtensions} = driver.globals();
+            const extension = NetsBloxExtensions.registry[0];
+            const payload = "hello there!";
+            extension.onIDEMessage = data => {
+                delete extension.onIDEMessage;
+                const err = data !== payload ?
+                  new Error("Incorrect data payload: " + data) : null;
+                done(err);
+            };
+            extension.sendIDEMessage(payload, driver.ide().cloud.clientId);
+        });
+
+        it('should only receive own messages', function(done) {
+            const {NetsBloxExtensions, Extension} = driver.globals();
+            const MessagingExt = function() {};
+            MessagingExt.prototype = new Extension('MessagingExt');
+
+            const extension = NetsBloxExtensions.registry[0];
+            extension.onIDEMessage = () => {
+                const err = new Error("Message received by other extension!");
+                done(err);
+            };
+
+            const sender = NetsBloxExtensions.registry[0];
+            sender.onIDEMessage = () => done();
+
+            const payload = "hello there!";
+            extension.sendIDEMessage(payload, driver.ide().cloud.clientId);
+            NetsBloxExtensions.register(MessagingExt);
+        });
+    });
 });
