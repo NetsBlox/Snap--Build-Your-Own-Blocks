@@ -374,37 +374,28 @@ describe('extensions', function() {
         });
     });
 
-    describe('IDE messages', function () {
-        it('should send IDE messages', function(done) {
+    describe('messages', function () {
+        it('should pass recvd messages to ext', function(done) {
             const {NetsBloxExtensions} = driver.globals();
             const extension = NetsBloxExtensions.registry[0];
             const payload = "hello there!";
-            extension.onIDEMessage = data => {
-                delete extension.onIDEMessage;
+            extension.addMessageListener('test', data => {
+                console.log("hello?")
                 const err = data !== payload ?
                   new Error("Incorrect data payload: " + data) : null;
                 done(err);
+            });
+
+            // spoof receiving the message
+            const msg = {
+                type: 'extension',
+                data: {
+                    type: 'test',
+                    data: payload,
+                },
             };
-            extension.sendIDEMessage(payload, driver.ide().cloud.clientId);
-        });
-
-        it('should only receive own messages', function(done) {
-            const {NetsBloxExtensions, Extension} = driver.globals();
-            const MessagingExt = function() {};
-            MessagingExt.prototype = new Extension('MessagingExt');
-
-            const extension = NetsBloxExtensions.registry[0];
-            extension.onIDEMessage = () => {
-                const err = new Error("Message received by other extension!");
-                done(err);
-            };
-
-            const sender = NetsBloxExtensions.registry[0];
-            sender.onIDEMessage = () => done();
-
-            const payload = "hello there!";
-            extension.sendIDEMessage(payload, driver.ide().cloud.clientId);
-            NetsBloxExtensions.register(MessagingExt);
+            const rawMsg = {data: JSON.stringify(msg)};
+            driver.ide().sockets.websocket.onmessage(rawMsg);
         });
     });
 });

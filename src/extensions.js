@@ -76,11 +76,10 @@
             this.registry.forEach(ext => ext.onSetStageSize(width, height));
         }
 
-        onIDEMessage(name, data) {
-            const ext = this.registry.find(ext => ext.name === name);
-            if (ext) {
-                ext.onIDEMessage(data);
-            }
+        onMessage(type, data) {
+          this.registry
+              .flatMap(ext => ext.getMessageHandlers(type))
+              .forEach(fn => fn(data))
         }
 
         register(Extension) {
@@ -192,6 +191,7 @@
 
     function Extension (name) {
         this.name = name;
+        this._handlers = {};
     }
 
     Extension.prototype.getMenu = function() {
@@ -218,23 +218,25 @@
         return [];
     };
 
-    /**
-     * Send a message to other open NetsBlox clients (IDEs). Messages will only
-     * be accessible to NetsBlox IDEs and not programs written in NetsBlox.
-     * 
-     * Message data can be anything and will be handled only if the extension is
-     * loaded by the recipient, too.
-     */
-    Extension.prototype.sendIDEMessage = function(msgData, ...clientIds) {
-        const msg = {
-            type: 'extension',
-            name: this.name,
-            data: msgData,
-        };
-        return NetsBloxExtensions.ide.sockets.sendIDEMessage(msg, ...clientIds);
+    Extension.prototype.addMessageListener = function(type, fn) {
+        if (!this._handlers[type]) {
+            this._handlers[type] = [];
+        }
+        this._handlers[type].push(fn);
     };
 
-    Extension.prototype.onIDEMessage =
+    Extension.prototype.removeMessageListener = function(type, fn) {
+        const handlers = this.getMessageHandlers(type);
+        const index = handlers.indexOf(fn);
+        if (index > -1) {
+            handlers.splice(index, 1);
+        }
+    };
+
+    Extension.prototype.getMessageHandlers = function(type) {
+      return this._handlers[type] || [];
+    };
+
     Extension.prototype.onRunScripts =
     Extension.prototype.onStopAllScripts =
     Extension.prototype.onPauseAll =
