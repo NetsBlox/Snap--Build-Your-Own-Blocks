@@ -176,6 +176,10 @@ WebSocketManager.IDEMessageHandlers = {
 };
 
 WebSocketManager.MessageHandlers = {
+    'extension': function(msg) {
+        const {type, data} = msg.data;
+        NetsBloxExtensions.onMessage(type, data);
+    },
     'ide-message': function(msg) {
         const {data, sender} = msg;
         let response, error;

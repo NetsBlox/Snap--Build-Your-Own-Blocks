@@ -76,6 +76,12 @@
             this.registry.forEach(ext => ext.onSetStageSize(width, height));
         }
 
+        onMessage(type, data) {
+          this.registry
+              .flatMap(ext => ext.getMessageHandlers(type))
+              .forEach(fn => fn(data))
+        }
+
         register(Extension) {
             if (this.isReady()) {
                 this.load(Extension);
@@ -185,6 +191,7 @@
 
     function Extension (name) {
         this.name = name;
+        this._handlers = {};
     }
 
     Extension.prototype.getMenu = function() {
@@ -209,6 +216,25 @@
 
     Extension.prototype.getLabelParts = function() {
         return [];
+    };
+
+    Extension.prototype.addMessageListener = function(type, fn) {
+        if (!this._handlers[type]) {
+            this._handlers[type] = [];
+        }
+        this._handlers[type].push(fn);
+    };
+
+    Extension.prototype.removeMessageListener = function(type, fn) {
+        const handlers = this.getMessageHandlers(type);
+        const index = handlers.indexOf(fn);
+        if (index > -1) {
+            handlers.splice(index, 1);
+        }
+    };
+
+    Extension.prototype.getMessageHandlers = function(type) {
+      return this._handlers[type] || [];
     };
 
     Extension.prototype.onRunScripts =

@@ -373,4 +373,29 @@ describe('extensions', function() {
             assert(w == 123 && h == 456);
         });
     });
+
+    describe('messages', function () {
+        it('should pass recvd messages to ext', function(done) {
+            const {NetsBloxExtensions} = driver.globals();
+            const extension = NetsBloxExtensions.registry[0];
+            const payload = "hello there!";
+            extension.addMessageListener('test', data => {
+                console.log("hello?")
+                const err = data !== payload ?
+                  new Error("Incorrect data payload: " + data) : null;
+                done(err);
+            });
+
+            // spoof receiving the message
+            const msg = {
+                type: 'extension',
+                data: {
+                    type: 'test',
+                    data: payload,
+                },
+            };
+            const rawMsg = {data: JSON.stringify(msg)};
+            driver.ide().sockets.websocket.onmessage(rawMsg);
+        });
+    });
 });
