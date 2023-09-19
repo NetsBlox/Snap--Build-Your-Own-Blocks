@@ -92,32 +92,6 @@ ServicesRegistry.prototype.getServiceURL = async function (name) {
     return baseUrl + '/' + name;
 };
 
-
-ServicesRegistry.prototype.getServiceURLSync = function (name) {
-    const missingUrls = [];
-    const checkingHosts = this.auxServicesHosts.map(hostInfo => {
-        const {url} = hostInfo;
-        try {
-            const response = utils.getUrlSync(url);
-            const serviceNames = JSON.parse(response)
-                .map(service => service.name);
-            return serviceNames.includes(name);
-        } catch (err) {
-            missingUrls.push(url);
-        }
-    });
-    const hostIndex = checkingHosts.findIndex(isCorrectHost => isCorrectHost);
-
-    if (missingUrls.length) {
-        const msg = `Could not fetch service metadata from "${missingUrls.join(',')}"`;
-        console.error(msg);
-    }
-
-    const baseUrl = hostIndex > -1 ? this.auxServicesHosts[hostIndex].url :
-        this.defaultHost.url;
-    return baseUrl + '/' + name;
-};
-
 ServicesRegistry.prototype.getServiceMetadataFromURLSync = function (url) {
     return JSON.parse(utils.getUrlSync(url));
 };
@@ -130,11 +104,6 @@ ServicesRegistry.prototype.getServiceMetadataFromURL = async function (url) {
 ServicesRegistry.prototype.getServiceMetadata = async function (name) {
     const url = await this.getServiceURL(name);
     return this.getServiceMetadataFromURL(url);
-};
-
-ServicesRegistry.prototype.getServiceMetadataSync = function (name) {
-    const url = this.getServiceURLSync(name);
-    return this.getServiceMetadataFromURLSync(url);
 };
 
 ServicesRegistry.prototype.getServicesMetadata = async function () {
