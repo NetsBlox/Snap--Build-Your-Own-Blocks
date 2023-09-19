@@ -2667,10 +2667,7 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
     // Add extra attribute for RPC blocks to list inputs
     if(this instanceof ReporterBlockMorph && this.selector == "getJSFromRPCStruct" ||
        this instanceof CommandBlockMorph && this.selector == "doRunRPC"){
-        let inputs = this.inputs(),
-            methodArgs;
-
-        methodArgs = inputs[1].fields.join(";");
+        let methodArgs = this.inputs()[1].fields.join(";");
         xml += ` inputNames="${methodArgs}"`; 
     }
 
