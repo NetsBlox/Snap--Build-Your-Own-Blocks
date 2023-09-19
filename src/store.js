@@ -2668,20 +2668,9 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
     if(this instanceof ReporterBlockMorph && this.selector == "getJSFromRPCStruct" ||
        this instanceof CommandBlockMorph && this.selector == "doRunRPC"){
         let inputs = this.inputs(),
-            serviceName = inputs[0].evaluate(),
-            methodName = inputs[1].evaluate()[0],
-            isServiceURL = !!inputs[0].constant,
-            ide = this.parentThatIsA(IDE_Morph),
-            services = ide.services;
+            methodArgs;
 
-        let metadata = isServiceURL ?
-            services.getServiceMetadataFromURLSync(serviceName) :
-            services.getServiceMetadataSync(serviceName);
-
-        let methodMetadata = metadata.rpcs[methodName] ?? { args: []};
-        let methodArgs = methodMetadata.args.map(arg => arg.name);
-
-        methodArgs = methodArgs.join(";");
+        methodArgs = inputs[1].fields.join(";");
         xml += ` inputNames="${methodArgs}"`; 
     }
 
