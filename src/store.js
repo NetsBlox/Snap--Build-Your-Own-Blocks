@@ -2667,8 +2667,22 @@ BlockMorph.prototype.toBlockXML = function (serializer) {
     // Add extra attribute for RPC blocks to list inputs
     if(this instanceof ReporterBlockMorph && this.selector == "getJSFromRPCStruct" ||
        this instanceof CommandBlockMorph && this.selector == "doRunRPC"){
-        const inputs = this.children.filter(child => child instanceof HintInputSlotMorph).map(slot => encodeURIComponent(slot.hintText)).join(";");
-        xml += ` inputNames="${inputs}"`; 
+        let inputs = this.inputs(),
+            serviceName = inputs[0].evaluate(),
+            methodName = inputs[1].evaluate()[0],
+            isServiceURL = !!inputs[0].constant,
+            ide = this.parentThatIsA(IDE_Morph),
+            services = ide.services;
+
+        let metadata = isServiceURL ?
+            services.getServiceMetadataFromURLSync(serviceName) :
+            services.getServiceMetadataSync(serviceName);
+
+        let methodMetadata = metadata.rpcs[methodName] ?? { args: []};
+        let methodArgs = methodMetadata.args.map(arg => arg.name);
+
+        methodArgs = methodArgs.join(";");
+        xml += ` inputNames="${methodArgs}"`; 
     }
 
     xml += '>%%</block>';
