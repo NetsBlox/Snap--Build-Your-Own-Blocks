@@ -63,7 +63,7 @@ TableFrameMorph, ColorSlotMorph, isSnapObject, newCanvas, Symbol, SVG_Costume*/
 
 /*jshint esversion: 6*/
 
-modules.threads = '2021-November-27';
+modules.threads = '2023-November-29';
 
 var ThreadManager;
 var Process;
@@ -3472,8 +3472,50 @@ Process.prototype.doAsk = function (data) {
             morph => morph instanceof StagePrompterMorph
         );
         if (!activePrompter) {
-            if (!isStage && !isHiddenSprite) {
-                rcvr.bubble(data, false, true);
+            if (data instanceof List) {
+                rcvr.stopTalking();
+                this.prompter = new StagePickerMorph(data);
+                this.prompter.createItems(stage.scale);
+                leftSpace = rcvr.left() - stage.left();
+                rightSpace = stage.right() - rcvr.right();
+                if (isStage) {
+                    this.prompter.popup(
+                        stage,
+                        stage.center().subtract(
+                            this.prompter.extent().floorDivideBy(2)
+                        )
+                    );
+                } else {
+                    this.prompter.popup(
+                        stage,
+                        rightSpace > this.prompter.width() ||
+                                rightSpace >= leftSpace ?
+                            rcvr.topRight()
+                            : rcvr.topLeft().subtract(
+                                new Point(this.prompter.width(), 0)
+                            )
+                    );
+                }
+            } else {
+                if (!isStage && !isHiddenSprite) {
+                    rcvr.bubble(data, false, true);
+                } else if (isStage) {
+                    rcvr.stopTalking();
+                }
+                this.prompter = new StagePrompterMorph(
+                    isStage || isHiddenSprite ? data : null
+                );
+                if (stage.scale < 1) {
+                    this.prompter.setWidth(stage.width() - 10);
+                } else {
+                    this.prompter.setWidth(stage.dimensions.x - 20);
+                }
+                this.prompter.fixLayout();
+                this.prompter.setCenter(stage.center());
+                this.prompter.setBottom(stage.bottom() - this.prompter.border);
+                stage.add(this.prompter);
+                this.prompter.inputField.edit();
+                stage.changed();
             }
             this.prompter = new StagePrompterMorph(
                 isStage || isHiddenSprite ? data : null

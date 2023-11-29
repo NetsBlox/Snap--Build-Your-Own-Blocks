@@ -52,6 +52,7 @@
 
         SpeechBubbleMorph*
             SpriteBubbleMorph
+            StageBubbleMorph
 
     * defined in Morphic.js
 
@@ -87,11 +88,12 @@ UndoManager, SnapUndo*/
 
 /*jshint esversion: 6*/
 
-modules.objects = '2021-November-26';
+modules.objects = '2023-November-29';
 
 var SpriteMorph;
 var StageMorph;
 var SpriteBubbleMorph;
+var StageBubbleMorph;
 var Costume;
 var SVG_Costume;
 var CostumeEditorMorph;
@@ -342,14 +344,12 @@ SpriteMorph.prototype.initBlocks = function () {
             defaults: [['current'], 100, 50]
         },
         doSayFor: {
-            only: SpriteMorph,
             type: 'command',
             category: 'looks',
             spec: 'say %s for %n secs',
             defaults: [localize('Hello!'), 2]
         },
         bubble: {
-            only: SpriteMorph,
             type: 'command',
             category: 'looks',
             spec: 'say %s',
@@ -8015,6 +8015,13 @@ StageMorph.prototype.setScale = function (number) {
     this.scale = number;
     this.setExtent(this.dimensions.multiplyBy(number));
 
+    // first resize my speech balloon, if any
+    bubble = this.talkBubble();
+    if (bubble) {
+        bubble.setScale(number);
+        this.positionTalkBubble();
+    }
+
     // now move and resize all children - sprites, bubbles, watchers etc..
     this.children.forEach(morph => {
         relativePos = morph.position().subtract(pos);
@@ -8919,6 +8926,9 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(watcherToggle('getCostumeIdx'));
         blocks.push(block('getCostumeIdx'));
         blocks.push('-');
+        blocks.push(block('doSayFor'));
+        blocks.push(block('bubble'));
+        blocks.push('-');
         blocks.push(block('reportGetImageAttribute'));
         blocks.push(block('reportNewCostumeStretched'));
         blocks.push(block('reportNewCostume'));
@@ -9817,6 +9827,30 @@ StageMorph.prototype.changeEffect
 StageMorph.prototype.clearEffects
     = SpriteMorph.prototype.clearEffects;
 
+// StageMorph talk bubble
+
+StageMorph.prototype.stopTalking = SpriteMorph.prototype.stopTalking;
+
+StageMorph.prototype.bubble = function (data) {
+    var bubble;
+    this.stopTalking();
+    if (data === '' || isNil(data)) {return; }
+    bubble = new StageBubbleMorph(data, this);
+    this.add(bubble);
+    this.positionTalkBubble();
+};
+
+StageMorph.prototype.talkBubble = SpriteMorph.prototype.talkBubble;
+
+StageMorph.prototype.positionTalkBubble = function () {
+    var bubble = this.talkBubble();
+    if (!bubble) {return null; }
+    bubble.show();
+    bubble.keepWithin(this);
+};
+
+StageMorph.prototype.doThink = StageMorph.prototype.bubble;
+
 // StageMorph sound management
 
 StageMorph.prototype.addSound
@@ -10111,6 +10145,14 @@ SpriteBubbleMorph.prototype.init = function (
     this.scale = stage ? stage.scale : 1;
     this.data = data;
     this.isQuestion = isQuestion;
+    this.bubbleFontColor = BLACK;
+    this.bubbleFontSize = sprite.bubbleFontSize;
+    this.bubbleFontIsBold = sprite.bubbleFontIsBold;
+    this.bubbleFontAlignment = 'center';
+    this.bubbleCorner = sprite.bubbleCorner;
+    this.bubbleBorder = sprite.bubbleBorder;
+    this.bubblePadding = this.bubbleCorner / 2;
+    this.maxTextWidth = sprite.bubbleMaxTextWidth;
 
     SpriteBubbleMorph.uber.init.call(
         this,
@@ -10165,7 +10207,7 @@ SpriteBubbleMorph.prototype.dataAsMorph = function (data) {
             null, // fontStyle
             sprite.bubbleFontIsBold,
             false, // italic
-            'center'
+            this.bubbleFontAlignment
         );
     } else if (typeof data === 'boolean') {
         img = sprite.booleanMorph(data).fullImage();
@@ -10245,7 +10287,7 @@ SpriteBubbleMorph.prototype.dataAsMorph = function (data) {
             sprite.bubbleCorner * 2 * this.scale
         );
         if (isText) {
-            width = Math.min(width, sprite.bubbleMaxTextWidth * this.scale);
+            width = Math.min(width, this.maxTextWidth * this.scale);
         }
         contents.setWidth(width);
     } else if (!(data instanceof List)) {
@@ -10292,13 +10334,7 @@ SpriteBubbleMorph.prototype.fixLayout = function () {
     this.padding = sprite.bubbleCorner / 2 * this.scale;
 
     // adjust my dimensions
-    this.bounds.setWidth(this.contentsMorph.width()
-        + (this.padding ? this.padding * 2 : this.edge * 2));
-    this.bounds.setHeight(this.contentsMorph.height()
-        + this.edge
-        + this.border * 2
-        + this.padding * 2
-        + 2);
+    this.adjustDimensions();
 
     // position my contents
     this.contentsMorph.setPosition(this.position().add(
@@ -10308,6 +10344,88 @@ SpriteBubbleMorph.prototype.fixLayout = function () {
         )
     ));
 };
+
+SpriteBubbleMorph.prototype.adjustDimensions = function () {
+    this.bounds.setWidth(this.contentsMorph.width()
+        + (this.padding ? this.padding * 2 : this.edge * 2));
+    this.bounds.setHeight(this.contentsMorph.height()
+        + this.edge
+        + this.border * 2
+        + this.padding * 2
+        + 2);
+};
+
+// StageBubbleMorph ////////////////////////////////////////////////////////
+
+/*
+    I am a stage's scaleable speech bubble. I rely on SpriteMorph
+    for my preferences settings and quasi-inherit from SpriteBubbleMorph
+*/
+
+// StageBubbleMorph inherits from SpeechBubbleMorph:
+
+StageBubbleMorph.prototype = new SpeechBubbleMorph();
+StageBubbleMorph.prototype.constructor = StageBubbleMorph;
+StageBubbleMorph.uber = SpeechBubbleMorph.prototype;
+
+// StageBubbleMorph instance creation:
+
+function StageBubbleMorph(data, stage) {
+    this.init(data, stage);
+}
+
+StageBubbleMorph.prototype.init = function (data, stage) {
+    var sprite = SpriteMorph.prototype;
+    this.stage = stage;
+    this.scale = stage ? stage.scale : 1;
+    this.data = data;
+    this.bubbleFontColor = BLACK;
+    this.bubbleFontSize = sprite.bubbleFontSize;
+    this.bubbleFontIsBold = false; // sprite.bubbleFontIsBold;
+    this.bubbleCorner = sprite.bubbleCorner;
+    this.bubbleBorder = sprite.bubbleBorder;
+    this.bubblePadding = this.bubbleCorner / 2;
+    this.maxTextWidth = stage.dimensions.x - sprite.bubbleCorner;
+    this.bubbleFontAlignment = 'left';
+
+    StageBubbleMorph.uber.init.call(
+        this,
+        this.data,
+        sprite.bubbleColor,
+        null,
+        null,
+        sprite.bubbleBorderColor,
+        null,
+        null, // isThought
+        true // no shadow
+    );
+
+    this.isCachingImage = true;
+    this.rerender();
+};
+
+// SpriteBubbleMorph contents formatting
+
+StageBubbleMorph.prototype.dataAsMorph =
+    SpriteBubbleMorph.prototype.dataAsMorph;
+
+// SpriteBubbleMorph scaling
+
+StageBubbleMorph.prototype.setScale = SpriteBubbleMorph.prototype.setScale;
+
+// SpriteBubbleMorph layout:
+
+StageBubbleMorph.prototype.fixLayout = SpriteBubbleMorph.prototype.fixLayout;
+
+StageBubbleMorph.prototype.adjustDimensions = function () {
+    this.bounds.setWidth(this.contentsMorph.width()
+        + (this.padding ? this.padding * 2 : this.edge * 2));
+    this.bounds.setHeight(this.contentsMorph.height()
+        + this.edge
+        + this.border * 2);
+};
+
+StageBubbleMorph.prototype.outlinePath = BoxMorph.prototype.outlinePath;
 
 // Costume /////////////////////////////////////////////////////////////
 
