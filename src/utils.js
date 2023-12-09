@@ -29,17 +29,26 @@ utils.requestPromise = function(request, data) {
     });
 };
 
-utils.memoize = function(func){
+utils.memoize = function(func, onlyOnFailure = false){
     var cache = {};
     return function(){
         var key = JSON.stringify(arguments);
-        if (cache[key]){
+        if (!onlyOnFailure && cache[key]){
             return cache[key];
         }
         else{
-            var val = func.apply(null, arguments);
-            cache[key] = val;
-            return val;
+            try {
+              var val = func.apply(null, arguments);
+              cache[key] = val;
+              return val;
+            } catch (err) {
+              if (cache[key]){
+                  const argString = [...arguments].join(',');
+                  console.warn(`${func.name}(${argString}) failed: ${err.stack}`);
+                  return cache[key];
+              }
+              throw err;
+            }
         }
     };
 };
@@ -56,6 +65,7 @@ utils.getUrlSync = function(url, parser = x => x) {
 };
 
 utils.getUrlSyncCached = utils.memoize(utils.getUrlSync);
+utils.getUrlSync = utils.memoize(utils.getUrlSync, true);
 
 utils.defer = function() {
     const deferred = {};
