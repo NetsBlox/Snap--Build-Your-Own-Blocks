@@ -3286,7 +3286,7 @@ PianoMenuMorph.prototype.init = function (
     this.soundType = soundType;
     PianoMenuMorph.uber.init.call(this, target, null, environment, fontSize);
     choices = {
-        'C (36)' : 36,
+        'C 3' : 36,
         'D (38)' : 38,
         'C# (37)' : 37,
         'E (40)' : 40,
