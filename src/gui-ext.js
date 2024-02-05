@@ -28,10 +28,10 @@ IDE_Morph.prototype.parseUrlAnchors = function (querystring, hash) {
       }
     }
 
-    const anchorsDict = new URLSearchParams(hashDictStr);
+    const anchorsDict = new SearchParams(hashDictStr);
 
     // parse querystring params
-    const queryDict = new URLSearchParams(querystring);
+    const queryDict = new SearchParams(querystring);
     queryDict.forEach((value, key) => anchorsDict.set(key, value));
 
     return anchorsDict;
@@ -51,6 +51,27 @@ class MissingParameterError extends UrlParamError {
   }
 }
 
+/**
+ * A case-insensitive search parameter dictionary.
+ */
+class SearchParams extends URLSearchParams {
+  normalizeKey(key) {
+    return key.toLowerCase();
+  }
+
+  has(key) {
+    return super.has(this.normalizeKey(key))
+  }
+
+  get(key) {
+    return super.get(this.normalizeKey(key))
+  }
+
+  set(key, value) {
+    return super.set(this.normalizeKey(key), value)
+  }
+}
+
 class UrlParams {
     constructor(params) {
         this.params = params;
@@ -61,6 +82,16 @@ class UrlParams {
           throw new MissingParameterError(this.params, name);
         }
         return this.params.get(name);
+    }
+
+    /**
+     * Check if a parameter value is truthy. A value of "" is considered to
+     * be truthy since it means the URL parameter is added like "&editMode".
+     */
+    getParameterFlag(name) {
+        const value = this.params.get(name);
+        const falseValues = [undefined, null, '0', 'false', false];
+        return !falseValues.includes(value);
     }
 
     async applySettings(ide) {
@@ -89,20 +120,20 @@ class UrlParams {
     }
 
     async applyFlags(ide) {
-        if (this.params.get('embedMode')) {
+        if (this.getParameterFlag('embedMode')) {
             ide.setEmbedMode();
         }
-        if (this.params.get('appMode')) {
+        if (this.getParameterFlag('appMode')) {
             ide.toggleAppMode(true);
         }
-        if (this.params.get('run')) {
+        if (this.getParameterFlag('run')) {
             ide.runScripts();
         }
-        if (this.params.get('hideControls')) {
+        if (this.getParameterFlag('hideControls')) {
             ide.controlBar.hide();
             window.onbeforeunload = nop;
         }
-        if (this.params.get('noExitWarning')) {
+        if (this.getParameterFlag('noExitWarning')) {
             window.onbeforeunload = nop;
         }
         if (this.params.get('lang')) {
@@ -154,10 +185,10 @@ class RunProjectFromUrl extends UrlParams {
         const text = hash.startsWith('<') ? hash : utils.getUrlSync(hash);
         await ide.droppedText(text);
 
-        if (!this.params.has('editMode')) {
+        if (!this.getParameterFlag('editMode')) {
             this.params.set('appMode', true);
         }
-        if (!this.params.has('noRun')) {
+        if (!this.getParameterFlag('noRun')) {
             this.params.set('run', true);
         }
     }
@@ -180,10 +211,10 @@ class OpenPublicProject extends UrlParams {
         await ide.droppedText(xml);
         ide.hasChangedMedia = true;
 
-        if (!this.params.has('editMode')) {
+        if (!this.getParameterFlag('editMode')) {
             this.params.set('appMode', true);
         }
-        if (!this.params.has('noRun')) {
+        if (!this.getParameterFlag('noRun')) {
             this.params.set('run', true);
         }
         msg.destroy();
@@ -258,10 +289,10 @@ class OpenExampleProject extends UrlParams {
             ide.showMessage('Example not found: ' + exampleName);
         }
 
-        if (!this.params.has('editMode')) {
+        if (!this.getParameterFlag('editMode')) {
             this.params.set('appMode', true);
         }
-        if (!this.params.has('noRun')) {
+        if (!this.getParameterFlag('noRun')) {
             this.params.set('run', true);
         }
     }
@@ -280,16 +311,16 @@ class OpenPrivateProject extends UrlParams {
             return;
         }
 
-        const msg = ide.showMessage('Opening ' + name + ' example...');
+        const msg = ide.showMessage('Opening ' + name + '...');
         try {
             const metadata = await ide.cloud.getProjectMetadataByName(ide.cloud.username, name);
             const source = new CloudProjectsSource(ide);
             await source.open(metadata);
 
-            if (!this.params.has('editMode')) {
+            if (!this.getParameterFlag('editMode')) {
                 this.params.set('appMode', true);
             }
-            if (!this.params.has('noRun')) {
+            if (!this.getParameterFlag('noRun')) {
                 this.params.set('run', true);
             }
         } catch (err) {

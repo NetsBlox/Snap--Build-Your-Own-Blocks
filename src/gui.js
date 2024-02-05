@@ -2284,6 +2284,11 @@ IDE_Morph.prototype.droppedText = async function (aString, name, fileType) {
     if (fileType.indexOf('json') !== -1 || ext === 'json') {
         return this.openDataString(aString, lbl, 'json');
     }
+    if (ext === 'musicxml') {
+        const read = new MusicReader(aString, name.replace(/\.musicxml$/, ''));
+        const write = new MusicWriter(read);
+        return this.droppedText(write.getFile());
+    }
 
     // import as plain text data
     return this.openDataString(aString, lbl, 'text');
