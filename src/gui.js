@@ -3064,9 +3064,18 @@ IDE_Morph.prototype.cloudMenu = function () {
             'Login...',
             'initializeCloud'
         );
-        menu.addItem(
-            'Login with Snap!...',
+        const loginOpts = new MenuMorph(this);
+        loginOpts.addItem(
+            'Snap!...',
             'initializeCloudWithSnap'
+        );
+        loginOpts.addItem(
+            'magic link...',
+            'initializeCloudWithMagicLink'
+        );
+        menu.addMenu(
+            'Login with...',
+            loginOpts
         );
         menu.addItem(
             'Signup...',
@@ -6326,6 +6335,63 @@ IDE_Morph.prototype.initializeCloudWithSnap = function () {
     );
 };
 
+IDE_Morph.prototype.initializeCloudWithMagicLink = function () {
+    var world = this.world();
+    const msg = 'Enter your email address to be sent a password-less sign in link!';
+    const dialog = new DialogBoxMorph().withKey('cloudMagicLink');
+
+    dialog.labelString = localize('Send a magic link!');
+    dialog.createLabel();
+
+    const bdy = new AlignmentMorph('column', dialog.padding);
+    const message = new TextMorph(localize(msg), 12, null, true);
+    const input = new InputFieldMorph();
+    input.setWidth(250);
+    bdy.setColor(WHITE);
+
+    bdy.add(message);
+    bdy.add(input);
+    message.fixLayout();
+    input.fixLayout();
+    bdy.fixLayout();
+    dialog.addBody(bdy);
+    dialog.edit = () => input.edit();
+
+    dialog.addButton('ok', 'OK');
+    dialog.addButton('cancel', 'Cancel');
+    dialog.fixLayout();
+
+    dialog.ok = async () => {
+        const email = input.getValue();
+        await this.cloud.sendMagicLink(email, window.location.href);
+        dialog.destroy();
+
+        await this.inform(
+            localize('Magic link sent!'),
+            'Click the link in the email to login then close this dialog.'
+        )
+        this.syncWithCloud();
+    };
+    dialog.popUp(world);
+};
+
+/**
+ * Update the local cloud state to be in sync with the server state.
+ */
+IDE_Morph.prototype.syncWithCloud = async function () {
+    await this.callCloudSilently(async cloud => {
+        try {
+            const username = await cloud.whoami();
+            cloud.username = username;
+            this.onCloudLogin(username);
+        } catch (_err) {  // Not logged in as anyone. Delete locally
+            delete(sessionStorage.username);
+            this.controlBar.cloudButton.refresh();
+            this.services.reset();
+        }
+    });
+};
+
 IDE_Morph.prototype.initializeCloud = function () {
     var world = this.world();
     new DialogBoxMorph(
@@ -6337,12 +6403,7 @@ IDE_Morph.prototype.initializeCloud = function () {
                 user.choice,
             );
             const {username} = this.cloud;
-            sessionStorage.username = username;
-            this.controlBar.cloudButton.refresh();
-            this.source = 'cloud';
-            this.services.fetchHosts(username);
-            let msg = localize('Logged in as ') + username;
-            this.showMessage(msg, 2);
+            this.onCloudLogin(username);
         }
     ).withKey('cloudlogin').promptCredentials(
         'Sign in',
@@ -6357,6 +6418,15 @@ IDE_Morph.prototype.initializeCloud = function () {
         this.cloudMsg
     );
 };
+
+IDE_Morph.prototype.onCloudLogin = function (username) {
+    sessionStorage.username = username;
+    this.controlBar.cloudButton.refresh();
+    this.source = 'cloud';
+    this.services.fetchHosts(username);
+    let msg = localize('Logged in as ') + username;
+    this.showMessage(msg, 2);
+}
 
 IDE_Morph.prototype.createCloudAccount = function () {
     const world = this.world();
@@ -6846,12 +6916,21 @@ IDE_Morph.prototype.showMessage = function (message, secs) {
     return m;
 };
 
-IDE_Morph.prototype.inform = function (title, message) {
-    new DialogBoxMorph().inform(
+IDE_Morph.prototype.inform = async function (title, message) {
+    const dialog = new DialogBoxMorph();
+    dialog.inform(
         title,
         localize(message),
         this.world()
     );
+
+    const destroy = dialog.destroy;
+    return new Promise(res => {
+        dialog.destroy = function() {
+            destroy.call(this);
+            res();
+        };
+    });
 };
 
 IDE_Morph.prototype.confirm = function (message, title, action) {
