@@ -6363,7 +6363,11 @@ IDE_Morph.prototype.initializeCloudWithMagicLink = function () {
 
     dialog.ok = async () => {
         const email = input.getValue();
-        await this.cloud.sendMagicLink(email, window.location.href);
+        const data = {
+            email,
+            redirectUri: window.location.href
+        };
+        await this.cloud.callApi(api => api.sendMagicLink(data));
         dialog.destroy();
 
         await this.inform(
@@ -6381,7 +6385,7 @@ IDE_Morph.prototype.initializeCloudWithMagicLink = function () {
 IDE_Morph.prototype.syncWithCloud = async function () {
     await this.callCloudSilently(async cloud => {
         try {
-            const username = await cloud.whoami();
+            const username = await cloud.whoAmI();
             cloud.username = username;
             this.onCloudLogin(username);
         } catch (_err) {  // Not logged in as anyone. Delete locally
