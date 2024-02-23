@@ -1819,6 +1819,7 @@ SpriteMorph.prototype.init = function (globals) {
     this.layers = null; // cache for dragging nested sprites, don't serialize
 
     this.blocksCache = {}; // not to be serialized (!)
+    this.primitivesCache = {}; // not to be serialized (!)
     this.paletteCache = {}; // not to be serialized (!)
     this.rotationOffset = ZERO; // not to be serialized (!)
     this.idx = 0; // not to be serialized (!) - used for de-serialization
@@ -1884,6 +1885,7 @@ SpriteMorph.prototype.fullCopy = function (forClone) {
     c.pannerNode = null;
     c.freqPlayer = null;
     c.blocksCache = {};
+    c.primitivesCache = {};
     c.paletteCache = {};
     c.imageData = {};
     c.cachedHSV = c.color.hsv();
@@ -2976,6 +2978,17 @@ SpriteMorph.prototype.makeBlock = function () {
         null,
         this.world()
     );
+};
+
+SpriteMorph.prototype.getPrimitiveTemplates = function (category) {
+    var blocks = this.primitivesCache[category];
+    if (!blocks) {
+        blocks = this.blockTemplates(category);
+        if (this.isCachingPrimitives) {
+            this.primitivesCache[category] = blocks;
+        }
+    }
+    return blocks;
 };
 
 SpriteMorph.prototype.palette = function (category) {
@@ -7737,6 +7750,7 @@ StageMorph.prototype.init = function (globals) {
 
     this.keysPressed = {}; // for handling keyboard events, do not persist
     this.blocksCache = {}; // not to be serialized (!)
+    this.primitivesCache = {}; // not to be serialized (!)
     this.paletteCache = {}; // not to be serialized (!)
     this.lastAnswer = ''; // last user input, do not persist
     this.activeSounds = []; // do not persist

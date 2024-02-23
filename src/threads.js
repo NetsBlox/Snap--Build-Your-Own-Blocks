@@ -4220,6 +4220,13 @@ Process.prototype.reportUnicodeAsLetter = function (num) {
 };
 
 Process.prototype.reportTextSplit = function (string, delimiter) {
+    if (this.inputOption(delimiter) === 'blocks') {
+        if (isString(string) && string.trim().startsWith('(')) {
+            return this.parseCode(string);
+        }
+        this.assertType(string, ['command', 'reporter', 'predicate']);
+        return string.components();
+    }
     return this.hyperDyadic(
         (str, delim) => this.reportBasicTextSplit(str, delim),
         string,
@@ -4388,6 +4395,321 @@ Process.prototype.parseJSON = function (string) {
     }
 
     return listify(JSON.parse(string));
+};
+
+Process.prototype.parseCode = function (string) {
+    var data = new List();
+    data.parse(string);
+    return this.toBlockSyntax(data);
+};
+
+// Process syntax analysis
+
+Process.prototype.assemble = function (blocks) {
+    var first;
+    if (!(blocks instanceof List)) {
+        return blocks;
+    }
+    first = blocks.at(1);
+    if (first instanceof Context) {
+        return first.copyWithInputs(
+            blocks.cdr().map(each => this.assemble(each))
+        );
+    }
+    if (blocks.isEmpty()) {
+        return blocks;
+    }
+    if (this.reportIsA(blocks.at(1), 'number')) {
+        return blocks.map(each => this.assemble(each));
+    }
+    return blocks.map(each => this.assemble(each)).itemsArray().reduce(
+        (a, b) => a.copyWithNext(b)
+    );
+};
+
+// Process - generating syntax trees from parsed text
+
+Process.prototype.toBlockSyntax = function (list) {
+    var head;
+    if (list.isEmpty()) {
+        return list;
+    }
+    head = list.at(1);
+    return this.variadify(
+        list.cons(
+            head instanceof List ? this.toBlockSyntax(head)
+                : this.blockMatching(head),
+            this.toInputSyntax(list.cdr())
+        )
+    );
+};
+
+Process.prototype.blockMatching = function (string) {
+    var pal = this.reportGet('blocks'),
+        block,
+        lbl,
+        i;
+    for (i = 1; i <= pal.length(); i += 1) {
+        block = pal.at(i);
+        if (block.expression && block.expression.isCustomBlock) {
+            lbl = this.reportBasicBlockAttribute('label', block);
+            if (snapEquals(string, lbl)) {
+                return block;
+            }
+        }
+    }
+    return (SpriteMorph.prototype.blockForSelector(
+        this.blockAlias(string)
+    ) || SpriteMorph.prototype.variableBlock(' ')).reify();
+};
+
+Process.prototype.toInputSyntax = function (list) {
+    var head;
+    if (list.isEmpty()) {
+        return list;
+    }
+    head = list.at(1);
+    return list.cons(
+        head instanceof List ? this.toBlockSyntax(head)
+            : this.parseInputValue(head),
+        this.toInputSyntax(list.cdr())
+    );
+};
+
+Process.prototype.parseInputValue = function (data) {
+    if (data === 't') {
+        return true;
+    }
+    if (data === 'f') {
+        return false;
+    }
+    return data;
+};
+
+Process.prototype.variadify = function (list) {
+    var ring = list.at(1),
+        slot, idx, syntax, items;
+    if (ring instanceof List) {
+        return list;
+    }
+    slot = ring.expression.inputs().find(any =>
+        any instanceof MultiArgMorph);
+    if (slot) {
+        idx = ring.expression.inputs().indexOf(slot) + 1;
+        slot.collapseAll();
+        items = list.itemsArray();
+        syntax = new List(items.slice(0, idx));
+        if (list.at(idx + 1) === ':') {
+            syntax.add(list.at(idx + 2));
+        } else {
+            syntax.add(new List(
+                [list.cons(
+                    list.length() - idx,
+                    new List(items.slice(idx))
+                )]
+            ));
+        }
+        return syntax;
+    }
+    return list;
+};
+
+Process.prototype.blockAlias = function (string) {
+    return this.blockAliases[string] || string;
+};
+
+Process.prototype.selectorAlias = function (string) {
+    return Object.keys(this.blockAliases).find(key =>
+        this.blockAliases[key] === string) || string;
+};
+
+Process.prototype.blockAliases = {
+    // motion:
+    move : 'forward',
+    right : 'turn',
+    left : 'turnLeft',
+    head: 'setHeading',
+    glide : 'doGlide',
+    changeX : 'changeXPosition',
+    setX : 'setXPosition',
+    changeY : 'changeYPosition',
+    setY : 'setYPosition',
+    bounce : 'bounceOffEdge',
+    pos : 'getPosition',
+    x : 'xPosition',
+    y : 'yPosition',
+    dir : 'direction',
+
+    // looks:
+    say : 'bubble',
+    sayFor : 'doSayFor',
+    think : 'doThink',
+    thinkFor : 'doThinkFor',
+    changeSize : 'changeScale',
+    setSize : 'setScale',
+    size : 'getScale',
+
+    // sound:
+    
+    // pen:
+    stamp : 'doStamp',
+    fill: 'floodFill',
+    trails : 'reportPenTrailsAsCostume',
+
+    // control:
+    broadcast : 'doBroadcast',
+    wait : 'doWait',
+    waitUntil : 'doWaitUntil',
+    forever : 'doForever',
+    repeat : 'doRepeat',
+    until : 'doUntil',
+    'for' : 'doFor',
+    'if' : 'doIf',
+    ifElse : 'reportIfElse',
+    stop : 'doStopThis',
+    run : 'doRun',
+    call : 'evaluate',
+    report : 'doReport',
+    warp : 'doWarp',
+    tell : 'doTellTo',
+    ask : 'reportAskFor',
+    pause : 'doPauseAll',
+    pipe : 'reportPipe',
+    define: 'doDefineBlock',
+    setBlock: 'doSetBlockAttribute',
+    getBlock: 'reportBlockAttribute',
+    'this' : 'reportEnvironment',
+
+    // sensing:
+    date : 'reportDate',
+    my : 'reportGet',
+    object : 'reportObject',
+    url : 'reportUrl',
+
+    // operators:
+    cmd : 'reifyScript',
+    ring : 'reifyReporter',
+    pred : 'reifyPredicate',
+    '+' : 'reportVariadicSum',
+    '-' : 'reportDifference',
+    '*' : 'reportVariadicProduct',
+    '/' : 'reportQuotient',
+    round : 'reportRound',
+    '^' : 'reportPower',
+    '%' : 'reportModulus',
+    mod : 'reportModulus',
+    atan2 : 'reportAtan2',
+    min : 'reportVariadicMin',
+    max : 'reportVariadicMax',
+    rand : 'reportRandom',
+    '=' : 'reportVariadicEquals',
+    '!=' : 'reportVariadicNotEquals',
+    '<' : 'reportVariadicLessThan',
+    '<=' : 'reportVariadicLessThanOrEquals',
+    '>' : 'reportVariadicGreaterThan',
+    '>=' : 'reportVariadicGreaterThanOrEquals',
+    bool : 'reportBoolean',
+    and : 'reportVariadicAnd',
+    or : 'reportVariadicOr',
+    not: 'reportNot',
+    join : 'reportJoinWords',
+    letter : 'reportLetter',
+    unicode : 'reportUnicode',
+    is : 'reportIsA',
+    identical : 'reportVariadicIsIdentical',
+    split : 'reportTextSplit',
+
+    // variables:
+    'var' : 'doDeclareVariables',
+    'get' : 'reportGetVar',
+    '+=' : 'doChangeVar',
+    'set' : 'doSetVar',
+
+    // lists:
+
+    list : 'reportNewList',
+    cons : 'reportCONS',
+    cdr: 'reportCDR',
+    data : 'reportListAttribute',
+    at : 'reportListItem',
+    contains : 'reportListContainsItem',
+    empty : 'reportListIsEmpty',
+    index : 'reportListIndex',
+    add : 'doAddToList',
+    del : 'doDeleteFromList',
+    ins : 'doInsertInList',
+    put : 'doReplaceInList',
+    'from' : 'reportNumbers',
+    append : 'reportConcatenatedLists',
+    reshape : 'reportReshape',
+    map : 'reportMap',
+    keep : 'reportKeep',
+    find : 'reportFindFirst',
+    combine : 'reportCombine',
+    forEach : 'doForEach',
+
+    // extensions
+
+    prim : 'doPrimitive',
+    extension : 'doApplyExtension',
+    ext: 'reportApplyExtension'
+};
+
+// Process - replacing blocks in syntax trees with text
+
+Process.prototype.toTextSyntax = function (list) {
+    var head, syn;
+    if (list.isEmpty()) {
+        return list;
+    }
+    syn = this.devariadify(list);
+    head = syn.at(1);
+    return syn.cons(
+        head instanceof List ? this.toTextSyntax(head)
+            : this.blockToken(head),
+        this.toInputTextSyntax(syn.cdr())
+    );
+};
+
+Process.prototype.devariadify = function (list) {
+    var ring = list.at(1),
+        slot, idx, syntax;
+    if (ring instanceof List) {
+        return list;
+    }
+    slot = ring.expression.inputs().find(any =>
+        any instanceof MultiArgMorph);
+    if (slot && !slot.inputs().length) {
+        idx = ring.expression.inputs().indexOf(slot) + 1;
+        syntax = list.map(each => each); // shallow copy
+        if (syntax.length() === (idx + 1) && syntax.at(idx + 1) === '') {
+            syntax.remove(idx + 1);
+            return syntax;
+        }
+        syntax.add(':', idx + 1);
+        return syntax;
+    }
+    return list;
+};
+
+Process.prototype.blockToken = function (ring) {
+    var block = ring.expression;
+    return block.isCustomBlock &&
+        !(block.isGlobal && block.definition.isBootstrapped()) ?
+            this.reportBasicBlockAttribute('label', ring)
+            : this.selectorAlias(block.selector);
+};
+
+Process.prototype.toInputTextSyntax = function (list) {
+    var head;
+    if (list.isEmpty()) {
+        return list;
+    }
+    head = list.at(1);
+    return list.cons(
+        head instanceof List ? this.toTextSyntax(head) : head,
+        this.toInputTextSyntax(list.cdr())
+    );
 };
 
 // Process debugging
@@ -5325,6 +5647,32 @@ Process.prototype.reportGet = function (query) {
             }
             stage = thisObj.parentThatIsA(StageMorph);
             return stage ? thisObj.height() / stage.scale : 0;
+        case 'blocks': // palette unoordered without inherited methods
+            return new List(
+                thisObj.parentThatIsA(StageMorph).globalBlocks.concat(
+                    thisObj.allBlocks(true)
+                ).filter(
+                    def => !def.isHelper
+                ).map(
+                    def => def.blockInstance().reify()
+                ).concat(
+                    SpriteMorph.prototype.categories.reduce(
+                        (blocks, category) => blocks.concat(
+                            thisObj.getPrimitiveTemplates(
+                                category
+                            ).filter(
+                                each => each instanceof BlockMorph &&
+                                    !(each instanceof HatBlockMorph)
+                            ).map(block => {
+                                let instance = block.fullCopy();
+                                instance.isTemplate = false;
+                                return instance.reify();
+                            })
+                        ),
+                        []
+                    )
+                )
+            );
         }
     }
     return '';

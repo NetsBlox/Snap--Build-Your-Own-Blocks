@@ -3826,6 +3826,309 @@ BlockMorph.prototype.showHelp = function () {
     pic.src = ide.resourceURL('help', spec + '.png');
 };
 
+BlockMorph.prototype.dependencies = function (onlyGlobal, receiver) {
+    // answer an array containing all custom block definitions referenced
+    // by this and the following blocks, optional parameter to constrain
+    // to global definitions.
+    // specifying a receiver sprite is optional for cases where
+    // the receiver sprite is not the currently edited one inside the IDE
+    // if a receiver is not specified  this method can only be called from
+    // within the IDE because it needs to be able to determine the scriptTarget
+    var dependencies = [],
+        quasiPrims = SpriteMorph.prototype.quasiPrimitives(),
+        rcvr = onlyGlobal ? null : (receiver || this.scriptTarget());
+    this.forAllChildren(morph => {
+        var def;
+        if (morph.isCustomBlock) {
+            if (!onlyGlobal || (onlyGlobal && morph.isGlobal)) {
+                def = morph.isGlobal ? morph.definition
+                    : rcvr.getMethod(morph.semanticSpec);
+                if (!def.isQuasiPrimitive()) {
+                    [def].concat(def.collectDependencies(
+                        quasiPrims,
+                        [],
+                        rcvr
+                    )).forEach(
+                        fun => {
+                            if (!contains(dependencies, fun)) {
+                                dependencies.push(fun);
+                            }
+                        }
+                    );
+                }
+            }
+        }
+    });
+    return dependencies;
+};
+
+// BlockMorph syntax analysis
+
+BlockMorph.prototype.components = function (parameterNames = []) {
+    if (this instanceof ReporterBlockMorph) {
+        return this.syntaxTree(parameterNames);
+    }
+    var seq = new List(this.blockSequence()).map((block, i) =>
+        block.syntaxTree(i < 1 ? parameterNames : [])
+    );
+    return seq.length() === 1 ? seq.at(1) : seq;
+};
+
+BlockMorph.prototype.syntaxTree = function (parameterNames) {
+    var expr = this.fullCopy(),
+        nb = expr.nextBlock ? expr.nextBlock() : null,
+        inputs, parts;
+    if (nb) {
+        nb.destroy();
+    }
+    expr.fixBlockColor(null, true);
+    inputs = expr.inputs();
+    parts = new List([expr.reify()]);
+    inputs.forEach(inp => {
+        var val;
+        if (inp instanceof BlockMorph) {
+            if (inp instanceof RingMorph && inp.isEmptySlot()) {
+                parts.add();
+                return;
+            }
+            parts.add(inp.components());
+            expr.revertToEmptyInput(inp);
+        } else if (inp.isEmptySlot()) {
+            parts.add();
+        } else if (inp instanceof MultiArgMorph) {
+            if (!inp.inputs().length) {
+                parts.add();
+            }
+            inp.inputs().forEach((slot, i) => {
+                var entry;
+                if (slot instanceof BlockMorph) {
+                    if (slot instanceof RingMorph && slot.isEmptySlot()) {
+                        parts.add();
+                        return;
+                    }
+                    parts.add(slot.components());
+                } else if (slot.isEmptySlot()) {
+                    parts.add();
+                } else {
+                    entry = slot.evaluate();
+                    parts.add(entry instanceof BlockMorph ?
+                        entry.components() : entry);
+                }
+                inp.revertToEmptyInput(slot);
+            });
+        } else if (inp instanceof ArgLabelMorph) {
+            parts.add(inp.argMorph().components());
+            expr.revertToEmptyInput(inp).collapseAll();
+        } else {
+            val = inp.evaluate();
+            if (val instanceof Array) {
+                val = '[' + val + ']';
+            }
+            if (inp instanceof ColorSlotMorph) {
+                val = val.toString();
+            }
+            parts.add(val instanceof BlockMorph ? val.components() : val);
+            expr.revertToEmptyInput(inp, true);
+        }
+    });
+    parts.at(1).updateEmptySlots();
+    if (expr.selector === 'reportGetVar') {
+        parts.add(expr.blockSpec);
+        expr.setSpec('\xa0'); // non-breaking space, appears blank
+    }
+    parameterNames.forEach(name => parts.add(name));
+    return parts;
+};
+
+BlockMorph.prototype.equalTo = function (other) {
+    // private - only to be called from a Context
+    return this.constructor.name === other.constructor.name &&
+        this.selector === other.selector &&
+        this.blockSpec === other.blockSpec;
+};
+
+BlockMorph.prototype.copyWithInputs = function (inputs) {
+    // private - only to be called from a Context
+    var cpy = this.fullCopy(),
+        slots = cpy.inputs(),
+        dta = inputs.itemsArray().map(inp =>
+            inp instanceof Context ?
+                (inp.expression instanceof BlockMorph ?
+                    inp.expression.fullCopy()
+                    : inp.expression
+                )
+                : inp
+        ),
+        count = 0,
+        dflt;
+
+    function isOption(data) {
+        return isString(data) &&
+            data.length > 2 &&
+            data[0] === '[' &&
+            data[data.length - 1] === ']';
+    }
+
+    if (dta.length === 0) {
+        return cpy.reify();
+    }
+    if (cpy.selector === 'reportGetVar' && (
+        (dta.length === 1) || (cpy.blockSpec === '\xa0' && dta.length > 1))
+    ) {
+        cpy.setSpec(dta[0]);
+        return cpy.reify(dta.slice(1));
+    }
+
+    // restore input slots
+    slots.forEach(slt => {
+        if (slt instanceof BlockMorph) {
+            dflt = cpy.revertToEmptyInput(slt);
+            if (dflt instanceof MultiArgMorph) {
+                dflt.collapseAll();
+            }
+        } else if (slt instanceof MultiArgMorph) {
+            slt.inputs().forEach(entry => {
+                if (entry instanceof BlockMorph) {
+                    slt.revertToEmptyInput(entry);
+                }
+            });
+        }
+    });
+
+    // distribute inputs among the slots
+    slots = cpy.inputs();
+    slots.forEach((slot) => {
+        var inp, i, cnt, sub;
+        if (slot instanceof MultiArgMorph && dta[count] instanceof List) {
+            // let the list's first item control the arity of the polyadic slot
+            // fill with the following items in the list
+            inp = dta[count];
+            if (inp.length() === 0) {
+                nop(); // ignore, i.e. leave slot as is
+            } else {
+                slot.collapseAll();
+                for (i = 1; i <= inp.at(1); i += 1) {
+                    cnt = inp.at(i + 1);
+                    if (cnt instanceof List) {
+                        cnt = Process.prototype.assemble(cnt);
+                    }
+                    if (cnt instanceof Context) {
+                        sub = slot.addInput();
+                        if (sub.nestedBlock) {
+                            sub.nestedBlock(cnt.expression.fullCopy());
+                        } else {
+                            slot.replaceInput(
+                                sub,
+                                cnt.expression.fullCopy()
+                            );
+                        }
+                    } else {
+                        slot.addInput(cnt);
+                    }
+                }
+            }
+            count += 1;
+        } else if (slot instanceof MultiArgMorph && slot.inputs().length) {
+            // fill the visible slots of the polyadic input as if they were
+            // permanent inputs each
+            slot.inputs().forEach(entry => {
+                inp = dta[count];
+                if (inp instanceof BlockMorph) {
+                    if (inp instanceof CommandBlockMorph && entry.nestedBlock) {
+                        entry.nestedBlock(inp);
+                    } else if (inp instanceof ReporterBlockMorph &&
+                            (!entry.isStatic || entry instanceof RingMorph)) {
+                        slot.replaceInput(entry, inp);
+                    }
+                } else {
+                    if (inp instanceof List && inp.length() === 0) {
+                        nop(); // ignore, i.e. leave slot as is
+                    } else if (entry instanceof InputSlotMorph ||
+                            entry instanceof TemplateSlotMorph ||
+                            entry instanceof BooleanSlotMorph) {
+                        entry.setContents(inp);
+                    }
+                }
+                count += 1;
+            });
+        } else {
+            // fill the visible slot, treat collapsed variadic slots as single
+            // input (to be replaced by a reporter),
+            // skip in case the join value is an empty list
+            inp = dta[count];
+            if (inp === undefined) {return; }
+            if (inp instanceof BlockMorph) {
+                if (inp instanceof CommandBlockMorph && slot.nestedBlock) {
+                    slot.nestedBlock(inp);
+                } else if (inp instanceof ReporterBlockMorph &&
+                        (!slot.isStatic || slot instanceof RingMorph)) {
+                    cpy.replaceInput(slot, inp);
+                } else if (inp instanceof ReporterBlockMorph &&
+                        slot.nestedBlock) {
+                    slot.nestedBlock(inp);
+                }
+            } else {
+                if (inp instanceof List && inp.length() === 0) {
+                    nop(); // ignore, i.e. leave slot as is
+                } else if (slot instanceof ColorSlotMorph) {
+                    slot.setColor(Color.fromString(inp));
+                } else if (slot instanceof InputSlotMorph) {
+                    slot.setContents(isOption(inp) ? [inp.slice(1, -1)] : inp);
+                } else if (slot instanceof TemplateSlotMorph ||
+                        slot instanceof BooleanSlotMorph) {
+                    slot.setContents(inp);
+                }
+            }
+            count += 1;
+        }
+    });
+
+    // create a function to return
+    return cpy.reify(dta.slice(count));
+};
+
+BlockMorph.prototype.copyWithNext = function (next, parameterNames) {
+    var expr = this.fullCopy(),
+        top;
+    if (this instanceof ReporterBlockMorph) {
+        return expr.reify();
+    }
+    top = next.fullCopy().topBlock();
+    if (top instanceof CommandBlockMorph) {
+        expr.bottomBlock().nextBlock(top);
+    }
+    return expr.reify(parameterNames);
+};
+
+BlockMorph.prototype.reify = function (inputNames, comment) {
+    // private - assumes that I've already been deep copied
+    var context = new Context();
+    context.expression = this;
+    context.inputs = inputNames || [];
+    context.emptySlots = this.markEmptySlots();
+    context.comment = comment || this.comment?.text();
+    return context;
+};
+
+BlockMorph.prototype.markEmptySlots = function () {
+    // private - mark all empty slots with an identifier
+    // and return the count
+    var count = 0;
+
+    this.allInputs().forEach(input =>
+        delete input.bindingID
+    );
+    this.allEmptySlots().forEach(slot => {
+        count += 1;
+        if (slot instanceof MultiArgMorph) {
+            slot.bindingID = Symbol.for('arguments');
+        } else {
+            slot.bindingID = count;
+        }
+    });
+    return count;
+};
+
 // BlockMorph code mapping
 
 /*
