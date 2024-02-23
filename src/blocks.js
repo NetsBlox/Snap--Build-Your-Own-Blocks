@@ -4925,7 +4925,7 @@ BlockMorph.prototype.reactToDropOf = function (droppedMorph) {
     droppedMorph.isDraggable = false;
     droppedMorph.fixLayout();
     this.fixLayout();
-    this.buildSpec();
+    //this.buildSpec();
 };
 
 BlockMorph.prototype.situation = function () {
