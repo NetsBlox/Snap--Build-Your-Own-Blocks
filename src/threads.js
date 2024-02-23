@@ -4143,9 +4143,23 @@ Process.prototype.reportJoin = function (a, b) {
 
 Process.prototype.reportJoinWords = function (aList) {
     if (aList instanceof List) {
+        if (this.isAST(aList)) {
+            return this.assemble(aList);
+        }
         return aList.asText();
     }
     return (aList || '').toString();
+};
+
+Process.prototype.isAST = function (aList) {
+    var first = aList.at(1);
+    if (first instanceof Context) {
+        return true;
+    }
+    if (first instanceof List) {
+        return first.at(1) instanceof Context;
+    }
+    return false;
 };
 
 // Process string ops - hyper-monadic/dyadic
@@ -4709,6 +4723,30 @@ Process.prototype.toInputTextSyntax = function (list) {
     return list.cons(
         head instanceof List ? this.toTextSyntax(head) : head,
         this.toInputTextSyntax(list.cdr())
+    );
+};
+
+// Process syntax analysis
+
+Process.prototype.assemble = function (blocks) {
+    var first;
+    if (!(blocks instanceof List)) {
+        return blocks;
+    }
+    first = blocks.at(1);
+    if (first instanceof Context) {
+        return first.copyWithInputs(
+            blocks.cdr().map(each => this.assemble(each))
+        );
+    }
+    if (blocks.isEmpty()) {
+        return blocks;
+    }
+    if (this.reportIsA(blocks.at(1), 'number')) {
+        return blocks.map(each => this.assemble(each));
+    }
+    return blocks.map(each => this.assemble(each)).itemsArray().reduce(
+        (a, b) => a.copyWithNext(b)
     );
 };
 
@@ -7043,6 +7081,56 @@ Context.prototype.stackSize = function () {
     }
     return 1 + this.parentContext.stackSize();
 };
+
+// Context syntax analysis
+
+Context.prototype.components = function () {
+    var expr = this.expression;
+    if (expr && expr.components) {
+        expr = expr.components(this.inputs.slice());
+    } else {
+        expr = new Context();
+        expr.inputs = this.inputs.slice();
+    }
+    return expr instanceof Context ? new List([expr]) : expr;
+};
+
+Context.prototype.equalTo = function (other) {
+    var c1 = this.components(),
+        c2 = other.components();
+    if (this.emptyOrEqual(c1.cdr(), c2.cdr())) {
+        if (this.expression && this.expression.length === 1 &&
+                other.expression && other.expression.length === 1) {
+            return snapEquals(this.expression[0], other.expression[0]);
+        }
+        return snapEquals(this.expression, other.expression);
+    }
+    return false;
+};
+
+Context.prototype.emptyOrEqual = function (list1, list2) {
+    // private - return TRUE if both lists are either equal
+    // or only contain empty items
+    return list1.equalTo(list2) || (
+        list1.itemsArray().every(item => !item) &&
+        list2.itemsArray().every(item => !item)
+    );
+};
+
+Context.prototype.copyWithInputs = function (inputs) {
+    return this.expression ?
+        this.expression.copyWithInputs(inputs)
+        : this;
+};
+
+Context.prototype.copyWithNext = function (next) {
+    return this.expression.copyWithNext(next.expression, this.inputs.slice());
+};
+
+Context.prototype.updateEmptySlots = function () {
+    this.emptySlots = this.expression.markEmptySlots();
+};
+
 
 // Variable /////////////////////////////////////////////////////////////////
 
