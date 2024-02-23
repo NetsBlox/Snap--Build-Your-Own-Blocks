@@ -3947,7 +3947,6 @@ BlockMorph.prototype.syntaxTree = function (parameterNames) {
                 return;
             }
             parts.add(inp.components());
-            expr.revertToEmptyInput(inp);
         } else if (inp.isEmptySlot()) {
             parts.add();
         } else if (inp instanceof MultiArgMorph) {
@@ -3977,7 +3976,6 @@ BlockMorph.prototype.syntaxTree = function (parameterNames) {
         } else if (inp instanceof RPCInputSlotMorph) {
             val = inp.evaluate();
             parts.add(val[0]);
-            expr.revertToEmptyInput(inp, true);
         } else {
             val = inp.evaluate();
             if (val instanceof Array) {
@@ -3987,7 +3985,6 @@ BlockMorph.prototype.syntaxTree = function (parameterNames) {
                 val = val.toString();
             }
             parts.add(val instanceof BlockMorph ? val.components() : val);
-            expr.revertToEmptyInput(inp, true);
         }
     });
     parts.at(1).updateEmptySlots();
