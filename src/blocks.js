@@ -1441,6 +1441,60 @@ SyntaxElementMorph.prototype.revertToDefaultInput = function (arg, noValues) {
     this.cachedInputs = null;
 };
 
+SyntaxElementMorph.prototype.revertToEmptyInput = function (arg) {
+    var idx = this.parts().indexOf(arg),
+        inp = this.inputs().indexOf(arg),
+        deflt = new InputSlotMorph(),
+        rcvr, def;
+
+    if (idx !== -1) {
+        if (this instanceof BlockMorph) {
+            deflt = this.labelPart(this.parseSpec(this.blockSpec)[idx]);
+            if (this.isCustomBlock) {
+                if (this.isGlobal) {
+                    def = this.definition;
+                } else {
+                    rcvr = this.scriptTarget(true);
+                    if (rcvr) {
+                        def = rcvr.getMethod(this.blockSpec);
+                    }
+                }
+                if (def) {
+                    if (deflt instanceof InputSlotMorph) {
+                        deflt.setChoices.apply(
+                            deflt,
+                            def.inputOptionsOfIdx(inp)
+                        );
+                    } else if (deflt instanceof MultiArgMorph) {
+                        deflt.setInfix(def.separatorOfInputIdx(inp));
+                        deflt.setCollapse(def.collapseOfInputIdx(inp));
+                        deflt.setExpand(def.expandOfInputIdx(inp));
+                        deflt.setDefaultValue(def.defaultValueOfInputIdx(inp));
+                        deflt.setInitialSlots(def.initialSlotsOfInputIdx(inp));
+                        deflt.setMinSlots(def.minSlotsOfInputIdx(inp));
+                        deflt.setMaxSlots(def.maxSlotsOfInputIdx(inp));
+                    }
+                }
+            }
+        } else if (this instanceof MultiArgMorph) {
+            deflt = this.labelPart(this.slotSpecFor(inp));
+        } else if (this instanceof ReporterSlotMorph) {
+            deflt = this.emptySlot();
+        }
+    }
+    if (deflt.icon || deflt instanceof BooleanSlotMorph) {
+        deflt.fixLayout();
+    }
+    this.replaceInput(arg, deflt);
+    if (deflt instanceof MultiArgMorph) {
+        deflt.refresh();
+    } else if (deflt instanceof RingMorph) {
+        deflt.fixBlockColor();
+    }
+    this.cachedInputs = null;
+    return deflt;
+};
+
 SyntaxElementMorph.prototype.isLocked = function () {
     // answer true if I can be exchanged by a dropped reporter
     return this.isStatic;

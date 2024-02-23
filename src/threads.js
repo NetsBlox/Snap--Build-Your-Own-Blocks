@@ -1921,8 +1921,22 @@ Process.prototype.reportListAttribute = function (choice, list) {
     case 'reverse':
         this.assertType(list, 'list');
         return list.reversed();
+    case 'text':
+        this.assertType(list, 'list');
+        if (this.isAST(list)) {
+            return this.toTextSyntax(list).encode(0, 0);
+        }
+        if (list.canBeWords()) {
+            return list.asWords();
+        }
+        throw new Error(
+            localize('unable to convert to') + ' ' + localize('text')
+        );
     case 'lines':
         this.assertType(list, 'list');
+        if (this.isAST(list)) {
+            return this.toTextSyntax(list).encode();
+        }
         if (list.canBeTXT()) {
             return list.asTXT();
         }
