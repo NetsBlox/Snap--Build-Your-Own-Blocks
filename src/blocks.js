@@ -496,6 +496,7 @@ SyntaxElementMorph.prototype.labelParts = {
             // 'transpose' : ['transpose'],
             'reverse' : ['reverse'],
             '~' : null,
+            'text' : ['text'],
             'lines' : ['lines'],
             'csv' : ['csv'],
             'json' : ['json']
