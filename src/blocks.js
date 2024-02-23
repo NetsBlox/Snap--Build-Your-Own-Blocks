@@ -3974,6 +3974,10 @@ BlockMorph.prototype.syntaxTree = function (parameterNames) {
         } else if (inp instanceof ArgLabelMorph) {
             parts.add(inp.argMorph().components());
             expr.revertToEmptyInput(inp).collapseAll();
+        } else if (inp instanceof RPCInputSlotMorph) {
+            val = inp.evaluate();
+            parts.add(val[0]);
+            expr.revertToEmptyInput(inp, true);
         } else {
             val = inp.evaluate();
             if (val instanceof Array) {
