@@ -4463,12 +4463,19 @@ Process.prototype.toBlockSyntax = function (list) {
         return list;
     }
     head = list.at(1);
+    let l = head instanceof List ? this.toBlockSyntax(head) : this.blockMatching(head);
+    let r = this.toInputSyntax(list.cdr());
+
+    if(l.expression && (l.expression.selector == 'getJSFromRPCStruct' || l.expression.selector == 'doRunRPC')){
+        // Build the RPC block's slots
+        let inputs = r.itemsArray();
+        l.expression.inputs()[0].setContents(inputs[0]);
+        l.expression.inputs()[1].setContents(inputs[1]);
+        l.expression.evaluate();
+    }
+
     return this.variadify(
-        list.cons(
-            head instanceof List ? this.toBlockSyntax(head)
-                : this.blockMatching(head),
-            this.toInputSyntax(list.cdr())
-        )
+        list.cons(l, r)
     );
 };
 
@@ -4578,7 +4585,7 @@ Process.prototype.blockAliases = {
     size : 'getScale',
 
     // sound:
-    
+
     // pen:
     stamp : 'doStamp',
     fill: 'floodFill',
