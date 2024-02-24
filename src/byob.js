@@ -561,6 +561,18 @@ CustomBlockDefinition.prototype.purgeCorpses = function () {
     );
 };
 
+CustomBlockDefinition.prototype.isBootstrapped = function () {
+    return this.isGlobal && this.selector &&
+        SpriteMorph.prototype.blocks[this.selector] === this;
+};
+
+CustomBlockDefinition.prototype.isQuasiPrimitive = function () {
+    return this.isBootstrapped() &&
+        (this.primitive === this.selector ||
+            this.selector === 'reportHyperZip') &&
+        this.codeMapping !== null;
+};
+
 // CustomCommandBlockMorph /////////////////////////////////////////////
 
 // CustomCommandBlockMorph inherits from CommandBlockMorph:
