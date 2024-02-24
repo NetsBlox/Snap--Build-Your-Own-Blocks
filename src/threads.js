@@ -6510,6 +6510,543 @@ Process.prototype.unflash = function () {
     }
 };
 
+// Process - Block attributes, DEFINE and introspection prims
+
+Process.prototype.reportBlockAttribute = function (attribute, block) {
+    // hyper-dyadic
+    // note: attributes in the left slot
+    // can only be queried via the dropdown menu and are, therefore, not
+    // reachable as dyadic inputs
+    return this.hyper(
+        (att, obj) => this.reportBasicBlockAttribute(att, obj),
+        attribute,
+        block
+    );
+};
+
+Process.prototype.reportBasicBlockAttribute = function (attribute, block) {
+    var choice = this.inputOption(attribute),
+        expr, body, slots, data, def, info, loc, cmt, prim;
+    this.assertType(block, ['command', 'reporter', 'predicate']);
+    expr = block.expression;
+    switch (choice) {
+    case 'label':
+        return expr ? expr.abstractBlockSpec() : '';
+    case 'comment':
+        if (block.comment) {
+            return block.comment;
+        }
+        cmt = expr?.comment?.text();
+        if (cmt) {
+            return cmt;
+        }
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            return def.comment?.text() || expr?.comment?.text() || '';
+        }
+        return '';
+    case 'definition':
+        if (expr.isCustomBlock) {
+            if (expr.isGlobal) {
+                if (expr.definition.primitive && !expr.definition.body) {
+                    prim = SpriteMorph.prototype.blockForSelector(
+                        'doPrimitive'
+                    );
+                    prim.inputs()[0].setContents(true);
+                    prim.inputs()[1].setContents(expr.definition.primitive);
+                    body = prim.reify();
+                } else {
+                    body = expr.definition.body || new Context();
+                }
+            } else {
+                body = this.blockReceiver().getMethod(expr.semanticSpec).body ||
+                    new Context();
+            }
+        } else {
+            prim = SpriteMorph.prototype.blockForSelector('doPrimitive');
+            prim.inputs()[0].setContents(true);
+            prim.inputs()[1].setContents(expr.selector);
+            body = prim.reify();
+        }
+        if (body instanceof Context &&
+            (!body.expression || prim) &&
+            !body.inputs.length
+        ) {
+            // make sure the definition has the same number of inputs as the
+            // block prototype (i.e. the header)
+            expr.inputs().forEach((inp, i) => body.addInput('#' + (i + 1)));
+        }
+        if (body.expression && body.expression.selector === 'doReport' &&
+                body.expression.inputs()[0] instanceof BlockMorph) {
+            return body.expression.inputs()[0].reify(body.inputs);
+        }
+        return body;
+    case 'category':
+        return expr ?
+            SpriteMorph.prototype.allCategories().indexOf(expr.category) + 1
+                : 0;
+    case 'custom?':
+        return expr ? !!expr.isCustomBlock : false;
+    case 'global?':
+        return (expr && expr.isCustomBlock) ? !!expr.isGlobal : true;
+    case 'type':
+        return ['command', 'reporter', 'predicate'].indexOf(
+            this.reportTypeOf(block)
+        ) + 1;
+    case 'scope':
+        return expr.isCustomBlock ? (expr.isGlobal ? 1 : 2) : 0;
+    case 'selector':
+        return expr.isCustomBlock ?
+            (expr.isGlobal ? expr.definition.selector || '' : '')
+            : expr.selector;
+    case 'slots':
+        if (expr.isCustomBlock) {
+            slots = [];
+            (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec)
+            ).declarations.forEach(value => slots.push(value[0]));
+            return new List(slots).map(spec => this.slotType(spec));
+        }
+        return new List(
+            expr.inputs().map(each =>
+                each instanceof ReporterBlockMorph ?
+                    each.getSlotSpec()
+                    : (each instanceof MultiArgMorph &&
+                            each.slotSpec instanceof Array ?
+                        each.slotSpec
+                        : each.getSpec())
+            )
+        ).map(spec => this.slotType(spec));
+    case 'defaults':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            // def.declarations.forEach(value => slots.add(value[1]));
+            def.declarations.forEach(value => {
+                if((value[0] || '').toString().startsWith('%mult')) {
+                    data = (value[1] || '').split('\n').map(each =>
+                        each.trim()).filter(each =>
+                            each.length);
+                    slots.add(data.length > 1 ? new List(data) : data[0]);
+                } else {
+                    slots.add(value[1]);
+                }
+            });
+        } else {
+            info = SpriteMorph.prototype.blocks[expr.selector];
+            if (!info) {return slots; }
+            slots = (info.defaults || []).map(v => this.inputOption(v));
+            // adjust structure if the last input is variadic
+            // and the default values overshoot the number of input slots
+            if (expr.inputs().slice(-1)[0] instanceof MultiArgMorph &&
+                slots.length > expr.inputs().length
+            ) {
+                data = slots.slice(expr.inputs().length - 1);
+                slots = slots.slice(0, expr.inputs().length - 1);
+                slots.push(new List(data));
+            }
+            slots = new List(slots);
+        }
+        return slots;
+    case 'menus':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => slots.add(
+                isString(value[2]) ?
+                    def.decodeChoices(def.parseChoices(value[2]))
+                    : ''
+            ));
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                slots.add(slot instanceof InputSlotMorph ?
+                    (isString(slot.choices) ? '§_' + slot.choices
+                        : CustomBlockDefinition.prototype.decodeChoices(
+                            slot.choices
+                        ))
+                    : ''
+                );
+            });
+        }
+        return slots;
+    case 'editables':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => slots.add(!value[3]));
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                slots.add(slot instanceof InputSlotMorph ?
+                    !slot.isReadOnly : false
+                );
+            });
+        }
+        return slots;
+    case 'replaceables':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => slots.add(!value[4]));
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                slots.add(!slot.isStatic);
+            });
+        }
+        return slots;
+    case 'separators':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => slots.add(value[5]));
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                slots.add(slot instanceof MultiArgMorph ?
+                    slot.infix : ''
+                );
+            });
+        }
+        return slots;
+    case 'collapses':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => slots.add(value[6]));
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                slots.add(slot instanceof MultiArgMorph ?
+                    slot.collapse : ''
+                );
+            });
+        }
+        return slots;
+    case 'expands':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => {
+                data = (value[7] || '').split('\n').map(each =>
+                    each.trim()).filter(each =>
+                        each.length);
+                slots.add(data.length > 1 ? new List(data) : data[0]);
+            });
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                if (slot instanceof MultiArgMorph) {
+                    data = slot.labelText instanceof Array ?
+                        new List(slot.labelText.map(item =>
+                            item.replaceAll('\n', ' ')))
+                        : (slot.labelText || '').replaceAll('\n', ' ');
+                    slots.add(data);
+                } else {
+                    slots.add('');
+                }
+            });
+        }
+        return slots;
+    case 'initial slots':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => slots.add(+value[8] || 0));
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                slots.add(slot instanceof MultiArgMorph ?
+                    slot.initialSlots : ''
+                );
+            });
+        }
+        return slots;
+    case 'min slots':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => slots.add(+value[9] || 0));
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                slots.add(slot instanceof MultiArgMorph ?
+                    +slot.minInputs : ''
+                );
+            });
+        }
+        return slots;
+    case 'max slots':
+        slots = new List();
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            def.declarations.forEach(value => slots.add(+value[10] || 0));
+        } else {
+            expr.inputs().forEach(slot => {
+                if (slot instanceof ReporterBlockMorph) {
+                    slot = SyntaxElementMorph.prototype.labelPart(
+                        slot.getSlotSpec()
+                    );
+                }
+                slots.add(slot instanceof MultiArgMorph ?
+                    +slot.maxInputs || 0 : ''
+                );
+            });
+        }
+        return slots;
+    case 'translations':
+        if (expr.isCustomBlock) {
+            def = (expr.isGlobal ?
+                expr.definition
+                : this.blockReceiver().getMethod(expr.semanticSpec));
+            loc = new List();
+            Object.keys(def.translations).forEach(lang =>
+                loc.add(new List([lang, def.translations[lang]]))
+            );
+            return loc;
+        }
+        return new List();
+    }
+    return '';
+};
+
+Process.prototype.slotType = function (spec) {
+    // answer a number indicating the shape of a slot represented by its spec.
+    // Note: you can also use it to translate mnemonics into slot type numbers
+    if (spec instanceof Array) {
+        // first check for a bunch of special cases
+        if (spec[0] === '%rcv') {
+            return 16;
+        } else if (spec[0] === '%msgSend') {
+            return 17;
+        } else if (spec[0] === '%b') {
+            return 18;
+        }
+        return new List(spec.map(each => this.slotType(each)));
+    }
+
+    var shift = 0,
+        key = spec.toLowerCase(),
+        num;
+
+    if (spec.startsWith('%')) {
+        key = spec.slice(1).toLowerCase();
+        if (key.startsWith('mult')) {
+            shift = 100;
+            key = key.slice(5);
+            if (key === 't') {
+                shift = 0;
+                key = 'variables';
+            }
+        }
+    } else if (spec.endsWith('...')) {
+        shift = 100;
+        key = spec.slice(0, -3).toLowerCase();
+    }
+
+    num =  {
+        '0':            0,
+        's':            0, // spec
+        // mnemonics:
+        ' ':            0,
+        '_':            0,
+        'a':            0,
+        'any':          0,
+
+        '1':            1,
+        'n':            1, // spec
+        // mnemonics:
+        '#':            1,
+        'num':          1,
+        'number':       1,
+
+        '2':            2,
+        'b':            2, // spec
+        // mnemonics:
+        '?':            2,
+        'tf':           2,
+        'bool':         2,
+        'boolean':      2,
+
+        '3':            3,
+        'l':            3, // spec
+        // mnemonics:
+        ':':            3,
+        'lst':          3,
+        'list':         3,
+
+        '4':            4,
+        'txt':          4, // spec
+        'mlt':          4, // spec
+        'code':         4, // spec
+        // mnemonics:
+        'x':            4,
+        'text':         4,
+        'abc':          4,
+
+        '5':            5,
+        'c':            5, // spec
+        'cs':           5, // spec
+        // mnemonics:
+        'script':       5,
+        
+        '6':            6,
+        'cmdring':      6, // spec
+        // mnemonics:
+        'cmd':          6,
+        'command':      6,
+
+        '7':            7,
+        'repring':      7, // spec
+        // mnemonics:
+        'rep':          7,
+        'reporter':     7,
+
+        '8':            8,
+        'predring':     8, // spec
+        // mnemonics:
+        'pred':         8,
+        'predicate':    8,
+
+        '9':            9,
+        'anyue':        9, // spec
+        // mnemonics:
+        'unevaluated':  9,
+
+        '10':           10,
+        'boolue':       10, // spec
+        // mnemonics: none
+
+        '11':           11,
+        'obj':          11, // spec
+        // mnemonics:
+        'o':            11,
+        'object':       11,
+
+        '12':           12,
+        't':            12, // spec
+        'upvar':        12, // spec
+        // mnemonics:
+        'v':            12,
+        'var':          12,
+        'variable':     12,
+
+        '13':           13,
+        'clr':          13, // spec
+        // mnemonics:
+        'color':        13,
+
+        '14':           14,
+        'scriptvars':   14, // spec
+        // mnemonics:
+        'vars':         14,
+        'variables':    14,
+
+        '15':           15,
+        'ca':           15, // spec
+        'loop':         15, // spec
+
+        '16':           16,
+        'receive':      16, // spec
+        // mnemonics:
+        'receivers':    16,
+
+        '17':           17,
+        'send':         17, // spec
+
+        '18':           18,
+        'elseif':       18, // spec
+        // mnemonics:
+        'conditionals': 18
+
+    }[key];
+    if (num === undefined) {
+        return spec;
+    }
+    return shift + num;
+};
+
+Process.prototype.slotSpec = function (num) {
+    // answer a spec indicating the shape of a slot represented by a number
+    // or by a textual mnemomic
+    var prefix = '',
+        id = this.reportIsA(num, 'text') ? this.slotType(num) : +num,
+        spec;
+
+    if (id >= 100) {
+        prefix = '%mult';
+        id -= 100;
+    }
+
+    spec = ['s', 'n', 'b', 'l', 'mlt', 'cs', 'cmdRing', 'repRing', 'predRing',
+    'anyUE', 'boolUE', 'obj', 'upvar', 'clr', 'scriptVars', 'loop', 'receive',
+    'send', 'elseif'][id];
+
+    if (spec === undefined) {
+        return null;
+    }
+    if (spec === 'upvar' && id > 100) {
+        return null;
+    }
+    return prefix + '%' + spec;
+};
+
 // Process: Compile (as of yet simple) block scripts to JS
 
 /*

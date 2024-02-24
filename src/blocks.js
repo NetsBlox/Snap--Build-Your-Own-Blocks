@@ -2972,6 +2972,48 @@ BlockMorph.prototype.rebuild = function (contrast) {
     }
 };
 
+BlockMorph.prototype.abstractBlockSpec = function () {
+	// answer the semantic block spec substituting each input
+ 	// with an underscore. Used as "name" of the Block.
+    return this.parseSpec(this.blockSpec).map(str =>
+        str === '%br' ? '$nl' : (str.length > 1 && (str[0]) === '%') ? '_' : str
+    ).join(' ');
+};
+
+BlockMorph.prototype.localizeBlockSpec = function (spec) {
+    // answer the translated block spec where the translation itself
+    // is in the form of an abstract spec, i.e. with padded underscores
+    // in place for percent-sign prefixed slot specs.
+    var prefixes = ['%', '$'],
+        slotSpecs = [],
+        slotCount = -1,
+        abstractSpec,
+        translation;
+
+    abstractSpec = this.parseSpec(spec).map(str => {
+        if (str.length > 1 && prefixes.includes(str[0])) {
+            slotSpecs.push(str);
+            return '_';
+        }
+        return str;
+    }).join(' ');
+
+    // make sure to also remove any explicit slot specs from the translation
+    translation = this.parseSpec(localize(abstractSpec)).map(str =>
+        (str.length > 1 && prefixes.includes(str[0])) ? '_' : str
+    ).join(' ');
+
+    // replace abstract slot placeholders in the translation with their
+    // concrete specs from the original block spec
+    return translation.split(' ').map(word => {
+        if (word === '_') {
+            slotCount += 1;
+            return slotSpecs[slotCount] || '';
+        }
+        return word;
+    }).join(' ');
+};
+
 // BlockMorph menu:
 
 BlockMorph.prototype.userMenu = function () {
