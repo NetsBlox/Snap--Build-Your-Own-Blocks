@@ -3725,7 +3725,7 @@ IDE_Morph.prototype.loadExtension = async function (url) {
 };
 
 IDE_Morph.prototype.isTrustedExtension = async function (url) {
-    const trustedLit = [ '/', window.location.origin];
+    const trustedLit = ['/', 'https://netsblox.github.io/', window.location.origin];
     const trustedPat = [/^https?:\/\/([a-zA-Z0-9\-]+\.)*netsblox.org/];
     const isAutoTrusted = trustedLit.some(lit => url.startsWith(lit)) || trustedPat.some(pat => !!url.match(pat));
     if (isAutoTrusted) {
