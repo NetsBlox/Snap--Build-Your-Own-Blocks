@@ -4486,6 +4486,14 @@ SpriteMorph.prototype.getPenAttribute = function (attrib) {
     if (name === 'size') {
         return this.size || 0;
     }
+    if (name === 'r-g-b-a') {
+        return new List([
+            this.color.r,
+            this.color.g,
+            this.color.b,
+            Math.round(this.color.a * 255)
+        ]);
+    }
     return this.getColorComponentHSLA(options.indexOf(name));
 };
 
