@@ -2510,6 +2510,11 @@ IDE_Morph.prototype.refreshIDE = function () {
         SnapUndo.reset();
         this.openProjectString(projectData);
     }
+
+    // Show extensions button if extensions are loaded
+    if (NetsBloxExtensions && NetsBloxExtensions.registry.length > 0) {
+        this.controlBar.extensionsButton.show();
+    }
 };
 
 // IDE_Morph settings persistence
