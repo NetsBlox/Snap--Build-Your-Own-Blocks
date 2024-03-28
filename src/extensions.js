@@ -212,6 +212,16 @@
                 receivers.forEach(Rcvr => Rcvr.prototype[block.name] = block.impl);
             });
         }
+
+
+        getUserMenu(target, menu, proc) {
+            const userMenu = this.registry.flatMap(ext => ext.getUserMenu(target, proc));
+
+            if (userMenu.length > 0) {
+                menu.addLine();   
+                userMenu.forEach(item => menu.addItem(item[0], item[1]));
+            }
+        }
     }
 
     function Extension (name) {
@@ -239,6 +249,10 @@
     };
 
     Extension.prototype.getLabelParts = function() {
+        return [];
+    };
+
+    Extension.prototype.getUserMenu = function(target, proc) {
         return [];
     };
 

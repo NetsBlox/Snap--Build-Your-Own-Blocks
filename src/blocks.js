@@ -3330,6 +3330,11 @@ BlockMorph.prototype.userMenu = function () {
             'mapToCode'
         );
     }
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu, proc);
+    }
+
     return menu;
 };
 
