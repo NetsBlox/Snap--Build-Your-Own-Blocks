@@ -9014,6 +9014,11 @@ CostumeIconMorph.prototype.userMenu = function () {
     menu.addItem("delete", "removeCostume");
     menu.addLine();
     menu.addItem("export", "exportCostume");
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu, null);
+    }
+
     return menu;
 };
 
@@ -9716,6 +9721,11 @@ SoundIconMorph.prototype.userMenu = function () {
     menu.addItem('delete', 'removeSound');
     menu.addLine();
     menu.addItem('export', 'exportSound');
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu, null);
+    }
+    
     return menu;
 };
 
