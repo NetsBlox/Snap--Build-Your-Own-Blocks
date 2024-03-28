@@ -213,12 +213,14 @@
             });
         }
 
-
         getUserMenu(target, menu, proc) {
             const userMenu = this.registry.flatMap(ext => ext.getUserMenu(target, proc));
 
             if (userMenu.length > 0) {
-                menu.addLine();   
+                if(menu.items.length > 0){
+                    menu.addLine();   
+                }
+                
                 userMenu.forEach(item => menu.addItem(item[0], item[1]));
             }
         }

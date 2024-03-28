@@ -3075,6 +3075,11 @@ BlockMorph.prototype.userMenu = function () {
                 );
             }
         }
+
+        if (NetsBloxExtensions) {
+            NetsBloxExtensions.getUserMenu(this, menu, proc);
+        }
+        
         return menu;
     }
     menu.addLine();
@@ -3280,6 +3285,11 @@ BlockMorph.prototype.userMenu = function () {
                 );
             }
         });
+
+        if (NetsBloxExtensions) {
+            NetsBloxExtensions.getUserMenu(this, menu, proc);
+        }
+
         return menu;
     }
     if (this.parent.parentThatIsA(RingMorph)) {
@@ -3294,6 +3304,11 @@ BlockMorph.prototype.userMenu = function () {
                 SnapActions.ringify(this);
             });
         }
+
+        if (NetsBloxExtensions) {
+            NetsBloxExtensions.getUserMenu(this, menu, proc);
+        }
+
         return menu;
     }
     if (contains(
@@ -3313,6 +3328,12 @@ BlockMorph.prototype.userMenu = function () {
             || (this instanceof HatBlockMorph)
             || (this instanceof CommandBlockMorph
                 && (top instanceof HatBlockMorph))) {
+
+
+        if (NetsBloxExtensions) {
+            NetsBloxExtensions.getUserMenu(this, menu, proc);
+        }
+
         return menu;
     }
     menu.addLine();
@@ -7428,6 +7449,11 @@ ScriptsMorph.prototype.userMenu = function () {
             )
         );
     }
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu, null);
+    }
+
     return menu;
 };
 
