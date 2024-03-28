@@ -213,14 +213,14 @@
             });
         }
 
-        getUserMenu(target, menu, proc) {
-            const userMenu = this.registry.flatMap(ext => ext.getUserMenu(target, proc));
+        getUserMenu(target, menu) {
+            const userMenu = this.registry.flatMap(ext => ext.getUserMenu(target));
 
             if (userMenu.length > 0) {
                 if(menu.items.length > 0){
                     menu.addLine();   
                 }
-                
+
                 userMenu.forEach(item => menu.addItem(item[0], item[1]));
             }
         }
@@ -254,7 +254,7 @@
         return [];
     };
 
-    Extension.prototype.getUserMenu = function(target, proc) {
+    Extension.prototype.getUserMenu = function(target) {
         return [];
     };
 

@@ -3077,9 +3077,9 @@ BlockMorph.prototype.userMenu = function () {
         }
 
         if (NetsBloxExtensions) {
-            NetsBloxExtensions.getUserMenu(this, menu, proc);
+            NetsBloxExtensions.getUserMenu(this, menu);
         }
-        
+
         return menu;
     }
     menu.addLine();
@@ -3287,7 +3287,7 @@ BlockMorph.prototype.userMenu = function () {
         });
 
         if (NetsBloxExtensions) {
-            NetsBloxExtensions.getUserMenu(this, menu, proc);
+            NetsBloxExtensions.getUserMenu(this, menu);
         }
 
         return menu;
@@ -3306,7 +3306,7 @@ BlockMorph.prototype.userMenu = function () {
         }
 
         if (NetsBloxExtensions) {
-            NetsBloxExtensions.getUserMenu(this, menu, proc);
+            NetsBloxExtensions.getUserMenu(this, menu);
         }
 
         return menu;
@@ -3331,7 +3331,7 @@ BlockMorph.prototype.userMenu = function () {
 
 
         if (NetsBloxExtensions) {
-            NetsBloxExtensions.getUserMenu(this, menu, proc);
+            NetsBloxExtensions.getUserMenu(this, menu);
         }
 
         return menu;
@@ -3353,7 +3353,7 @@ BlockMorph.prototype.userMenu = function () {
     }
 
     if (NetsBloxExtensions) {
-        NetsBloxExtensions.getUserMenu(this, menu, proc);
+        NetsBloxExtensions.getUserMenu(this, menu);
     }
 
     return menu;
@@ -7451,7 +7451,7 @@ ScriptsMorph.prototype.userMenu = function () {
     }
 
     if (NetsBloxExtensions) {
-        NetsBloxExtensions.getUserMenu(this, menu, null);
+        NetsBloxExtensions.getUserMenu(this, menu);
     }
 
     return menu;

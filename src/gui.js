@@ -1929,7 +1929,7 @@ IDE_Morph.prototype.createCorral = function () {
         }
 
         if (NetsBloxExtensions) {
-            NetsBloxExtensions.getUserMenu(this, menu, null);
+            NetsBloxExtensions.getUserMenu(this, menu);
         }
 
         return menu;
@@ -8630,7 +8630,7 @@ SpriteIconMorph.prototype.userMenu = function () {
         }
 
         if (NetsBloxExtensions) {
-            NetsBloxExtensions.getUserMenu(this, menu, null);
+            NetsBloxExtensions.getUserMenu(this, menu);
         }
 
         return menu;
@@ -8686,7 +8686,7 @@ SpriteIconMorph.prototype.userMenu = function () {
     menu.addItem("export...", 'exportSprite');
 
     if (NetsBloxExtensions) {
-        NetsBloxExtensions.getUserMenu(this, menu, null);
+        NetsBloxExtensions.getUserMenu(this, menu);
     }
 
     return menu;
@@ -9016,7 +9016,7 @@ CostumeIconMorph.prototype.userMenu = function () {
     menu.addItem("export", "exportCostume");
 
     if (NetsBloxExtensions) {
-        NetsBloxExtensions.getUserMenu(this, menu, null);
+        NetsBloxExtensions.getUserMenu(this, menu);
     }
 
     return menu;
@@ -9723,9 +9723,9 @@ SoundIconMorph.prototype.userMenu = function () {
     menu.addItem('export', 'exportSound');
 
     if (NetsBloxExtensions) {
-        NetsBloxExtensions.getUserMenu(this, menu, null);
+        NetsBloxExtensions.getUserMenu(this, menu);
     }
-    
+
     return menu;
 };
 

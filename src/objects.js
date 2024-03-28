@@ -3155,7 +3155,7 @@ SpriteMorph.prototype.freshPalette = function (category) {
         }
 
         if (NetsBloxExtensions) {
-            NetsBloxExtensions.getUserMenu(this, menu, null);
+            NetsBloxExtensions.getUserMenu(this, menu);
         }
 
         return menu;
@@ -4139,7 +4139,7 @@ SpriteMorph.prototype.userMenu = function () {
     menu.addItem("export...", 'exportSprite');
 
     if (NetsBloxExtensions) {
-        NetsBloxExtensions.getUserMenu(this, menu, null);
+        NetsBloxExtensions.getUserMenu(this, menu);
     }
 
     return menu;
@@ -9275,7 +9275,7 @@ StageMorph.prototype.userMenu = function () {
     }
 
     if (NetsBloxExtensions) {
-        NetsBloxExtensions.getUserMenu(this, menu, null);
+        NetsBloxExtensions.getUserMenu(this, menu);
     }
 
     return menu;
