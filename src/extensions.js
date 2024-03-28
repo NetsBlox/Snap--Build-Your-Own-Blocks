@@ -19,6 +19,18 @@
         }
 
         load(Extension) {
+            // First, check if the extension is supported
+            const supported = Extension.prototype.isSupported();
+            if (supported !== true) {
+                if(typeof supported === 'string'){
+                    this.ide.showMessage(`Unable to load extension: ${supported}`);
+                } else {
+                    this.ide.showMessage(`Unable to load extension.`);
+                }
+                
+                return;
+            }
+
             const extension = new Extension(this.ide);  // TODO: Replace the IDE with an official API?
             if (this.isLoaded(extension.name)) {
                 return;
@@ -255,6 +267,10 @@
             }
         });
     }
+
+    Extension.prototype.isSupported = function() {
+        return true;
+    };
 
     class ExtensionSetting {
         constructor(label, toggle, test, onHint = '', offHint = '', hide = false) {
