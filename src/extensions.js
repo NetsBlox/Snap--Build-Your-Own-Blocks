@@ -318,7 +318,7 @@
     }
 
     class CustomBlock {
-        constructor(name, type, category, spec, defaults=[], impl) {
+        constructor(name, type, category, spec, defaults=[], impl, help = null) {
             this.name = name;
             this.type = type;
             this.category = category;
@@ -326,7 +326,7 @@
             this.defaults = defaults;
             this.impl = impl;
             this.receivers = [];
-            this.help = null;
+            this.help = help;
         }
 
         help(info) {
