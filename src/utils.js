@@ -77,6 +77,7 @@ utils.getUrlSync = function(url, parser = x => x) {
     url = ensureFullUrl(url);
     var request = new XMLHttpRequest();
     request.open('GET', url, false);
+    request.withCredentials = true;
     request.send();
     if (request.status === 200) {
         return parser(request.responseText);
