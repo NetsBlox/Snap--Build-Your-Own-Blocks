@@ -19,6 +19,18 @@
         }
 
         load(Extension) {
+            // First, check if the extension is supported
+            const supported = Extension.prototype.isSupported();
+            if (supported !== true) {
+                if(typeof supported === 'string'){
+                    this.ide.showMessage(`Unable to load extension: ${supported}`);
+                } else {
+                    this.ide.showMessage(`Unable to load extension.`);
+                }
+                
+                return;
+            }
+
             const extension = new Extension(this.ide);  // TODO: Replace the IDE with an official API?
             if (this.isLoaded(extension.name)) {
                 return;
@@ -200,6 +212,18 @@
                 receivers.forEach(Rcvr => Rcvr.prototype[block.name] = block.impl);
             });
         }
+
+        getUserMenu(target, menu) {
+            const userMenu = this.registry.flatMap(ext => ext.getUserMenu(target));
+
+            if (userMenu.length > 0) {
+                if(menu.items.length > 0){
+                    menu.addLine();   
+                }
+
+                userMenu.forEach(item => menu.addItem(item[0], item[1]));
+            }
+        }
     }
 
     function Extension (name) {
@@ -230,6 +254,10 @@
         return [];
     };
 
+    Extension.prototype.getUserMenu = function(target) {
+        return [];
+    };
+
     Extension.prototype.onRunScripts =
     Extension.prototype.onStopAllScripts =
     Extension.prototype.onPauseAll =
@@ -255,6 +283,10 @@
             }
         });
     }
+
+    Extension.prototype.isSupported = function() {
+        return true;
+    };
 
     class ExtensionSetting {
         constructor(label, toggle, test, onHint = '', offHint = '', hide = false) {
@@ -302,7 +334,7 @@
     }
 
     class CustomBlock {
-        constructor(name, type, category, spec, defaults=[], impl) {
+        constructor(name, type, category, spec, defaults=[], impl, help = null) {
             this.name = name;
             this.type = type;
             this.category = category;
@@ -310,7 +342,7 @@
             this.defaults = defaults;
             this.impl = impl;
             this.receivers = [];
-            this.help = null;
+            this.help = help;
         }
 
         help(info) {

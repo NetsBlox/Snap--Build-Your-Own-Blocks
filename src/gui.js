@@ -1927,6 +1927,11 @@ IDE_Morph.prototype.createCorral = function () {
                 }
             );
         }
+
+        if (NetsBloxExtensions) {
+            NetsBloxExtensions.getUserMenu(this, menu);
+        }
+
         return menu;
     };
     if (this.isAppMode) this.corral.hide();
@@ -8623,6 +8628,11 @@ SpriteIconMorph.prototype.userMenu = function () {
                 'export pen trails\nline segments as SVG'
             );
         }
+
+        if (NetsBloxExtensions) {
+            NetsBloxExtensions.getUserMenu(this, menu);
+        }
+
         return menu;
     }
     if (!(this.object instanceof SpriteMorph)) {return null; }
@@ -8674,6 +8684,11 @@ SpriteIconMorph.prototype.userMenu = function () {
         );
     }
     menu.addItem("export...", 'exportSprite');
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu);
+    }
+
     return menu;
 };
 
@@ -8999,6 +9014,11 @@ CostumeIconMorph.prototype.userMenu = function () {
     menu.addItem("delete", "removeCostume");
     menu.addLine();
     menu.addItem("export", "exportCostume");
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu);
+    }
+
     return menu;
 };
 
@@ -9701,6 +9721,11 @@ SoundIconMorph.prototype.userMenu = function () {
     menu.addItem('delete', 'removeSound');
     menu.addLine();
     menu.addItem('export', 'exportSound');
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu);
+    }
+
     return menu;
 };
 

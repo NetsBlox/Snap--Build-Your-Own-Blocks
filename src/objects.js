@@ -3153,6 +3153,11 @@ SpriteMorph.prototype.freshPalette = function (category) {
                     SnapUndo.undo('palette');
                 });
         }
+
+        if (NetsBloxExtensions) {
+            NetsBloxExtensions.getUserMenu(this, menu);
+        }
+
         return menu;
     };
 
@@ -4132,6 +4137,11 @@ SpriteMorph.prototype.userMenu = function () {
         });
     }
     menu.addItem("export...", 'exportSprite');
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu);
+    }
+
     return menu;
 };
 
@@ -9263,6 +9273,11 @@ StageMorph.prototype.userMenu = function () {
             'export pen trails\nline segments as SVG'
         );
     }
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu);
+    }
+
     return menu;
 };
 
