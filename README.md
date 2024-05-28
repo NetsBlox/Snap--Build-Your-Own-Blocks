@@ -1,4 +1,3 @@
-
 NetsBlox (client source code)
 
 https://netsblox.org
@@ -8,6 +7,7 @@ An extension of Snap providing networking capabilities, collaborative editing an
 For a deployment ready version of NetsBlox, check out the [main repo](https://github.com/netsblox/netsblox).
 
 ## Quick Start
+
 If you need to make changes only to the client side of netsblox if it is a change that is generic and everyone could benefit from [fork us and make a pull request](https://github.com/NetsBlox/Snap--Build-Your-Own-Blocks/pulls).
 Otherwise, you can always host the NetsBlox client and point it to our server. This way you can still:
 1. communicate with other users on main NetsBlox server
@@ -49,11 +49,13 @@ Afterwards, to create the release files, run the following commands.
 Despite the name, `minify.js` will automatically build required files before minifying them.
 
 ```
-cd utils
-node minify.js
+node utils/minify.js
 ```
 
+You can then commit the updated files in `dist/` and open a PR.
+
 ## Contact
+
 For questions about netsblox, feel free to make an issue or reach out to:
 - Akos Ledeczi at akos.ledeczi@vanderbilt.edu
 - Hamid Zare at hamid.zare@vanderbilt.edu
