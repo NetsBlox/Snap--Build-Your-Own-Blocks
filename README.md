@@ -15,20 +15,42 @@ Otherwise, you can always host the NetsBlox client and point it to our server. T
 3. have access to all the services already available and configured on NetsBlox.
 
 To host your own client files, first install dependencies:
+
 ```
-cd utils/  
-npm install
+cd utils
+npm i
+cd -
 ```
-Next, the cloud client needs to be built:
+
+Next, the cloud client needs to be (optionally updated via git and) built:
+
 ```
 cd src/cloud
-npm install
+npm i
 npm run build
+cd -
 ```
 
 Then return to the project root and start the file server with
 ```
 node utils/serve.js
+```
+
+## New Releases
+
+To create a new release, first begin by performing the setup steps in the previous section.
+You will also need to install `google-closure-compiler` globally.
+
+```
+npm i -g google-closure-compiler
+```
+
+Afterwards, to create the release files, run the following commands.
+Despite the name, `minify.js` will automatically build required files before minifying them.
+
+```
+cd utils
+node minify.js
 ```
 
 ## Contact
