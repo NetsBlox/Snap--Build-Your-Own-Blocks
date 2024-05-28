@@ -69,7 +69,7 @@ async function minifyJS() {
   }, unlinkFile(srcPath));
   try {
     await execFile(
-      "closure-compiler",
+      "google-closure-compiler",
       ["--js", srcPath, "--js_output_file", minPath],
     );
   } catch (err) {
