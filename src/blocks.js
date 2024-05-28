@@ -2886,27 +2886,6 @@ BlockMorph.prototype.userSetSpec = function (spec) {
     tb.fullChanged();
 };
 
-BlockMorph.prototype.buildSpec = function () {
-    // WARNING: this whole function seems to be the cause of the shadow smear and [undefined] bugs.
-
-    // create my blockSpec from my parts - for demo purposes only
-    // this.blockSpec = '';
-    // this.parts().forEach(part => {
-    //     if (part instanceof StringMorph) {
-    //         this.blockSpec += part.text;
-    //     } else if (part instanceof ArgMorph) {
-    //         this.blockSpec += part.getSpec();
-    //     } else if (part.isBlockLabelBreak) {
-    //         this.blockSpec += part.getSpec();
-    //     } else {
-    //         this.blockSpec += '[unknown]';
-    //     }
-    //     this.blockSpec += ' ';
-    //     console.log(this.blockSpec);
-    // });
-    // this.blockSpec = this.blockSpec.trim();
-};
-
 BlockMorph.prototype.rebuild = function (contrast) {
     // rebuild my label fragments, for use in ToggleElementMorphs
     this.setSpec(this.blockSpec);
@@ -4954,7 +4933,6 @@ BlockMorph.prototype.reactToDropOf = function (droppedMorph) {
     droppedMorph.isDraggable = false;
     droppedMorph.fixLayout();
     this.fixLayout();
-    this.buildSpec();
 };
 
 BlockMorph.prototype.situation = function () {
