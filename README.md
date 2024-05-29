@@ -45,7 +45,9 @@ You will also need to install `google-closure-compiler` globally.
 npm i -g google-closure-compiler
 ```
 
-Afterwards, to create the release files, run the following commands.
+Afterwards, you will need to update the NetsBlox version numbers in `index.dot` and `src/store-ext.js` to the soon-to-be-released version.
+
+Next, to create the release files, run the following command.
 Despite the name, `minify.js` will automatically build required files before minifying them.
 
 ```
@@ -53,6 +55,8 @@ node utils/minify.js
 ```
 
 You can then commit the updated files in `dist/` and open a PR.
+After merging, you can create a new release on github, which will automatically publish a new dockerhub version.
+Afterwards, simply pull and restart browser in the NetsBlox server.
 
 ## Contact
 
