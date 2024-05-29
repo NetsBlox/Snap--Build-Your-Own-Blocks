@@ -2524,7 +2524,7 @@ Process.prototype.doForEach = function (upvar, list, script) {
     this.pushContext();
     this.context.outerContext.variables.addVar(upvar);
     this.context.outerContext.variables.setVar(upvar, next);
-    this.evaluate(script, new List([]), true);  // pass [] for args to disable auto-filling default (RPC) args
+    this.evaluate(script, new List([]), true);  // pass [] for args to disable auto-filling slots
 };
 
 Process.prototype.doFor = function (upvar, start, end, script) {
@@ -2553,7 +2553,7 @@ Process.prototype.doFor = function (upvar, start, end, script) {
     if (dta.test()) {return; }
     this.pushContext('doYield');
     this.pushContext();
-    this.evaluate(script, dta.parms, true);
+    this.evaluate(script, new List([]), true); // pass [] for args to disable auto-filling slots
 };
 
 // Process interpolated HOF primitives
