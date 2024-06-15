@@ -5388,17 +5388,11 @@ CommandBlockMorph.prototype.prepareToBeGrabbed = function (handMorph) {
 };
 
 CommandBlockMorph.prototype.isStop = function () {
-    var choice;
     if (this.selector === 'doStopThis') { // this could be cached...
-        choice = this.inputs()[0].evaluate();
+        const choice = this.inputs()[0].evaluate();
         return choice instanceof Array && choice[0].length < 12;
     }
-    return ([
-        'doForever',
-        'doReport',
-        'removeClone',
-        'doThrow',
-    ].indexOf(this.selector) > -1);
+    return SpriteMorph.prototype.blocks[this.selector]?.terminal === true;
 };
 
 // CommandBlockMorph deleting

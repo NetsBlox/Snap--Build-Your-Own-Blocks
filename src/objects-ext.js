@@ -157,6 +157,7 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'command',
         category: 'control',
         spec: 'error %s',
+        terminal: true
     };
 
     if (NetsBloxExtensions) {

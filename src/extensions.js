@@ -196,6 +196,7 @@
                     spec: block.spec,
                     defaults: block.defaults,
                     help: block.help,
+                    terminal: block.isTerminal,
                 };
                 const receivers = this.findWatcherReceivers(palettes, block.name);
                 receivers.forEach(rcvr => {
@@ -343,10 +344,16 @@
             this.impl = impl;
             this.receivers = [];
             this.help = help;
+            this.isTerminal = false;
         }
 
         help(info) {
             this.help = info;
+            return this;
+        }
+
+        terminal() {
+            this.isTerminal = true;
             return this;
         }
 
@@ -357,7 +364,7 @@
     }
 
     class Category {
-        constructor(name, color=new Color(120, 120, 120)) {
+        constructor(name, color = new Color(120, 120, 120)) {
             this.name = name;
             this.color = color;
         }

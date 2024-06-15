@@ -759,7 +759,8 @@ SpriteMorph.prototype.initBlocks = function () {
         doForever: {
             type: 'command',
             category: 'control',
-            spec: 'forever %loop'
+            spec: 'forever %loop',
+            terminal: true
         },
         doRepeat: {
             type: 'command',
@@ -817,7 +818,8 @@ SpriteMorph.prototype.initBlocks = function () {
         doReport: {
             type: 'command',
             category: 'control',
-            spec: 'report %s'
+            spec: 'report %s',
+            terminal: true
         },
         doCallCC: {
             type: 'command',
