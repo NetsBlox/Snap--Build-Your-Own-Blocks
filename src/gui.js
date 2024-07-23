@@ -123,6 +123,52 @@ function ensureFullUrl(url) {
     return url;
 }
 
+var SPEECH_RECOGNIZER = undefined;
+var SPEECH_RECOGNIZER_REQUESTS = [];
+var SPEECH_RECOGNIZER_RESULT = '';
+var SPEECH_RECOGNIZER_PROMPT = undefined;
+function getSpeechClass() {
+    return window.SpeechRecognition || window.webkitSpeechRecognition;
+}
+async function getSpeech() {
+    const SpeechRecognizer = getSpeechClass();
+    if (!SpeechRecognizer) {
+        throw Error('this browser does not support speech recognition');
+    }
+
+    if (!SPEECH_RECOGNIZER) {
+        SPEECH_RECOGNIZER = new SpeechRecognizer();
+
+        SPEECH_RECOGNIZER.continuous = false;
+        SPEECH_RECOGNIZER.lang = 'en-US';
+        SPEECH_RECOGNIZER.interimResults = false;
+        SPEECH_RECOGNIZER.maxAlternatives = 1;
+
+        SPEECH_RECOGNIZER.onstart = (e) => {
+            SPEECH_RECOGNIZER_RESULT = '';
+            SPEECH_RECOGNIZER_PROMPT = world.children[0].showMessage('Listening for speech');
+        };
+        SPEECH_RECOGNIZER.onresult = (e) => {
+            SPEECH_RECOGNIZER_RESULT = ((e.results || [])[0] || [])[0]?.transcript || '';
+        };
+        SPEECH_RECOGNIZER.onend = (e) => {
+            SPEECH_RECOGNIZER_PROMPT.destroy();
+            const requests = SPEECH_RECOGNIZER_REQUESTS;
+            SPEECH_RECOGNIZER_REQUESTS = [];
+            for (const req of requests) {
+                req(SPEECH_RECOGNIZER_RESULT);
+            }
+        };
+    }
+
+    return await new Promise((resolve, reject) => {
+        SPEECH_RECOGNIZER_REQUESTS.push(resolve);
+        try {
+            SPEECH_RECOGNIZER.start();
+        } catch (e) {}
+    });
+}
+
 // IDE_Morph ///////////////////////////////////////////////////////////
 
 // I am SNAP's top-level frame, the Editor window
@@ -1268,23 +1314,32 @@ IDE_Morph.prototype.createPalette = function (forSearching) {
             this.currentSprite.sliderColor
         );
 
-        // search toolbar (floating cancel button):
-        /* commented out for now
-        this.palette.toolBar = new PushButtonMorph(
-            this,
-            () => {
-                this.refreshPalette();
-                this.palette.adjustScrollBars();
-            },
-            new SymbolMorph("magnifierOutline", 16)
-        );
-        this.palette.toolBar.alpha = 0.2;
-        this.palette.toolBar.padding = 1;
-        // this.palette.toolBar.hint = 'Cancel';
-        this.palette.toolBar.labelShadowColor = new Color(140, 140, 140);
-        this.palette.toolBar.fixLayout();
-        this.palette.add(this.palette.toolBar);
-	    */
+        if (getSpeechClass()) { // if speech recognition is supported
+            this.palette.toolBar = new PushButtonMorph(
+                this,
+                async () => {
+                    try {
+                        const search = await getSpeech();
+                        if (search !== '') {
+                            world.children[0].currentSprite.searchBlocks(search);
+                            if (this.palette.accept) {
+                                this.palette.accept();
+                            }
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert('speech recognition is not supported in this browser');
+                    }
+                },
+                new SymbolMorph("speechBubbleOutline", 16)
+            );
+            this.palette.toolBar.alpha = 0.2;
+            this.palette.toolBar.padding = 1;
+            this.palette.toolBar.hint = 'Voice Search';
+            this.palette.toolBar.labelShadowColor = new Color(140, 140, 140);
+            this.palette.toolBar.fixLayout();
+            this.palette.add(this.palette.toolBar);
+        }
     } else {
         this.palette = this.currentSprite.palette(this.currentCategory);
     }
