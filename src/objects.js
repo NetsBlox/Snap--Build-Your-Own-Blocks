@@ -3455,7 +3455,7 @@ SpriteMorph.prototype.searchBlocks = function (
     searchPane.color = this.paletteColor;
     searchPane.contents.color = this.paletteColor;
     searchPane.addContents(searchBar);
-    searchBar.setWidth(ide.logo.width() - 30);
+    searchBar.setWidth(ide.logo.width() - 40);
     searchBar.contrast = 90;
     searchBar.setPosition(
         searchPane.contents.topLeft().add(new Point(10, 10))
