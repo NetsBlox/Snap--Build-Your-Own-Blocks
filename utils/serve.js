@@ -60,9 +60,14 @@ const server = http.createServer(async (req, res) => {
     // dynamically generate the index.html file
     const query = Object.fromEntries(
       queryString.split("&").map((chunk) => {
-        const [key, value] = chunk.split("=");
-        return [key, decodeURIComponent(value)];
-      }),
+        try {
+          const [key, value] = chunk.split("=");
+          return [key, decodeURIComponent(value)];
+        } catch (e) {
+          console.log('malformed url param: ${chunk}');
+          return undefined;
+        }
+      }).filter(x => !!x),
     );
     const cloudUrl = query.cloud || CLOUD_URL;
 
@@ -154,7 +159,9 @@ function readFrom(text, substring) {
 function addScraperSettings(userAgent, metaInfo) {
   // fix the aspect ratio for facebook
   if (userAgent.includes("facebookexternalhit") || userAgent === "Facebot") {
-    metaInfo.image.url += "?aspectRatio=1.91";
+    if (metaInfo?.image?.url) {
+      metaInfo.image.url += "?aspectRatio=1.91";
+    }
   }
 }
 
