@@ -60,8 +60,8 @@ const server = http.createServer(async (req, res) => {
     // dynamically generate the index.html file
     const query = Object.fromEntries(
       queryString.split("&").map((chunk) => {
-        const [key, value] = chunk.split("=");
         try {
+          const [key, value] = chunk.split("=");
           return [key, decodeURIComponent(value)];
         } catch (e) {
           console.log('malformed url param: ${chunk}');
