@@ -3694,6 +3694,13 @@ IDE_Morph.prototype.settingsMenu = function () {
     );
     menu.addLine(); // everything below this line is stored in the project
     addPreference(
+        'Hard RPC Errors',
+        () => stage.hardRPCErrors = !stage.hardRPCErrors,
+        this.stage.hardRPCErrors,
+        'uncheck to use soft errors (error block)',
+        'check to use hard errors (exceptions)'
+    );
+    addPreference(
         'Thread safe scripts',
         () => stage.isThreadSafe = !stage.isThreadSafe,
         this.stage.isThreadSafe,

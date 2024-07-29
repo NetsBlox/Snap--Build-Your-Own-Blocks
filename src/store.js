@@ -641,6 +641,8 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode, remixID) {
         model.stage.attributes.hyperops !== 'false';
     project.stage.isThreadSafe =
         model.stage.attributes.threadsafe === 'true';
+    project.stage.hardRPCErrors =
+        model.stage.attributes.hardrpcerrors === 'true';
     StageMorph.prototype.enableCodeMapping =
         model.stage.attributes.codify === 'true';
     StageMorph.prototype.enableInheritance =
@@ -2113,7 +2115,7 @@ StageMorph.prototype.toXML = function (serializer) {
             '<notes>$</notes>' +
             '<thumbnail>$</thumbnail>' +
             '<stage name="@" width="@" height="@" collabId="@" ' +
-            'costume="@" color="@,@,@,@" tempo="@" threadsafe="@" ' +
+            'costume="@" color="@,@,@,@" tempo="@" threadsafe="@" hardrpcerrors="@" ' +
             'penlog="@" ' +
             '%' +
             'volume="@" ' +
@@ -2159,6 +2161,7 @@ StageMorph.prototype.toXML = function (serializer) {
         this.color.a,
         this.getTempo(),
         this.isThreadSafe,
+        this.hardRPCErrors,
         this.enablePenLogging,
         this.instrument ?
                 ' instrument="' + parseInt(this.instrument) + '" ' : '',
@@ -2236,7 +2239,7 @@ StageMorph.prototype.toPortableXML = function (serializer, mediaID) {
             '<notes>$</notes>' +
             '<thumbnail>$</thumbnail>' +
             '<stage name="@" width="@" height="@" collabId="@" ' +
-            'costume="@" tempo="@" threadsafe="@" ' +
+            'costume="@" tempo="@" threadsafe="@" hardrpcerrors="@" ' +
             'lines="@" ' +
             'codify="@" ' +
             'inheritance="@" ' +
@@ -2271,6 +2274,7 @@ StageMorph.prototype.toPortableXML = function (serializer, mediaID) {
         this.getCostumeIdx(),
         this.getTempo(),
         this.isThreadSafe,
+        this.hardRPCErrors,
         SpriteMorph.prototype.useFlatLineEnds ? 'flat' : 'round',
         this.enableCodeMapping,
         this.enableInheritance,

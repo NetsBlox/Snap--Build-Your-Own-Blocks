@@ -7764,6 +7764,7 @@ StageMorph.prototype.init = function (globals) {
     this.trailsCanvas = null;
     this.trailsLog = []; // each line being [p1, p2, color, width, cap]
     this.isThreadSafe = false;
+    this.hardRPCErrors = false;
 
     this.microphone = new Microphone(); // audio input, do not persist
 
