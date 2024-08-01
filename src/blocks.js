@@ -7589,6 +7589,7 @@ ScriptsMorph.prototype.addToolbar = function () {
 
 ScriptsMorph.prototype.updateToolbar = function () {
     var sf = this.parentThatIsA(ScrollFrameMorph),
+        ide = this.parentThatIsA(IDE_Morph),
         changed = false,
         owner;
     if (!sf) {return; }
@@ -7598,6 +7599,14 @@ ScriptsMorph.prototype.updateToolbar = function () {
         sf.toolBar = this.addToolbar();
         sf.add(sf.toolBar);
         changed = true;
+    }
+    if (ide && ide.performerMode) {
+        if (!sf.toolBar.switchToStageButton) {
+            this.addSwitchToStageButton();
+        }
+        sf.toolBar.switchToStageButton.show();
+    } else if (sf.toolBar.toggleStageFocusButton) {
+        sf.toolBar.toggleStageFocusButton.destroy();
     }
     if (this.enableKeyboard) { // TODO: mark it as changed?
         sf.toolBar.keyboardButton.show();
@@ -7640,6 +7649,24 @@ ScriptsMorph.prototype.updateToolbar = function () {
     }
 
     sf.adjustToolBar();
+};
+
+ScriptsMorph.prototype.addSwitchToStageButton = function () {
+    var toolBar = this.parentThatIsA(ScrollFrameMorph).toolBar;
+    toolBar.switchToStageButton = new PushButtonMorph(
+        this, // target
+        "switchToStage",
+        new SymbolMorph('turtleOutline', 12)
+    );
+    toolBar.switchToStageButton.alpha = 0.2;
+    toolBar.switchToStageButton.padding = 4;
+    toolBar.switchToStageButton.edge = 0;
+    toolBar.switchToStageButton.hint =
+        'toggle focus between stage\nand scripting area';
+    toolBar.switchToStageButton.labelShadowColor =
+        toolBar.keyboardButton.labelShadowColor;
+    toolBar.switchToStageButton.fixLayout();
+    toolBar.add(toolBar.switchToStageButton);
 };
 
 ScriptsMorph.prototype.hideToolbar = function () {
@@ -7831,6 +7858,12 @@ ScriptsMorph.prototype.toggleKeyboardEntry = function () {
         target.focus.moveBy(new Point(50, 50));
     }
     target.focus.fixLayout();
+};
+
+ScriptsMorph.prototype.switchToStage = function () {
+    var ide = this.parentThatIsA(IDE_Morph);
+    this.parentThatIsA(ScrollFrameMorph).hide();
+    ide.stage.addSwitchToScriptsButton();
 };
 
 // ScriptsMorph context - scripts target

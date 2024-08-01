@@ -3087,6 +3087,27 @@ Node.prototype.parentThatIsAnyOf = function (constructors) {
     return this.parentThatIsA.apply(this, constructors);
 };
 
+Node.prototype.childThatIsA = function () {
+    // including myself
+    // Note: you can pass in multiple constructors to test for
+    var i, hit;
+    for (i = 0; i < arguments.length; i += 1) {
+        if (this instanceof arguments[i]) {
+            return this;
+        }
+    }
+    if (!this.children.length) {
+        return null;
+    }
+    for (i = 0; i < this.children.length; i += 1) {
+        hit = this.childThatIsA.apply(this.children[i], arguments);
+        if (hit) {
+            return hit;
+        }
+    }
+    return null;
+};
+
 // Morphs //////////////////////////////////////////////////////////////
 
 // Morph: referenced constructors

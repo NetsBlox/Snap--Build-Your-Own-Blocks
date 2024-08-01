@@ -495,12 +495,12 @@ Process.prototype.reportLongitude = function () {
 // TODO: I can probably move these next two to the Sprite/StageMorphs
 Process.prototype.reportStageWidth = function () {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-    return stage.dimensions.x;
+    return Math.round(stage.dimensions.x); // round for convenience with performer mode and int-based rpcs (e.g., google maps)
 };
 
 Process.prototype.reportStageHeight = function () {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-    return stage.dimensions.y;
+    return Math.round(stage.dimensions.y); // round for convenience with performer mode and int-based rpcs (e.g., google maps)
 };
 
 Process.prototype.reportImageOfObject = function (object) {
