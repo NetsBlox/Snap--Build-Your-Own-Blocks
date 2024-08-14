@@ -304,9 +304,9 @@
         return new ExtensionSetting(
             label,
             () => {
-                window.localStorage.setItem(id, !(window.localStorage.getItem(id) ?? defaultValue));
+                window.localStorage.setItem(id, !((window.localStorage.getItem(id) ?? defaultValue) == 'true'));
             },
-            () => window.localStorage.getItem(id) ?? defaultValue,
+            () => (window.localStorage.getItem(id) ?? defaultValue) == 'true',
             onHint, offHint, hide);
     }
 
