@@ -13565,7 +13565,7 @@ ReplayControls.prototype.getInverseEvent = function(event) {
  * @description - Creates and instance of an object representing a note in a musical work.
  * @param {Element} src - The contents of a <note> tag in a .musicxml file. 
  */
-function Note(src) {
+function XmlNote(src) {
     this.src = src;
 
     this.initPitch = function () {
@@ -13610,7 +13610,7 @@ function Part(src, name="untitled") {
     const xmlMeasures = this.src.getElementsByTagName("measure");
     for (let i = 0; i < xmlMeasures.length; ++i) {
         const xmlNotes = xmlMeasures[i].getElementsByTagName("note");
-        for (let j = 0; j < xmlNotes.length; ++j) this.notes.push(new Note(xmlNotes[j]));
+        for (let j = 0; j < xmlNotes.length; ++j) this.notes.push(new XmlNote(xmlNotes[j]));
     }
 }
 
