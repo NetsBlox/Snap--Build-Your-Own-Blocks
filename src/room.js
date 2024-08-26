@@ -2313,6 +2313,11 @@ InviteOccupantDialogMorph.prototype.buildContents = function() {
     this.createLabel();
 
     this.inviteButton = this.addButton(() => {
+        // easy hax to avoid inviting our own session
+        const ide = world.children[0];
+        ide.ignoringRoomInvites = true;
+        setTimeout(() => ide.ignoringRoomInvites = false, 1000);
+
         this.target.room.inviteOccupant(this.listField.selected, this.roleId);
         this.destroy();
     }, 'Invite');
