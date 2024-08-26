@@ -257,7 +257,7 @@ WebSocketManager.MessageHandlers = {
     'room-invitation': function(msg) {
         const {projectId, roleId, projectName, inviter} = msg;
         const isCurrentRole = projectId === this.ide.cloud.projectId && roleId === this.ide.cloud.roleId;
-        if (!isCurrentRole) {
+        if (!isCurrentRole && !this.ide.ignoringRoomInvites) {
             this.ide.room.promptInvite(projectId, roleId, projectName, inviter);
         }
     },
