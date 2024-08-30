@@ -159,7 +159,7 @@ SnapActions, SnapUndo, NetsBloxExtensions*/
 
 // Global stuff ////////////////////////////////////////////////////////
 
-modules.blocks = '2020-August-08';
+modules.blocks = '2021-November-27';
 
 /*
 var SyntaxElementMorph;
@@ -687,7 +687,7 @@ SyntaxElementMorph.prototype.labelParts = {
             back : ['back']
         }
     },
-    '%hsva': { // in most recent Snap!, this is renamed to %clrdim everywhere
+    '%clrdim': {
         type: 'input',
         tags: 'read-only static',
         menu: {

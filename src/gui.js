@@ -88,7 +88,7 @@ SnapUndo, ReplayControls */
 
 // Global stuff ////////////////////////////////////////////////////////
 
-modules.gui = '2020-August-08';
+modules.gui = '2021-November-27';
 
 // Declarations
 
