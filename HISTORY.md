@@ -5,6 +5,16 @@
     * show message senders and receivers from the blocks context menu, thanks, Bernat!
     * new "Database" library operating on localstore, thanks, Jadga!
 
+### 2021-11-08 (merged to NetsBlox on 2024-08-30)
+* added "r-g-b-a" option to dropdown menu of SET / CHANGE PEN command and PEN reporter 
+* blocks, threads: tweaked SET / CHANGE PEN dropdown option to "r-g-b(-a)"
+
+### 2021-11-26
+* blocks, treads, objects: added "r-g-b-a" option to dropdown menu of SET / CHANGE PEN command and PEN reporter 
+* objects: renamed some internal color methods
+* objects, store: renamed internal pen color channel cache
+* objects, blocks, threads: renamed internal pen accessor methods 
+
 ### 2020-08-08
 * blocks: changed "show senders/receivers" menu entry to "senders.../receivers..."
 * gui: tweaked SpriteIconMorph>>flash() for flat design mode

@@ -61,7 +61,9 @@ StageMorph, SpriteMorph, StagePrompterMorph, Note, modules, isString, copy, Map,
 isNil, WatcherMorph, List, ListWatcherMorph, alert, console, TableMorph, BLACK,
 TableFrameMorph, ColorSlotMorph, isSnapObject, newCanvas, Symbol, SVG_Costume*/
 
-modules.threads = '2020-August-05';
+/*jshint esversion: 6*/
+
+modules.threads = '2021-November-27';
 
 var ThreadManager;
 var Process;
@@ -4569,26 +4571,43 @@ Process.prototype.goToLayer = function (name) {
 
 // Process color primitives
 
-Process.prototype.setHSVA = function (name, num) {
-    var options = ['hue', 'saturation', 'brightness', 'transparency'];
-    this.blockReceiver().setColorComponentHSVA(
-        options.indexOf(this.inputOption(name)),
+Process.prototype.setColorDimension = function (name, num) {
+    var options = ['hue', 'saturation', 'brightness', 'transparency'],
+        choice = this.inputOption(name);
+    if (choice === 'r-g-b(-a)') {
+        this.blockReceiver().setColorRGBA(num);
+        return;
+    }
+    this.blockReceiver().setColorDimension(
+        options.indexOf(choice),
         +num
     );
 };
 
-Process.prototype.changeHSVA = function (name, num) {
-    var options = ['hue', 'saturation', 'brightness', 'transparency'];
-    this.blockReceiver().changeColorComponentHSVA(
-        options.indexOf(this.inputOption(name)),
+Process.prototype.changeColorDimension = function (name, num) {
+    var options = ['hue', 'saturation', 'brightness', 'transparency'],
+        choice = this.inputOption(name);
+    if (choice === 'r-g-b(-a)') {
+        this.blockReceiver().changeColorRGBA(num);
+        return;
+    }
+    this.blockReceiver().changeColorDimension(
+        options.indexOf(choice),
         +num
     );
 };
 
-Process.prototype.setPenHSVA = Process.prototype.setHSVA;
-Process.prototype.changePenHSVA = Process.prototype.changeHSVA;
-Process.prototype.setBackgroundHSVA = Process.prototype.setHSVA;
-Process.prototype.changeBackgroundHSVA = Process.prototype.changeHSVA;
+Process.prototype.setPenColorDimension =
+    Process.prototype.setColorDimension;
+
+Process.prototype.changePenColorDimension =
+    Process.prototype.changeColorDimension;
+
+Process.prototype.setBackgroundColorDimension =
+    Process.prototype.setColorDimension;
+
+Process.prototype.changeBackgroundColorDimension =
+    Process.prototype.changeColorDimension;
 
 // Process pasting primitives
 
