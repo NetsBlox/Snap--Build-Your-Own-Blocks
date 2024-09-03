@@ -2536,8 +2536,8 @@ function BlockLabelMorph(
 }
 BlockLabelMorph.prototype.getRenderColor = function () {
     var block = this.parentThatIsA(BlockMorph);
-    if (MorphicPreferences.isFlat) {
-        return block.alpha > 0.5 ? this.color
+    if (IDE_Morph.prototype.isBright) {
+        return !block || block.alpha > 0.5 ? this.color
             : block.color.solid().darker(Math.max(block.alpha * 200, 0.1));
     }
     return block.alpha > 0.5 ? this.color
@@ -2572,7 +2572,7 @@ function BlockSymbolMorph(name, size, color, shadowOffset, shadowColor) {
 
 BlockSymbolMorph.prototype.getRenderColor = function () {
     var block = this.parentThatIsA(BlockMorph);
-    if (MorphicPreferences.isFlat) {
+    if (IDE_Morph.prototype.isBright) {
         if (this.isFading) {
             return this.color.mixed(block.alpha, this.overrideWhite || WHITE);
         }
@@ -7037,7 +7037,7 @@ ScriptsMorph.prototype.render = function (aContext) {
 };
 
 ScriptsMorph.prototype.getRenderColor = function () {
-    if (MorphicPreferences.isFlat ||
+    if (IDE_Morph.prototype.isBright ||
             SyntaxElementMorph.prototype.alpha > 0.85) {
         return this.color;
     }
@@ -10542,7 +10542,7 @@ function InputSlotStringMorph(
 }
 
 InputSlotStringMorph.prototype.getRenderColor = function () {
-    if (MorphicPreferences.isFlat) {
+    if (IDE_Morph.prototype.isBright) {
         if (this.isEditable) {
             return this.color;
         }
@@ -11405,7 +11405,7 @@ ArrowMorph.prototype.render = function (ctx) {
 
 ArrowMorph.prototype.getRenderColor = function () {
     if (this.isBlockLabel) {
-        if (MorphicPreferences.isFlat) {
+        if (IDE_Morph.prototype.isBright) {
             return this.color;
         }
         return SyntaxElementMorph.prototype.alpha > 0.5 ? this.color : WHITE;
@@ -11955,6 +11955,17 @@ MultiArgMorph.prototype.init = function (
         arrowColor,
         true
     );
+
+    listSymbol = new SymbolMorph('verticalEllipsis', this.fontSize);
+    listSymbol.alpha = 0.5;
+    listSymbol.getRenderColor = function () {
+        // behave the same as arrows when fading the blocks
+        if (IDE_Morph.prototype.isBright) {
+            return this.color;
+        }
+        return SyntaxElementMorph.prototype.alpha > 0.5 ? this.color : WHITE;
+    };
+    // */
 
     // control panel:
     arrows.add(leftArrow);
