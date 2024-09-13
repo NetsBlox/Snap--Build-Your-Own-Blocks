@@ -2787,9 +2787,9 @@ IDE_Morph.prototype.addNewSprite = function () {
     sprite.parent = this.stage;
 
     // randomize sprite properties
-    sprite.setColorComponentHSVA(0, rnd.call(this, 0, 100));
-    sprite.setColorComponentHSVA(1, 100);
-    sprite.setColorComponentHSVA(2, rnd.call(this, 50, 100));
+    sprite.setColorDimension(0, rnd.call(this, 0, 100));
+    sprite.setColorDimension(1, 100);
+    sprite.setColorDimension(2, rnd.call(this, 50, 100));
 
     sprite.setXPosition(rnd.call(this, -220, 220));
     sprite.setYPosition(rnd.call(this, -160, 160));
