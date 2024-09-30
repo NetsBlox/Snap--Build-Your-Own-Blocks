@@ -173,7 +173,7 @@ PushButtonMorph.prototype.init = function (
     this.enabledColor = PushButtonMorph.prototype.labelColor;
     this.disabledColor = PushButtonMorph.prototype.disabledColor;
 
-    // override inherited properites:
+    // override inherited properties:
     this.color = PushButtonMorph.prototype.color;
     this.createLabel();
     this.fixLayout();
@@ -1547,7 +1547,7 @@ DialogBoxMorph.prototype.init = function (target, action, environment) {
     this.target = target || null;
     this.action = action || null;
     this.environment = environment || null;
-    this.key = null; // keep track of my purpose to prevent mulitple instances
+    this.key = null; // keep track of my purpose to prevent multiple instances
 
     this.labelString = null;
     this.label = null;
@@ -1558,7 +1558,7 @@ DialogBoxMorph.prototype.init = function (target, action, environment) {
     // initialize inherited properties:
     DialogBoxMorph.uber.init.call(this);
 
-    // override inherited properites:
+    // override inherited properties:
     this.isDraggable = true;
     this.noDropShadow = true;
     this.fullShadowSource = false;
@@ -2859,7 +2859,7 @@ AlignmentMorph.prototype.init = function (orientation, padding) {
     // initialize inherited properties:
     AlignmentMorph.uber.init.call(this);
 
-    // override inherited properites:
+    // override inherited properties:
 };
 
 // AlignmentMorph displaying and layout
@@ -3286,6 +3286,18 @@ PianoMenuMorph.prototype.init = function (
     this.soundType = soundType;
     PianoMenuMorph.uber.init.call(this, target, null, environment, fontSize);
     choices = {
+        'C (36)' : 36,
+        'D (38)' : 38,
+        'C# (37)' : 37,
+        'E (40)' : 40,
+        'Eb (39)' : 39,
+        'F (41)' : 41,
+        'G (43)' : 43,
+        'F# (42)' : 42,
+        'A (45)' : 45,
+        'G# (44)' : 44,
+        'B (47)' : 47,
+        'Bb (46)' : 46,
         'C (48)' : 48,
         'D (50)' : 50,
         'C# (49)' : 49,
@@ -3310,7 +3322,19 @@ PianoMenuMorph.prototype.init = function (
         'G# (68)' : 68,
         'B (71)' : 71,
         'Bb (70)' : 70,
-        'C (72)' : 72
+        'C (72)' : 72,
+        'D (74)' : 74,
+        'C# (73)' : 73,
+        'E (76)' : 76,
+        'Eb (75)' : 75,
+        'F (77)' : 77,
+        'G (79)' : 79,
+        'F# (78)' : 78,
+        'A (81)' : 81,
+        'G# (80)' : 80,
+        'B (83)' : 83,
+        'Bb (82)' : 82,
+        'C (84)' : 84
     };
     for (key in choices) {
         if (Object.prototype.hasOwnProperty.call(choices, key)) {

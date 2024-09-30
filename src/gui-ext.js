@@ -1,4 +1,4 @@
-/* globals ensureFullUrl, localize, nop, Point, IDE_Morph, Process, SnapCloud,
+/* globals ensureFullUrl, localize, nop, Point, IDE_Morph, Process, 
    SaveOpenDialogMorph, SaveOpenDialogMorphSource, Morph, utils, MenuMorph,
    SERVER_URL, SnapActions, fontHeight, TextMorph, ScrollFrameMorph, SpriteMorph,
    InputFieldMorph,
@@ -7,6 +7,329 @@
 ////////////////////////////////////////////////////
 // Override submodule for exporting of message types
 ////////////////////////////////////////////////////
+IDE_Morph.prototype.UrlActionRegistry = {};
+IDE_Morph.prototype.parseUrlAnchors = function (querystring, hash) {
+    // Parse the hash options
+    hash = hash.replace(/^#/, '');
+    const [hashAction, ...hashDataChunks] = hash.split(':');
+    const hashData = hashDataChunks.join(':');
+    let hashDictStr = hashData;
+
+    if (hashData.length > 0) {
+      const withoutTrailingParams = hashData.split('&').shift();
+      let hasImplicitParam = !withoutTrailingParams.includes('=');
+
+      if (hasImplicitParam) {
+          hashDictStr = 'data=' + hashData;
+      }
+
+      if (this.UrlActionRegistry.hasOwnProperty(hashAction)) {
+          hashDictStr = hashDictStr + `&action=${hashAction}`;
+      }
+    }
+
+    const anchorsDict = new SearchParams(hashDictStr);
+
+    // parse querystring params
+    const queryDict = new SearchParams(querystring);
+    queryDict.forEach((value, key) => anchorsDict.set(key, value));
+
+    return anchorsDict;
+};
+
+IDE_Morph.prototype.getUrlSettings = function (querystring, hash) {
+    const anchorsDict = this.parseUrlAnchors(querystring, hash);
+    const UrlAction = this.UrlActionRegistry[anchorsDict.get('action')] || NoMainParam;
+    return new UrlAction(anchorsDict, hash);
+};
+
+class UrlParamError extends Error {}
+class MissingParameterError extends UrlParamError {
+  constructor(params, parameter) {
+    const action = params.get('action');
+    super(`"${parameter}" required for "${action}"`);
+  }
+}
+
+/**
+ * A case-insensitive search parameter dictionary.
+ */
+class SearchParams extends URLSearchParams {
+  normalizeKey(key) {
+    return key.toLowerCase();
+  }
+
+  has(key) {
+    return super.has(this.normalizeKey(key))
+  }
+
+  get(key) {
+    return super.get(this.normalizeKey(key))
+  }
+
+  set(key, value) {
+    return super.set(this.normalizeKey(key), value)
+  }
+}
+
+class UrlParams {
+    constructor(params) {
+        this.params = params;
+    }
+
+    getRequiredParam(name) {
+        if (!this.params.has(name)) {
+          throw new MissingParameterError(this.params, name);
+        }
+        return this.params.get(name);
+    }
+
+    /**
+     * Check if a parameter value is truthy. A value of "" is considered to
+     * be truthy since it means the URL parameter is added like "&editMode".
+     */
+    getParameterFlag(name) {
+        const value = this.params.get(name);
+        const falseValues = [undefined, null, '0', 'false', false];
+        return !falseValues.includes(value);
+    }
+
+    async applySettings(ide) {
+        await this.applyInitialFlags(ide);
+        await this.apply(ide);
+        await this.applyFlags(ide);
+    }
+
+    async apply(_ide) {}
+
+    async applyInitialFlags(ide) {
+        const extensions = this.params.get('extensions');
+        if (extensions) {
+            try {
+                const extensionUrls = JSON.parse(decodeURIComponent(extensions));
+                await Promise.all(extensionUrls.map(url => ide.loadExtension(url)));
+            } catch (err) {
+                ide.inform(
+                    'Unable to load extensions',
+                    'The following error occurred while trying to load extensions:\n\n' +
+                    err.message + '\n\n' +
+                    'Perhaps the URL is malformed?'
+                );
+            }
+        }
+    }
+
+    async applyFlags(ide) {
+        if (this.getParameterFlag('embedMode')) {
+            ide.setEmbedMode();
+        }
+        if (this.getParameterFlag('appMode')) {
+            ide.toggleAppMode(true);
+        }
+        if (this.getParameterFlag('run')) {
+            ide.runScripts();
+        }
+        if (this.getParameterFlag('hideControls')) {
+            ide.controlBar.hide();
+            window.onbeforeunload = nop;
+        }
+        if (this.getParameterFlag('noExitWarning')) {
+            window.onbeforeunload = nop;
+        }
+        if (this.params.get('lang')) {
+            ide.setLanguage(this.params.get('lang'), null, true); // don't persist
+        }
+        if (this.params.get('setVariable')) {
+            const [varName, value] = this.params.get('setVariable').split('=');
+            const exists = ide.globalVariables.allNames().includes(varName);
+            if (exists) {
+                ide.globalVariables.setVar(varName, value);
+            } else {
+                await ide.droppedText(value, varName, 'text');
+            }
+        }
+
+        // only force my world to get focus if I'm not in embed mode
+        // to prevent the iFrame from involuntarily scrolling into view
+        if (!ide.isEmbedMode) {
+            ide.world().keyboardHandler.focus();
+        }
+    }
+}
+
+/**
+ * Default params. Don't really do anything but apply the before & after flags.
+ */
+class NoMainParam extends UrlParams {}
+
+/**
+ * Import content (xml or URL) on open
+ */
+class OpenTextFromUrl extends UrlParams {
+    async apply(ide) {
+        let hash = this.getRequiredParam('data');
+
+        const text = hash.startsWith('<') ? hash : utils.getUrlSync(hash);
+        await ide.droppedText(text);
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.open = OpenTextFromUrl;
+
+/**
+ * Open project from xml/URL and run.
+ */
+class RunProjectFromUrl extends UrlParams {
+    async apply(ide) {
+        let hash = this.getRequiredParam('data');
+        // Determine if it is a URL or text
+        const text = hash.startsWith('<') ? hash : utils.getUrlSync(hash);
+        await ide.droppedText(text);
+
+        if (!this.getParameterFlag('editMode')) {
+            this.params.set('appMode', true);
+        }
+        if (!this.getParameterFlag('noRun')) {
+            this.params.set('run', true);
+        }
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.run = RunProjectFromUrl;
+
+/**
+ * Open a public project (username, project name)
+ */
+class OpenPublicProject extends UrlParams {
+    async apply(ide) {
+        ide.showMessage('Fetching project\nfrom the cloud...');
+
+        const msg = ide.showMessage('Opening project...');
+        const projectData = await ide.cloud.getProjectByName(
+            this.getRequiredParam('Username'),
+            this.getRequiredParam('ProjectName')
+        );
+        const xml = ide.getXMLFromProjectData(projectData);
+        await ide.droppedText(xml);
+        ide.hasChangedMedia = true;
+
+        if (!this.getParameterFlag('editMode')) {
+            this.params.set('appMode', true);
+        }
+        if (!this.getParameterFlag('noRun')) {
+            this.params.set('run', true);
+        }
+        msg.destroy();
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.present = OpenPublicProject;
+
+/**
+ * Download a cloud project as an xml
+ */
+class DownloadCloudProject extends UrlParams {
+    async apply(ide) {
+        let m = ide.showMessage('Fetching project\nfrom the cloud...');
+        try {
+            const projectData = await ide.cloud.getProjectByName(
+                this.getRequiredParam('Username'),
+                this.getRequiredParam('ProjectName')
+            );
+            const xml = ide.getXMLFromProjectData(projectData);
+            const blob = new Blob([xml], {type: 'text/xml'});
+            const url = URL.createObjectURL(blob);
+
+            // Create temporary link for download
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = this.getRequiredParam('ProjectName') + ".xml";
+
+            document.body.appendChild(link);
+            link.dispatchEvent(
+                new MouseEvent('click', { 
+                bubbles: true, 
+                cancelable: true, 
+                view: window 
+                })
+            );
+
+            // Cleanup
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            ide.cloudError()(err.message);
+        }
+        m.destroy();
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.dl = DownloadCloudProject;
+
+/**
+ * Open cloud signup dialog.
+ */
+class CreateCloudAccount extends UrlParams {
+    async apply(ide) {
+        ide.createCloudAccount();
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.signup = CreateCloudAccount;
+
+/**
+ * Open example project.
+ */
+class OpenExampleProject extends UrlParams {
+    async apply(ide) {
+        const exampleName = this.params.get('data') || this.getRequiredParam('ProjectName');
+        const source = new CloudProjectExamples(ide);
+        const example = source.list().find(example => example.name === exampleName);
+        if (example) {
+            const msg = ide.showMessage('Opening ' + example + ' example...');
+            await source.open(example);
+            ide.hasChangedMedia = true;
+            msg.destroy();
+        } else {
+            ide.showMessage('Example not found: ' + exampleName);
+        }
+
+        if (!this.getParameterFlag('editMode')) {
+            this.params.set('appMode', true);
+        }
+        if (!this.getParameterFlag('noRun')) {
+            this.params.set('run', true);
+        }
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.example = OpenExampleProject;
+
+/**
+ * open a private (unshared) project via url
+ */
+class OpenPrivateProject extends UrlParams {
+    async apply(ide) {
+        const name = this.params.get('data') || this.getRequiredParam('ProjectName');
+        const isLoggedIn = ide.cloud.username !== null;
+        if (!isLoggedIn) {
+            ide.showMessage('You are not logged in. Cannot open ' + name);
+            return;
+        }
+
+        const msg = ide.showMessage('Opening ' + name + '...');
+        try {
+            const metadata = await ide.cloud.getProjectMetadataByName(ide.cloud.username, name);
+            const source = new CloudProjectsSource(ide);
+            await source.open(metadata);
+
+            if (!this.getParameterFlag('editMode')) {
+                this.params.set('appMode', true);
+            }
+            if (!this.getParameterFlag('noRun')) {
+                this.params.set('run', true);
+            }
+        } catch (err) {
+            ide.cloudError()(err.message);
+        }
+        msg.destroy();
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.private = OpenPrivateProject;
 
 IDE_Morph.prototype._getURL = IDE_Morph.prototype.getURL;
 IDE_Morph.prototype.getURL = function (url, callback, responseType) {
@@ -389,15 +712,15 @@ IDE_Morph.prototype.mobileMode.positionButtons = function(buttons, controls) {
 };
 
 IDE_Morph.prototype.initializeEmbeddedAPI = function () {
-    var self = this,
-        externalVariables = {},
+    var externalVariables = {},
         receiveMessage;
 
-    receiveMessage = async function(event) {
+    receiveMessage = async event => {
         var data = event.data;
+        console.log('received message', event.data);
         switch (data.type) {
         case 'import':
-            self.droppedText(data.content, data.name, data.fileType);
+            this.droppedText(data.content, data.name, data.fileType);
             break;
         case 'set-variable':
             externalVariables[data.key] = data.value;
@@ -408,7 +731,7 @@ IDE_Morph.prototype.initializeEmbeddedAPI = function () {
         case 'export-project':
         {
             const {id} = data;
-            const xml = await self.getProjectXML();
+            const xml = await this.getProjectXML();
             const type = 'reply';
             event.source.postMessage({id, type, xml}, event.origin);
             break;
@@ -416,7 +739,7 @@ IDE_Morph.prototype.initializeEmbeddedAPI = function () {
         case 'get-username':
         {
             const {id} = data;
-            const {username} = SnapCloud;
+            const {username} = this.cloud;
             const type = 'reply';
             event.source.postMessage({id, type, username}, event.origin);
             break;
@@ -432,16 +755,23 @@ IDE_Morph.prototype.initializeEmbeddedAPI = function () {
                     detail: event.detail,
                 }, origin);
             };
-            self.events.addEventListener(eventType, listenerId, callback);
+            this.events.addEventListener(eventType, listenerId, callback);
             source.postMessage({id, type: 'reply'}, origin);
             break;
         }
         case 'remove-listener':
         {
             const {id, eventType, listenerId} = data;
-            self.events.removeEventListener(eventType, listenerId);
+            this.events.removeEventListener(eventType, listenerId);
             event.source.postMessage({id, type: 'reply'}, event.origin);
+            break;
         }
+        case 'run-scripts':
+            this.runScripts();
+            break;
+        case 'stop-all-scripts':
+            this.stopAllScripts();
+            break;
         }
     };
 
@@ -475,7 +805,56 @@ IDE_Morph.prototype.extensionsMenu = function() {
         return menu;
     };
 
-    return menuFromDict(dict);
+    let menu = menuFromDict(dict);
+
+    const on = new SymbolMorph(
+        'checkedBox',
+        MorphicPreferences.menuFontSize * 0.75
+    ),
+    off = new SymbolMorph(
+        'rectangle',
+        MorphicPreferences.menuFontSize * 0.75
+    );
+                    
+    // Add preferences
+    this.extensions.registry
+        .filter(ext => ext.getSettings())
+        .forEach(ext => {
+            const name = ext.name || ext.constructor.name;
+            let thisExtMenu = menu.items.find(item => item[0] == name);
+
+            let prefs = ext.getSettings();
+
+            if(thisExtMenu){
+                thisExtMenu = thisExtMenu[1];
+
+                // Only show menu if there is a non-hidden option available
+                if(prefs.find(pref => !pref.hide || world.currentKey == 16) !== undefined){
+                    let newOptionsMenu = new MenuMorph(this);
+                    thisExtMenu.addMenu('Options', newOptionsMenu);
+                    
+                    // Add each setting as a toggle
+                    prefs.forEach(pref => {
+
+                        let test = pref.test;
+
+                        if (!pref.hide || world.currentKey == 16) {
+                            newOptionsMenu.addItem(
+                                [
+                                    (test() ? on : off),
+                                    pref.label
+                                ],
+                                pref.toggle,
+                                test() ? pref.onHint : pref.offHint,
+                                pref.hide ? new Color(100, 0, 0) : null
+                            );
+                        }
+                    });
+                }
+            }
+        });
+
+    return menu;
 };
 
 IDE_Morph.prototype.requestProjectReload = async function (reason) {
@@ -502,6 +881,190 @@ IDE_Morph.prototype.openRoleString = async function (role, parsed=false) {
     ].join('');
 
     return SnapActions.openProject(projectXml);
+};
+
+IDE_Morph.prototype.manageFriends = async function () {
+    const dialog = new UserDialogMorph(this);
+    dialog.popUp(this.world());
+};
+
+IDE_Morph.prototype.sendFriendRequest = async function () {
+    this.prompt(localize('Send Friend Invitation to...'), async name => {
+        await this.cloud.sendFriendRequest(name);
+        this.showMessage(localize('Friend request sent!'), 2);
+    });
+};
+
+IDE_Morph.prototype.respondToFriendRequest = async function (request) {
+    const dialog = new DialogBoxMorph(
+        this,
+        () => this.cloud.respondToFriendRequest(request.sender, 'Approved'),
+    );
+    dialog.labelString = 'Respond to Friend Request';
+    dialog.key = `FriendRequestFrom${request.sender}`;
+
+    const textString = localize('Received friend request from ') + request.sender +
+        '.\n\n' + localize('What would you like to do?');
+    const txt = new TextMorph(
+        textString,
+        dialog.fontSize,
+        dialog.fontStyle,
+        true,
+        false,
+        'center',
+        null,
+        null,
+        MorphicPreferences.isFlat ? null : new Point(1, 1),
+        WHITE
+    );
+    dialog.addBody(txt);
+    dialog.addButton('ok', localize('Accept'));
+    dialog.addButton(
+        () => {
+            this.cloud.respondToFriendRequest(request.sender, 'Rejected');
+            dialog.destroy();
+        }, 
+        localize('Reject')
+    );
+    dialog.addButton(
+        async () => {
+            const confirmed = await this.confirm(
+                localize('Are you sure you would like to block ') + request.sender + '?',
+                localize('Block User?')
+            );
+            if (confirmed) {
+                this.cloud.respondToFriendRequest(request.sender, 'Blocked');
+            }
+            dialog.destroy();
+        }, 
+        localize('Block')
+    );
+    dialog.addButton('cancel', localize('Cancel'));
+    dialog.createLabel();
+    dialog.fixLayout = function() {
+        DialogBoxMorph.prototype.fixLayout.call(this);
+        horizontalCenter(this, this.label);
+        horizontalCenter(this, this.body);
+    };
+    function horizontalCenter(parent, child) {
+        const centerX = parent.center().x
+        const left = centerX - child.width()/2;
+        child.setLeft(left);
+    }
+
+    dialog.popUp(this.world());
+    dialog.fixLayout();
+};
+
+IDE_Morph.prototype.tryElevatePermissions = async function (projectId, room) {
+    const username = this.cloud.username;
+    const existingInvite = (await this.cloud.getCollaboratorRequestList()).find(
+        invite => invite.projectId === projectId
+    );
+
+    if (existingInvite) {
+        this.confirm(
+            localize('Edits cannot be made on projects by guests.\n\nWould ' +
+            'you like to accept the existing invitation to collaborate?'),
+            localize('Accept Collaboration Invitation?'),
+            async () => {
+              await this.cloud.respondToCollaborateRequest(existingInvite.id, true);
+            }
+        );
+    } else {
+        this.confirm(
+            localize('Edits cannot be made on projects by guests.\n\nWould ' +
+            'you like to request to be made a collaborator?'),
+            localize('Request Collaborator Privileges?'),
+            () => {
+                const ownerIds = room.getOccupants()
+                    .filter(occupant => room.isOwner(occupant.name))
+                    .map(occupant => occupant.id);
+
+                this.sockets.sendIDEMessage({
+                    type: 'permission-elevation-request',
+                    id: `elevate-${Date.now()}`,
+                    projectId: projectId,
+                    clients: ownerIds,
+                    username,
+                }, ...ownerIds);
+            }
+        );
+    }
+};
+
+IDE_Morph.prototype.respondToCollaborateRequest = async function (request) {
+    const metadata = await this.cloud.getProjectMetadata(request.projectId);
+    const dialog = new DialogBoxMorph(
+        this,
+        async () => {
+            await this.cloud.respondToCollaborateRequest(request.id, true);
+            const isOccupied = request.projectId === this.cloud.projectId;
+
+            if (!isOccupied) {
+                const dialog = new DialogBoxMorph();
+                dialog.askYesNo(
+                  localize('Open Shared Project?'),
+                  localize('Would you like to open the shared project now?'),
+                  this.root(),
+                );
+                dialog.ok = async () => {
+                  const source = new SharedCloudProjectsSource(this);
+                  await source.open(metadata);
+                };
+            }
+        },
+    );
+    dialog.labelString = 'Respond to Collaborate Request';
+    dialog.key = request.id;
+
+    const textString = request.sender + localize(' has invited you to collaborate on') +
+        '\n\n' + metadata.name + '\n\n' + localize('What would you like to do?');
+    const txt = new TextMorph(
+        textString,
+        dialog.fontSize,
+        dialog.fontStyle,
+        true,
+        false,
+        'center',
+        null,
+        null,
+        MorphicPreferences.isFlat ? null : new Point(1, 1),
+        WHITE
+    );
+    dialog.addBody(txt);
+    dialog.addButton('ok', localize('Accept'));
+    dialog.addButton(
+        async () => {
+            await this.cloud.respondToCollaborateRequest(request.id, false);
+            this.showMessage(localize('Invitation rejected.'));
+            dialog.destroy();
+        }, 
+        localize('Reject')
+    );
+    dialog.addButton('cancel', localize('Cancel'));
+    dialog.createLabel();
+    dialog.fixLayout = function() {
+        DialogBoxMorph.prototype.fixLayout.call(this);
+        horizontalCenter(this, this.label);
+        horizontalCenter(this, this.body);
+    };
+    function horizontalCenter(parent, child) {
+        const centerX = parent.center().x
+        const left = centerX - child.width()/2;
+        child.setLeft(left);
+    }
+
+    dialog.popUp(this.world());
+    dialog.fixLayout();
+
+};
+
+IDE_Morph.prototype.manageCollaborators = async function () {
+    const dialog = new CollaboratorDialogMorph(
+        this,
+    );
+    dialog.popUp();
 };
 
 // Events ///////////////////////////////////////////
@@ -601,37 +1164,21 @@ function CloudLibrarySource(ide) {
     this.init(ide, 'Cloud', 'cloud', 'cloud');
 }
 
-CloudLibrarySource.prototype.list = function() {
-    const isLoggedIn = !!SnapCloud.username;
+CloudLibrarySource.prototype.list = async function() {
+    const isLoggedIn = !!this.ide.cloud.username;
     if (!isLoggedIn) {
         this.ide.showMessage(localize('You are not logged in'));
     }
 
-    const deferred = utils.defer();
-    const url = `${SERVER_URL}/api/v2/libraries/user/`;
-    this.ide.getURL(
-        url,
-        libJSON => {
-            const libraries = JSON.parse(libJSON).map(lib => {
-                lib.public = lib.public || lib.needsApproval;
-                return lib;
-            });
-            deferred.resolve(libraries);
-        }
-    );
-    return deferred.promise;
+    const libs = await this.ide.cloud.getLibraryList();
+    libs.forEach(lib => lib.public = lib.state === 'Public' || lib.state === 'PendingApproval');
+    return libs;
 };
 
 CloudLibrarySource.prototype.save = async function(item) {
     const {name, blocks, notes} = item;
-    const request = new XMLHttpRequest();
-    const username = SnapCloud.username;
-    request.open('POST', `${SERVER_URL}/api/v2/libraries/user/${username}/${name}`, true);
-    request.withCredentials = true;
-
-    await utils.requestPromise(request, {blocks, notes});
-    const {needsApproval} = JSON.parse(request.responseText);
-    if (needsApproval) {
+    const library = await this.ide.cloud.saveLibrary(name, blocks, notes);
+    if (library.state === 'PendingApproval') {
         this.ide.inform(
             'Approval Required',
             'Approval is required to re-publish the given library.\n\n' +
@@ -641,41 +1188,23 @@ CloudLibrarySource.prototype.save = async function(item) {
 };
 
 CloudLibrarySource.prototype.getContent = async function(item) {
-    const deferred = utils.defer();
     const {owner, name} = item;
-    const url = `${SERVER_URL}/api/v2/libraries/user/${owner}/${name}`;
-    this.ide.getURL(
-        url,
-        libXML => {
-            deferred.resolve(libXML);
-        }
-    );
-    return deferred.promise;
+    return await this.ide.cloud.getLibrary(owner, name);
 };
 
 CloudLibrarySource.prototype.delete = async function(item) {
     const {name} = item;
-    const request = new XMLHttpRequest();
-    const username = SnapCloud.username;
-    request.open('DELETE', `${SERVER_URL}/api/v2/libraries/user/${username}/${name}`, true);
-    request.withCredentials = true;
-
-    await utils.requestPromise(request);
+    return await this.ide.cloud.deleteLibrary(name);
 };
 
 CloudLibrarySource.prototype.publish = async function(item, unpublish) {
-    const action = unpublish ? 'unpublish' : 'publish';
-    const username = SnapCloud.username;
     const {name} = item;
-    const url = `${SERVER_URL}/api/v2/libraries/user/${username}/${name}/${action}`;
-    const request = new XMLHttpRequest();
-    request.open('POST', url, true);
-    request.withCredentials = true;
-
-    await utils.requestPromise(request);
-    if (!unpublish) {
-        const {needsApproval} = JSON.parse(request.responseText);
-        if (needsApproval) {
+    const action = unpublish ? 'unpublish' : 'publish';
+    if (unpublish) {
+        await this.ide.cloud.unpublishLibrary(name);
+    } else {
+        const publishState = await this.ide.cloud.publishLibrary(name);
+        if (publishState === 'PendingApproval') {
             this.ide.inform(
                 'Approval Required',
                 'Approval is required to publish the given library.\n\n' +
@@ -693,22 +1222,13 @@ function CommunityLibrarySource(ide) {
     this.init(ide, 'Community', 'cloud', 'community');
 }
 
-CommunityLibrarySource.prototype.list = function() {
-    const deferred = utils.defer();
-    const url = `${SERVER_URL}/api/v2/libraries/community/`;
-    this.ide.getURL(
-        url,
-        libJSON => {
-            const libraries = JSON.parse(libJSON);
-            libraries.forEach(lib => {
-                lib.libraryName = lib.name;
-                lib.name = `${lib.name} (author: ${lib.owner})`;
-            });
-
-            deferred.resolve(libraries);
-        }
-    );
-    return deferred.promise;
+CommunityLibrarySource.prototype.list = async function() {
+    const libs = await this.ide.cloud.getCommunityLibraryList();
+    libs.forEach(lib => {
+        lib.libraryName = lib.name;
+        lib.name = `${lib.name} (author: ${lib.owner})`;
+    });
+    return libs;
 };
 
 CommunityLibrarySource.prototype.getContent = function(item) {
@@ -739,7 +1259,7 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
     // initialize inherited properties:
     this.ide = ide;
     this.libraryXML = xml;
-    // I contain a cached version of the libaries I have displayed,
+    // I contain a cached version of the libraries I have displayed,
     // because users may choose to explore a library many times before
     // importing.
     this.libraryCache = {}; // {fileName: [blocks-array] }
@@ -757,6 +1277,10 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
         this.labelString = 'Import Library';
         this.createLabel();
     }
+};
+
+LibraryDialogMorph.prototype.getNewItemID = function() {
+    return Date.now();
 };
 
 LibraryDialogMorph.prototype.saveItem = async function(newItem) {
@@ -899,12 +1423,12 @@ LibraryDialogMorph.prototype.fixLayout = function () {
             100,
         ));
 
-        this.palette.setRight(this.body.right());
-        this.palette.setTop(inputField.bottom() + this.padding);
         this.palette.setExtent(new Point(
             this.notesField.width(),
             this.listField.height() - this.notesField.height() - thin
         ));
+        this.palette.setRight(this.body.right());
+        this.palette.setTop(inputField.bottom() + this.padding);
         
         this.notesField.setPosition(this.palette.bottomLeft().add(
             new Point(0, thin)

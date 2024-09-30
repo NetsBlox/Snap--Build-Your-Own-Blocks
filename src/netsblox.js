@@ -1,26 +1,31 @@
-/* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
+/* global RoomMorph, IDE_Morph, StageMorph, List, VariableFrame,
    WebSocketManager, SpriteMorph, Point, RoomEditorMorph, localize, Process,
    StringMorph, Color, TabMorph, InputFieldMorph, MorphicPreferences, MenuMorph,
    TextMorph, NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512,
    SnapUndo, ScrollFrameMorph, SnapUndo, CollaboratorDialogMorph,
-   SnapSerializer, newCanvas, detect, WatcherMorph, Services, utils */
+   SnapSerializer, newCanvas, detect, WatcherMorph, utils */
 // Netsblox IDE (subclass of IDE_Morph)
 
 NetsBloxMorph.prototype = Object.create(IDE_Morph.prototype);
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
 NetsBloxMorph.uber = IDE_Morph.prototype;
 
-function NetsBloxMorph(isAutoFill) {
-    this.init(isAutoFill);
+function NetsBloxMorph(isAutoFill, config) {
+    this.init(isAutoFill, config);
 }
 
-NetsBloxMorph.prototype.init = function (isAutoFill) {
-    this.sockets = new WebSocketManager(this);
-    Services.onInvalidHosts = this.onInvalidHosts.bind(this);
+NetsBloxMorph.prototype.init = function (isAutoFill, config) {
+    NetsBloxMorph.uber.init.call(this, isAutoFill, config);
+
+    this.sockets = new WebSocketManager(this, config);
+    this.services = new ServicesRegistry(config, this.cloud);
+    this.services.onInvalidHosts = this.onInvalidHosts.bind(this);
     this.room = null;
+    if (this.cloud.username) {
+        this.services.fetchHosts(this.cloud.username);
+    }
 
     // initialize inherited properties:
-    NetsBloxMorph.uber.init.call(this, isAutoFill);
     this.serializer = new NetsBloxSerializer();
 
     var myself = this;
@@ -56,7 +61,7 @@ NetsBloxMorph.prototype.buildPanes = function () {
 };
 
 NetsBloxMorph.prototype.clearProject = function () {
-    this.source = SnapCloud.username ? 'cloud' : 'local';
+    this.source = this.cloud.username ? 'cloud' : 'local';
     if (this.stage) {
         this.stage.destroy();
     }
@@ -90,9 +95,20 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
     var menu = NetsBloxMorph.uber.cloudMenu.call(this);
 
     const isLoggedIn = this.cloud.username;
+    let user = {};
     if (isLoggedIn) {
-        const userData = await this.cloud.getUserData();
-        const linkedAccounts = userData ? userData.linkedAccounts : [];
+        const [userData, invites, collaborateInvites] = await Promise.all([
+            this.cloud.getUserData(),
+            this.cloud.getFriendRequestList(),
+            this.cloud.getCollaboratorRequestList(),
+        ]);
+        user.data = userData;
+        user.invites = invites;
+        user.collaborateInvites = collaborateInvites;
+    }
+
+    if (isLoggedIn) {
+        const linkedAccounts = user.data.linkedAccounts;
         if (linkedAccounts.length === 0) {
             menu.addItem(
                 'Link to Snap! account...',
@@ -101,17 +117,48 @@ NetsBloxMorph.prototype.cloudMenu = async function () {
         } else {
             menu.addItem(
                 localize('Unlink Snap! account...'),
-                () => this.unlinkAccount(userData.linkedAccounts[0]),
+                () => this.unlinkAccount(user.data.linkedAccounts[0]),
             );
         }
     }
 
-    if (this.cloud.username && this.room.isOwner()) {
+    if (isLoggedIn) {
         menu.addLine();
-        menu.addItem(
-            'Collaborators...',
-            'manageCollaborators'
+        if (this.room.isOwner()) {
+            menu.addItem(
+                'Collaborators...',
+                'manageCollaborators'
+            );
+        }
+
+        const friendMenu = new MenuMorph(this);
+        friendMenu.addItem('View Friends...', 'manageFriends');
+        friendMenu.addItem('Send Friend Request...', 'sendFriendRequest');
+        menu.addMenu(
+            'Friends...',
+            friendMenu
         );
+        if (user.invites.length) {
+            const friendRequestMenu = new MenuMorph(this);
+            user.invites.forEach(invite => {
+                friendRequestMenu.addItem(`${invite.sender}...`, () => this.respondToFriendRequest(invite));
+            });
+            menu.addMenu(
+                'Friend Requests...',
+                friendRequestMenu
+            );
+        }
+
+        if (user.collaborateInvites.length) {
+            const inviteMenu = new MenuMorph(this);
+            user.collaborateInvites.forEach(invite => {
+                inviteMenu.addItem(`${invite.sender}...`, () => this.respondToCollaborateRequest(invite));
+            });
+            menu.addMenu(
+                'Collaboration Requests...',
+                inviteMenu
+            );
+        }
     }
 
     return menu;
@@ -129,29 +176,18 @@ NetsBloxMorph.prototype.settingsMenu = function () {
 };
 
 NetsBloxMorph.prototype.newProject = async function (projectName) {
-    let projectInfo;
-    try {
-        projectInfo = await SnapCloud.newProject(projectName);
-    } catch (err) {
-        projectInfo = {
-            name: projectName || 'untitled',
-            roleName: 'myRole',
-            projectId: this.cloud.projectId,
-            roleId: this.cloud.roleId,
-        };
-    }
-    await this.newProjectFromInfo(projectInfo, !projectName);
-    this.extensions.onNewProject();
-};
-
-NetsBloxMorph.prototype.newProjectFromInfo = async function (projectInfo, updateUrl) {
+    const metadata = await this.cloud.newProject(projectName);
     this.createRoom();
-    this.room.silentSetRoomName(projectInfo.name);
+    this.room.silentSetRoomName(metadata.name);
+    const updateUrl = !projectName;
     if (updateUrl) {
-        this.updateUrlQueryString();
+        this.updateUrlQueryString(metadata);
     }
     await SnapActions.openProject();
-    this.silentSetProjectName(projectInfo.roleName);
+    const [roleData] = Object.values(metadata.roles);
+    this.silentSetProjectName(roleData.name);
+
+    this.extensions.onNewProject();
 };
 
 NetsBloxMorph.prototype.newRole = function (name) {
@@ -265,50 +301,6 @@ NetsBloxMorph.prototype.createControlBar = function () {
     };
 };
 
-NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
-    var project;
-    StageMorph.prototype.hiddenPrimitives = {};
-    StageMorph.prototype.codeMappings = {};
-    StageMorph.prototype.codeHeaders = {};
-    StageMorph.prototype.enableCodeMapping = false;
-    StageMorph.prototype.enableInheritance = false;
-    StageMorph.prototype.enableSublistIDs = false;
-    Process.prototype.enableLiveCoding = false;
-    SnapActions.disableCollaboration();
-    SnapUndo.reset();
-    if (Process.prototype.isCatchingErrors) {
-        try {
-            // NetsBlox addition: start
-            model = parsed ? model : this.serializer.parse(model);
-            // NetsBlox addition: end
-            this.serializer.loadMediaModel(model.childNamed('media'));
-            project = this.serializer.openProject(
-                this.serializer.loadProjectModel(
-                    model.childNamed('project'),
-                    this
-                ),
-                this
-            );
-        } catch (err) {
-            this.showMessage('Load failed: ' + err);
-        }
-    } else {
-        // NetsBlox addition: start
-        model = parsed ? model : this.serializer.parse(model);
-        // NetsBlox addition: end
-        this.serializer.loadMediaModel(model.childNamed('media'));
-        project = this.serializer.openProject(
-            this.serializer.loadProjectModel(
-                model.childNamed('project'),
-                this
-            ),
-            this
-        );
-    }
-    this.stopFastTracking();
-    return project;
-};
-
 NetsBloxMorph.prototype.createSpriteBar = function () {
     NetsBloxMorph.uber.createSpriteBar.call(this);
 
@@ -408,7 +400,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
     }
 
     var isSavingToCloud = this.source.indexOf('cloud') > -1;
-    if (SnapCloud.username && !this.room.isOwner()) {
+    if (this.cloud.username && !this.room.isOwner()) {
         item = ['Save a Copy', 'saveACopy'];
         var itemIndex = menu.items.map(function(item) {
             return item[1];
@@ -462,27 +454,27 @@ NetsBloxMorph.prototype.projectMenu = function () {
 
 NetsBloxMorph.prototype.serviceURL = function() {
     var path = Array.prototype.slice.call(arguments, 0);
-    const {url} = Services.defaultHost;
+    const {url} = this.services.defaultHost;
     return url + '/' + path.join('/');
 };
 
 NetsBloxMorph.prototype.exportRole = NetsBloxMorph.prototype.exportProject;
 
 // Trigger the export
-NetsBloxMorph.prototype.exportProject = function () {
+NetsBloxMorph.prototype.exportProject = function (name = this.room.name) {
     this.showMessage('Exporting...', 3);
 
     if (this.room.getRoleCount() === 1) {
         // If only one role, we should just create the room xml locally
-        this.exportSingleRoleXml();
+        this.exportSingleRoleXml(name);
     } else {  // Trigger server export of all roles
-        this.exportMultiRoleXml();
+        this.exportMultiRoleXml(name);
     }
 };
 
-NetsBloxMorph.prototype.exportMultiRoleXml = async function () {
-    const xml = await this.cloud.exportProject();
-    this.exportRoom(xml);
+NetsBloxMorph.prototype.exportMultiRoleXml = async function (name) {
+    const xml = await this.getProjectXML();
+    this.exportRoom(xml, name);
 };
 
 NetsBloxMorph.prototype.getSnapXml = function() {
@@ -524,26 +516,41 @@ NetsBloxMorph.prototype.getSnapXml = function() {
     return str;
 };
 
-NetsBloxMorph.prototype.getSerializedRole = function () {
-    var data = this.sockets.getSerializedProject();
+NetsBloxMorph.prototype.getSerializedRole = function (role = this.sockets.getSerializedProject()) {
     return this.serializer.format(
         '<role name="@">%</role>',
-        this.room.getCurrentRoleName(),
-        data.SourceCode + data.Media
+        role.name,
+        role.code + role.media
     );
 
 };
 
-NetsBloxMorph.prototype.exportSingleRoleXml = function () {
-    // Get the role xml
+NetsBloxMorph.prototype.exportSingleRoleXml = function (name) {
+    const xml = this.exportProjectXml(this.room.name, [this.getSerializedRole()]);
+    this.exportRoom(xml, name);
+};
+
+NetsBloxMorph.prototype.getProjectXML = async function () {
+    const projectData = await this.cloud.getProjectData();
+    return this.getXMLFromProjectData(projectData);
+};
+
+NetsBloxMorph.prototype.getXMLFromProjectData = function (projectData) {
+    const roles = Object.values(projectData.roles)
+        .map(role => this.getSerializedRole(role));
+
+    return this.exportProjectXml(projectData.name, roles);
+};
+
+NetsBloxMorph.prototype.exportProjectXml = function (name, roles) {
     try {
         var str = this.serializer.format(
             '<room name="@" app="@">%</room>',
-            this.room.name,
+            name,
             this.serializer.app,
-            this.getSerializedRole()
+            roles,
         );
-        this.exportRoom(str);
+        return str;
     } catch (err) {
         if (Process.prototype.isCatchingErrors) {
             this.showMessage('Export failed: ' + err);
@@ -553,8 +560,8 @@ NetsBloxMorph.prototype.exportSingleRoleXml = function () {
     }
 };
 
-NetsBloxMorph.prototype.exportRoom = function (str) {
-    var name = this.room.name;
+NetsBloxMorph.prototype.exportRoom = function (str, name) {
+    name = name || this.room.name;
 
     try {
         this.saveXMLAs(str, name);
@@ -582,21 +589,18 @@ NetsBloxMorph.prototype.openRoomString = async function (str) {
         var media = role.children[1] || '';
 
         return {
-            ProjectName: role.attributes.name,
-            SourceCode: srcCode.toString(),
-            Media: media.toString()
+            name: role.attributes.name,
+            code: srcCode.toString(),
+            media: media.toString()
         };
     });
-    const roleName = room.children[0].attributes.name;
 
     const msg = this.showMessage(localize('Opening project...'));
     const {name} = room.attributes;
-    const state = await SnapCloud.importProject(name, roleName, roles);
-    this.room.onRoomStateUpdate(state);
-    const [role] = room.children;
-    await this.openRoleString(role, true);
-    msg.destroy();
-    this.sockets.updateRoomInfo();
+    const metadata = await this.cloud.importProject({name, roles});
+
+    const cloudSource = new CloudProjectsSource(this);
+    await cloudSource.open(metadata);
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
@@ -609,42 +613,6 @@ NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
         });
 };
 
-// Serialize a project and save to the browser.
-NetsBloxMorph.prototype.rawSaveProject = async function (name) {
-    this.showMessage('Saving', 3);
-
-    if (name) {
-        this.room.name = name;
-    }
-
-    // Trigger server export of all roles
-    const xml = await this.cloud.exportProject();
-    this.saveRoomLocal(xml);
-};
-
-NetsBloxMorph.prototype.getProjectXML = async function () {
-    return await this.cloud.exportProject();
-};
-
-NetsBloxMorph.prototype.saveRoomLocal = function (str) {
-    var name = this.room.name;
-
-    if (Process.prototype.isCatchingErrors) {
-        try {
-            localStorage['-snap-project-' + name] = str;
-
-            this.setURL('#open:' + str);
-            this.showMessage('Saved to the browser.', 1);
-        } catch (err) {
-            this.showMessage('Save failed: ' + err);
-        }
-    } else {
-        localStorage['-snap-project-' + name] = str;
-        this.setURL('#open:' + str);
-        this.showMessage('Saved to the browser.', 1);
-    }
-};
-
 NetsBloxMorph.prototype.openProject = function (name) {
     var str;
     if (name) {
@@ -655,19 +623,23 @@ NetsBloxMorph.prototype.openProject = function (name) {
     }
 };
 
-NetsBloxMorph.prototype.saveACopy = function () {
-    var myself = this;
+NetsBloxMorph.prototype.saveACopy = async function () {
     if (this.isPreviousVersion()) {
         return this.showMessage('Please exit replay mode before saving');
     }
 
     // Save the project!
-    SnapCloud.saveProjectCopy(function(result) {
-        if (result.name) {
-            myself.room.silentSetRoomName(result.name);
-        }
-        myself.showMessage('Made your own copy and saved it to the cloud!', 2);
-    }, this.cloudError());
+    const metadata = await this.cloud.saveProjectCopy();
+    this.showMessage('Made your own copy and saved it to the cloud!', 2);
+
+    const confirmed = await this.confirm(
+        localize('Would you like to open the project now?'),
+        localize('Open Project'),
+    );
+    if (confirmed) {
+        const source = new CloudProjectsSource(this);
+        await source.open(metadata);
+    }
 };
 
 NetsBloxMorph.prototype.cloudSaveError = function () {
@@ -692,68 +664,6 @@ NetsBloxMorph.prototype.cloudSaveError = function () {
         var explanation = 'Unable to save. Please export project if the problem persists.';
         myself.showMessage(explanation);
     };
-};
-
-NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
-    var myself = this,
-        overwriteExisting;
-
-    if (SnapCloud.username !== this.room.ownerId) {
-        return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
-    }
-
-    overwriteExisting = function(overwrite) {
-        var contentName = myself.room.hasMultipleRoles() ?
-            myself.room.getCurrentRoleName() : myself.room.name;
-        if (name) {
-            myself.showMessage('Saving ' + contentName + '\nto the cloud...');
-            SnapCloud.saveProject(
-                myself,
-                function (result) {
-                    if (result.name) {
-                        myself.room.silentSetRoomName(result.name);
-                    }
-                    if (overwrite) {
-                        myself.showMessage('Saved ' + contentName + ' to cloud!', 2);
-                    } else {
-                        myself.showMessage('Saved as ' + myself.room.name, 2);
-                    }
-                },
-                myself.cloudSaveError(),
-                overwrite,
-                name
-            );
-        }
-    };
-
-    // Check if it will overwrite the current one
-    // We can check this by just using the project IDs now...
-    // TODO
-    SnapCloud.hasConflictingStoredProject(
-        name,
-        function(hasConflicting) {
-            if (!hasConflicting) {
-                myself.updateUrlQueryString();
-                return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
-            } else {  // doesn't match the stored version!
-                var dialog = new DialogBoxMorph(null, function() {
-                    overwriteExisting(true);
-                });
-
-                dialog.cancel = function() {  // don't overwrite
-                    overwriteExisting();
-                    dialog.destroy();
-                };
-                dialog.askYesNo(
-                    localize('Overwrite Existing Project'),
-                    localize('A project with the given name already exists.\n' +
-                        'Would you like to overwrite it?'),
-                    myself.world()
-                );
-            }
-        },
-        this.cloudSaveError()
-    );
 };
 
 // RPC import support (both custom blocks and message types)
@@ -830,50 +740,64 @@ NetsBloxMorph.prototype.rawOpenBlocksMsgTypeString = function (aString) {
     this.rawOpenBlocksString(blocksStr, '', true);
 };
 
-NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
-    var myself = this,
-        newRoom = project.RoomName,
-        roleName = project.ProjectName,
-        projectId = project.ProjectID;  // src proj name
+NetsBloxMorph.prototype.rawLoadCloudRole = async function (project, roleData) {
+    const rolePair = Object.entries(project.roles)
+        .find(([_id, metadata]) => metadata.name === roleData.name)
+
+    if (!rolePair) throw new Error(`Could not find role ${roleData.name} in project.`);
+    const [roleId] = rolePair;
 
     this.source = 'cloud';
-    project.Owner = project.Owner || SnapCloud.username;
-    this.updateUrlQueryString(newRoom, isPublic);
+    project.owner = project.owner || this.cloud.username;
+    this.updateUrlQueryString(project);
 
-    var msg = this.showMessage('Opening project...');
-    return SnapActions.openProject(project.SourceCode)
-        .then(function() {
-            SnapCloud.projectId = projectId;
-            myself.room.silentSetRoomName(newRoom);
-            myself.room.ownerId = project.Owner;
-            myself.silentSetProjectName(roleName);
+    const msg = this.showMessage('Opening project...');
+    this.cloud.setLocalState(project.id, roleId);
 
-            // Send the message to the server
-            myself.sockets.updateRoomInfo();
-            msg.destroy();
-        });
+    await SnapActions.openProject(`<snapdata>${roleData.code}${roleData.media}</snapdata>`);
+    const isLoadInterrupted = this.cloud.projectId !== project.id || this.cloud.roleId !== roleId;
+    if (isLoadInterrupted) return;
+
+    this.room.silentSetRoomName(project.name);
+    this.room.ownerId = project.owner;
+    this.silentSetProjectName(roleData.name);
+    await this.cloud.setClientState(project.id, roleId);
+    msg.destroy();
 };
 
-NetsBloxMorph.prototype.updateUrlQueryString = function (room, isPublic, isExample) {
-    const querystring = location.href
-        .replace(/^.*\?/, '')
-        .replace('#' + location.hash, '');
-    const dict = this.cloud.parseDict(querystring);
+/**
+ * Update the URL to reflect opened public projects, etc.
+ */
+NetsBloxMorph.prototype.updateUrlQueryString = function (
+    project,
+    isExample,
+) {
+    const extensions = this.parseUrlAnchors(location.search, location.hash).get('extensions');
+    const dict = {};
+    if (extensions) {
+        dict.extensions = extensions;
+    }
 
-    let url = location.pathname + '?';
+    const isPublic = project.state !== "Private" && project.saveState === 'Saved';
 
-    room = room || this.room.name;
     if (isExample) {
-        url += 'action=example&ProjectName=' + encodeURIComponent(room) + '&';
+        dict.action = 'example';
+        dict.ProjectName = project.name;
     } else if (isPublic) {
-        url += 'action=present&Username=' + encodeURIComponent(SnapCloud.username) +
-            '&ProjectName=' + encodeURIComponent(room) + '&';
-    }
-    if (dict.extensions) {
-        url += 'extensions=' + dict.extensions;
+        dict.action = 'present';
+        dict.Username = project.owner;
+        dict.ProjectName = project.name;
     }
 
-    window.history.pushState(room, room, url);
+    this.setQueryString(dict, project.name);
+};
+
+NetsBloxMorph.prototype.setQueryString = function (dict, stateName) {
+    const qs = Object.entries(dict)
+      .map(pair => pair.map(encodeURIComponent).join('='))
+      .join('&');
+    const url = location.pathname + "?" + qs + location.hash;
+    window.history.pushState(stateName, stateName, url);
 };
 
 // Bug reporting assistance
@@ -984,9 +908,10 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     report.undoState = SnapUndo;
 
     // Add username (if logged in)
-    report.user = SnapCloud.username;
+    report.user = this.cloud.username;
     report.isAutoReport = !!error;
 
+    let url = window.location.origin + '/bugs/';
     if (report.isAutoReport) {
         var event = SnapActions.currentEvent;
         report.description = [
@@ -999,11 +924,11 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
         ].join('\n');
         report.error = error;
         report.event = event;
+        url += "?auto=true";
     }
 
     // Report to the server
-    var request = new XMLHttpRequest(),
-        url = SnapCloud.url + '/BugReport';
+    var request = new XMLHttpRequest();
 
     request.open('post', url);
     request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
@@ -1012,8 +937,8 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
             if (request.status > 199 && request.status < 400) {  // success
                 myself.showMessage(localize('Bug has been reported!'), 2);
             } else {  // failed...
-                myself.cloudError()(url, localize('bug could not be reported:') +
-                    request.responseText);
+                myself.cloudError()(localize('Bug could not be reported:') +
+                    '\n\n' + request.responseText);
             }
         }
     };
@@ -1169,180 +1094,6 @@ NetsBloxMorph.prototype.loadBugReport = function () {
 };
 
 // Collaboration
-NetsBloxMorph.prototype.manageCollaborators = function () {
-    var myself = this,
-        ownerId = this.room.ownerId,
-        name = this.room.name;
-
-    SnapCloud.getCollaboratorList(
-        function(friends) {
-            friends.sort(function(a, b) {
-                return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
-            });
-            new CollaboratorDialogMorph(
-                myself,
-                function(user) {
-                    if (user) {
-                        SnapCloud.inviteToCollaborate(
-                            SnapCloud.clientId,
-                            user.username,
-                            ownerId,
-                            name
-                        );
-                    }
-                },
-                friends,
-                'Invite a Collaborator to the Project'
-            ).popUp();
-        },
-        function (err, lbl) {
-            myself.cloudError().call(null, err, lbl);
-        }
-    );
-};
-
-NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, roomName, role
-    // Create a confirm dialog about joining the group
-    var myself = this,
-        // unpack the params
-        roomName = params.roomName,
-        enabled = false,
-        dialog,
-        msg;
-
-    if (!SnapActions.isCollaborating()) {
-        SnapActions.enableCollaboration();
-        enabled = true;
-    }
-
-    if (params.inviter === SnapCloud.username) {
-        msg = 'Would you like to collaborate at "' + roomName + '"?';
-    } else {
-        msg = params.inviter + ' has invited you to collaborate with\nhim/her at "' + roomName +
-            '"\nAccept?';
-    }
-
-    dialog = new DialogBoxMorph(null, function() {
-        myself.collabResponse(params, true);
-        dialog.destroy();
-    });
-
-    dialog.cancel = function() {
-        myself.collabResponse(params, false);
-        if (enabled) {
-            SnapActions.disableCollaboration();
-        }
-        dialog.destroy();
-    };
-
-    dialog.askYesNo(
-        'Collaboration Invitation',
-        localize(msg),
-        this.world()
-    );
-};
-
-NetsBloxMorph.prototype.collabResponse = function (invite, response) {
-    var myself = this;
-
-    SnapCloud.collabResponse(
-        invite.id,
-        response,
-        function() {
-            var dialog,
-                msg;
-
-            if (response) {
-                dialog = new DialogBoxMorph(null, function() {
-                    // Open the given project
-                    SnapCloud.reconnect(
-                        function () {
-                            SnapCloud.joinActiveProject(
-                                invite.projectId,
-                                function (xml) {
-                                    myself.rawLoadCloudProject(xml);
-                                },
-                                myself.cloudError()
-                            );
-                        },
-                        myself.cloudError()
-                    );
-                    dialog.destroy();
-                });
-                msg = 'Would you like to open the shared project now?';
-                dialog.askYesNo(
-                    localize('Open Shared Project?'),
-                    localize(msg),
-                    myself.world()
-                );
-            }
-        },
-        function(err){
-            myself.showMessage(err, 2);
-        }
-    );
-};
-
-NetsBloxMorph.prototype.logout = function () {
-    delete localStorage['-snap-user'];
-    SnapCloud.logout(
-        () => {
-            Services.reset();
-            SnapCloud.clear();
-            this.controlBar.cloudButton.refresh();
-            this.showMessage('disconnected.', 2);
-            this.newProject();
-        },
-        () => {
-            SnapCloud.clear();
-            this.controlBar.cloudButton.refresh();
-            this.showMessage('disconnected.', 2);
-            this.newProject();
-        }
-    );
-};
-
-NetsBloxMorph.prototype.createCloudAccount = function () {
-    var myself = this,
-        world = this.world();
-    /*
-    // force-logout, commented out for now:
-    delete localStorage['-snap-user'];
-    SnapCloud.clear();
-*/
-    new DialogBoxMorph(
-        null,
-        function (user) {
-            SnapCloud.signup(
-                user.username,
-                user.email,
-                function (txt, title) {
-                    new DialogBoxMorph().inform(
-                        title,
-                        txt +
-                            '.\n\nAn e-mail with your password\n' +
-                            'has been sent to the address provided',
-                        world,
-                        myself.cloudIcon(null, new Color(0, 180, 0))
-                    );
-                },
-                myself.cloudError()
-            );
-        }
-    ).withKey('cloudsignup').promptCredentials(
-        'Sign up',
-        'signup',
-        '/tos.html',
-        'Terms of Service...',
-        '/privacy.html',
-        'Privacy...',
-        'I have read and agree\nto the Terms of Service',
-        world,
-        myself.cloudIcon(),
-        myself.cloudMsg
-    );
-};
-
 NetsBloxMorph.prototype.simpleNotification = function (msg, sticky) {
     var msgText = localize(msg);
     var notification = new MenuMorph(null, msgText);

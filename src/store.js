@@ -487,7 +487,7 @@ SnapSerializer.prototype.getPortableXML = function (object) {
     return xml;
 };
 
-SnapSerializer.prototype.loadProjectModel = function (xmlNode, ide, remixID) {
+SnapSerializer.prototype.loadProjectModelSync = function (xmlNode, ide, remixID) {
     // public - answer a new Project represented by the given XML top node
     // show a warning if the origin apps differ
 
@@ -505,6 +505,27 @@ SnapSerializer.prototype.loadProjectModel = function (xmlNode, ide, remixID) {
     }
     model = this.rawLoadProjectModel(xmlNode, remixID);
     this.objects = {};
+    return model;
+};
+
+SnapSerializer.prototype.loadProjectModel = async function (xmlNode, ide, remixID) {
+    const model = this.loadProjectModelSync(xmlNode, ide, remixID);
+    function waitForCallback(obj, name) {
+        const cb = obj[name];
+        if (!cb) return;
+
+        const deferred = utils.defer();
+        obj[name] = function() {
+            cb(...arguments);
+            deferred.resolve();
+        }
+
+        return deferred.promise;
+    }
+
+    if (model.pentrails) {
+        await waitForCallback(model.pentrails, 'onload');
+    }
     return model;
 };
 
@@ -1354,7 +1375,7 @@ SnapSerializer.prototype.loadScripts = function (object, scripts, model) {
 };
 
 SnapSerializer.prototype.loadScriptsArray = function (model, object) {
-    // private - answer an array containting the model's scripts
+    // private - answer an array containing the model's scripts
     var scale = SyntaxElementMorph.prototype.scale,
         scripts = [];
     model.children.forEach(child => {
@@ -2053,21 +2074,17 @@ Array.prototype.toXML = function (serializer) {
 // Sprites
 
 StageMorph.prototype.toXML = function (serializer) {
-    var thumbnail = normalizeCanvas(
-            this.thumbnail(SnapSerializer.prototype.thumbnailSize),
-            true
-        ),
-        thumbdata,
+    var thumbdata,
         costumeIdx = this.getCostumeIdx(),
         ide = this.parentThatIsA(IDE_Morph);
 
-    // catch cross-origin tainting exception when using SVG costumes
     if (!serializer.isSavingPortable) {
-        thumbnail = normalizeCanvas(
+        const thumbnail = normalizeCanvas(
             this.thumbnail(SnapSerializer.prototype.thumbnailSize),
             true
         );
         try {
+            // catch cross-origin tainting exception when using SVG costumes
             thumbdata = thumbnail.toDataURL('image/png');
         } catch (error) {
             thumbdata = null;
@@ -2132,8 +2149,8 @@ StageMorph.prototype.toXML = function (serializer) {
         (ide && ide.projectNotes) ? ide.projectNotes : '',
         thumbdata,
         this.name,
-        StageMorph.prototype.dimensions.x,
-        StageMorph.prototype.dimensions.y,
+        ide?.performerMode ? 480 : this.dimensions.x,
+        ide?.performerMode ? 360 : this.dimensions.y,
         this.id,
         costumeIdx,
         this.color.r,
@@ -2645,8 +2662,19 @@ BlockMorph.prototype.toXML = BlockMorph.prototype.toScriptXML = function (
 };
 
 BlockMorph.prototype.toBlockXML = function (serializer) {
+    let xml = '<block collabId="@" s="@"';
+
+    // Add extra attribute for RPC blocks to list inputs
+    if(this instanceof ReporterBlockMorph && this.selector == "getJSFromRPCStruct" ||
+       this instanceof CommandBlockMorph && this.selector == "doRunRPC"){
+        let methodArgs = this.inputs()[1].fields.join(";");
+        xml += ` inputNames="${methodArgs}"`; 
+    }
+
+    xml += '>%%</block>';
+
     return serializer.format(
-        '<block collabId="@" s="@">%%</block>',
+        xml,
         this.id,
         this.selector,
         serializer.store(this.inputs()),

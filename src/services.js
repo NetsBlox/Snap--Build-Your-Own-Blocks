@@ -1,10 +1,10 @@
 /* globals utils, DEFAULT_SERVICES_HOST, SERVICES_HOSTS, SERVER_URL */
-function ServicesRegistry(servicesHosts) {
-    this.setServicesHosts(servicesHosts);
+function ServicesRegistry(config, cloud) {
+    this.cloud = cloud;
+    this.setServicesHosts(config.servicesHosts);
 }
 
 ServicesRegistry.prototype.reset = function () {
-    this.defaultHost = DEFAULT_SERVICES_HOST;
     this.auxServicesHosts = [];
 };
 
@@ -12,9 +12,10 @@ ServicesRegistry.prototype.onInvalidHosts = function (invalidHosts) {
     console.error('Invalid services hosts detected:', invalidHosts);
 };
 
-ServicesRegistry.prototype.fetchHosts = function () {
-    const url = SERVER_URL + '/api/v2/services-hosts/all/';
-    return fetch(url)
+ServicesRegistry.prototype.fetchHosts = function (username) {
+    const url = '/services/hosts/all/' + encodeURIComponent(username);
+
+    return this.cloud.fetch(url)
         .then(response => response.json())
         .then(hosts => this.setServicesHosts(hosts))
         .catch(err => {
@@ -92,7 +93,11 @@ ServicesRegistry.prototype.getServiceURL = async function (name) {
 };
 
 ServicesRegistry.prototype.getServiceMetadataFromURLSync = function (url) {
-    return JSON.parse(utils.getUrlSync(url));
+    return utils.getUrlSyncCached(
+        url,
+        JSON.parse, 
+        {ttl: 5000, cacheFailures: true},
+    );
 };
 
 ServicesRegistry.prototype.getServiceMetadataFromURL = async function (url) {
@@ -109,7 +114,7 @@ ServicesRegistry.prototype.getServicesMetadata = async function () {
     var serviceGroups = this.allHosts().map(async hostInfo => {
         const {url, categories} = hostInfo;
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, { signal: AbortSignal.timeout(2500) });
             const services = await response.json();
             if (hostInfo !== this.defaultHost) {
                 services.forEach(service => service.url = url);
@@ -136,6 +141,3 @@ ServicesRegistry.prototype.getServicesMetadata = async function () {
 ServicesRegistry.prototype.isRegisteredServiceURL = function (url) {
     return !!this.allHosts().find(host => url.startsWith(host.url));
 };
-
-/* eslint-disable-next-line no-unused-vars */
-const Services = new ServicesRegistry(SERVICES_HOSTS);

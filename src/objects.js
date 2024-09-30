@@ -85,7 +85,9 @@ localize, TableMorph, TableFrameMorph, normalizeCanvas, VectorPaintEditorMorph,
 HandleMorph, AlignmentMorph, Process, XML_Element, copyCanvas,
 UndoManager, SnapUndo*/
 
-modules.objects = '2020-August-07';
+/*jshint esversion: 6*/
+
+modules.objects = '2021-November-26';
 
 var SpriteMorph;
 var StageMorph;
@@ -209,13 +211,15 @@ SpriteMorph.prototype.initBlocks = function () {
             only: SpriteMorph,
             type: 'command',
             category: 'motion',
-            spec: 'point in direction %dir'
+            spec: 'point in direction %dir',
+            defaults: [90]
         },
         doFaceTowards: {
             only: SpriteMorph,
             type: 'command',
             category: 'motion',
-            spec: 'point towards %dst'
+            spec: 'point towards %dst',
+            defaults: [['mouse-pointer']]
         },
         gotoXY: {
             only: SpriteMorph,
@@ -228,7 +232,8 @@ SpriteMorph.prototype.initBlocks = function () {
             only: SpriteMorph,
             type: 'command',
             category: 'motion',
-            spec: 'go to %dst'
+            spec: 'go to %dst',
+            defaults: [['random position']]
         },
         doGlide: {
             only: SpriteMorph,
@@ -310,7 +315,7 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'reporter',
             category: 'looks',
             spec: '%img of costume %cst',
-            defaults: [['width']]
+            defaults: [['width'], ['current']]
         },
         reportNewCostume: {
             type: 'reporter',
@@ -321,7 +326,7 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'reporter',
             category: 'looks',
             spec: 'stretch %cst x: %n y: %n %',
-            defaults: ['', 100, 50]
+            defaults: [['current'], 100, 50]
         },
         doSayFor: {
             only: SpriteMorph,
@@ -355,18 +360,19 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'command',
             category: 'looks',
             spec: 'change %eff effect by %n',
-            defaults: [null, 25]
+            defaults: [['ghost'], 25]
         },
         setEffect: {
             type: 'command',
             category: 'looks',
             spec: 'set %eff effect to %n',
-            defaults: [null, 0]
+            defaults: [['ghost'], 0]
         },
         getEffect: {
             type: 'reporter',
             category: 'looks',
-            spec: '%eff effect'
+            spec: '%eff effect',
+            defaults: [['ghost']]
         },
         clearEffects: {
             type: 'command',
@@ -604,18 +610,18 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'pen',
             spec: 'set pen color to %clr'
         },
-        setPenHSVA: {
+        setPenColorDimension: {
             only: SpriteMorph,
             type: 'command',
             category: 'pen',
-            spec: 'set pen %hsva to %n',
+            spec: 'set pen %clrdim to %n',
             defaults: [['hue'], 50]
         },
-        changePenHSVA: {
+        changePenColorDimension: {
             only: SpriteMorph,
             type: 'command',
             category: 'pen',
-            spec: 'change pen %hsva by %n',
+            spec: 'change pen %clrdim by %n',
             defaults: [['hue'], 10]
         },
         getPenAttribute: {
@@ -630,18 +636,18 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'pen',
             spec: 'set background color to %clr'
         },
-        setBackgroundHSVA: {
+        setBackgroundColorDimension: {
             only: StageMorph,
             type: 'command',
             category: 'pen',
-            spec: 'set background %hsva to %n',
+            spec: 'set background %clrdim to %n',
             defaults: [['hue'], 50]
         },
-        changeBackgroundHSVA: {
+        changeBackgroundColorDimension: {
             only: StageMorph,
             type: 'command',
             category: 'pen',
-            spec: 'change background %hsva by %n',
+            spec: 'change background %clrdim by %n',
             defaults: [['hue'], 10]
         },
         changeSize: {
@@ -702,7 +708,8 @@ SpriteMorph.prototype.initBlocks = function () {
         receiveKey: {
             type: 'hat',
             category: 'control',
-            spec: 'when %keyHat key pressed'
+            spec: 'when %keyHat key pressed',
+            defaults: [['space']]
         },
         receiveInteraction: {
             type: 'hat',
@@ -754,7 +761,8 @@ SpriteMorph.prototype.initBlocks = function () {
         doForever: {
             type: 'command',
             category: 'control',
-            spec: 'forever %loop'
+            spec: 'forever %loop',
+            terminal: true
         },
         doRepeat: {
             type: 'command',
@@ -791,7 +799,8 @@ SpriteMorph.prototype.initBlocks = function () {
         doStopThis: {
             type: 'command',
             category: 'control',
-            spec: 'stop %stopChoices'
+            spec: 'stop %stopChoices',
+            defaults: [['all']]
         },
         doRun: {
             type: 'command',
@@ -811,7 +820,8 @@ SpriteMorph.prototype.initBlocks = function () {
         doReport: {
             type: 'command',
             category: 'control',
-            spec: 'report %s'
+            spec: 'report %s',
+            terminal: true
         },
         doCallCC: {
             type: 'command',
@@ -851,7 +861,8 @@ SpriteMorph.prototype.initBlocks = function () {
         createClone: {
             type: 'command',
             category: 'control',
-            spec: 'create a clone of %cln'
+            spec: 'create a clone of %cln',
+            defaults: [['myself']]
         },
         newClone: {
             type: 'reporter',
@@ -877,7 +888,8 @@ SpriteMorph.prototype.initBlocks = function () {
             only: SpriteMorph,
             type: 'predicate',
             category: 'sensing',
-            spec: 'touching %col ?'
+            spec: 'touching %col ?',
+            defaults: [['mouse-pointer']]
         },
         reportTouchingColor: {
             only: SpriteMorph,
@@ -895,7 +907,7 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'reporter',
             category: 'sensing',
             spec: '%asp at %loc',
-            defaults: [['hue']]
+            defaults: [['hue'], ['mouse-pointer']]
         },
         reportStackSize: {
             dev: true,
@@ -950,14 +962,15 @@ SpriteMorph.prototype.initBlocks = function () {
         reportKeyPressed: {
             type: 'predicate',
             category: 'sensing',
-            spec: 'key %key pressed?'
+            spec: 'key %key pressed?',
+            defaults: [['space']]
         },
         reportRelationTo: {
             only: SpriteMorph,
             type: 'reporter',
             category: 'sensing',
             spec: '%rel to %dst',
-            defaults: [['distance']]
+            defaults: [['distance'], ['mouse-pointer']]
         },
         doResetTimer: {
             type: 'command',
@@ -993,6 +1006,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'url %s',
             defaults: ['snap.berkeley.edu']
         },
+        reportHTTPRequest: {
+            type: 'reporter',
+            category: 'sensing',
+            spec: '%httprt url: %s send: %s headers: %lists',
+            defaults: ['GET', 'https://snap.berkeley.edu'],
+        },
         doSetGlobalFlag: {
             type: 'command',
             category: 'sensing',
@@ -1008,7 +1027,8 @@ SpriteMorph.prototype.initBlocks = function () {
         reportDate: {
             type: 'reporter',
             category: 'sensing',
-            spec: 'current %dates'
+            spec: 'current %dates',
+            defaults: [['date']]
         },
         reportGet: {
             type: 'reporter',
@@ -1045,7 +1065,14 @@ SpriteMorph.prototype.initBlocks = function () {
         reportSum: {
             type: 'reporter',
             category: 'operators',
-            spec: '%n + %n'
+            spec: '%n + %n',
+            alias: '+'
+        },
+        reportVariadicSum: {
+            type: 'reporter',
+            category: 'operators',
+            spec: '%sum',
+            alias: '+'
         },
         reportDifference: {
             type: 'reporter',
@@ -1056,7 +1083,13 @@ SpriteMorph.prototype.initBlocks = function () {
         reportProduct: {
             type: 'reporter',
             category: 'operators',
-            spec: '%n \u00D7 %n',
+            spec: '%n * %n',
+            alias: '*'
+        },
+        reportVariadicProduct: {
+            type: 'reporter',
+            category: 'operators',
+            spec: '%product',
             alias: '*'
         },
         reportQuotient: {
@@ -1073,7 +1106,7 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'reporter',
             category: 'operators',
             spec: '%fun of %n',
-            defaults: [null, 10]
+            defaults: [['sqrt'], 10]
         },
         reportPower: {
             type: 'reporter',
@@ -1085,26 +1118,58 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'operators',
             spec: '%n mod %n'
         },
+        reportAtan2: {
+            type: 'reporter',
+            category: 'operators',
+            spec: 'atan2 %n ÷ %n'
+        },
+        reportVariadicMin: {
+            type: 'reporter',
+            category: 'operators',
+            spec: '%min',
+            alias: 'min'
+        },
+        reportVariadicMax: {
+            type: 'reporter',
+            category: 'operators',
+            spec: '%max',
+            alias: 'max'
+        },
         reportRandom: {
             type: 'reporter',
             category: 'operators',
             spec: 'pick random %n to %n',
             defaults: [1, 10]
         },
-        reportLessThan: {
-            type: 'predicate',
-            category: 'operators',
-            spec: '%s < %s'
-        },
         reportEquals: {
             type: 'predicate',
             category: 'operators',
             spec: '%s = %s'
         },
+        reportNotEquals: {
+            type: 'predicate',
+            category: 'operators',
+            spec: '%s \u2260 %s'
+        },
+        reportLessThan: {
+            type: 'predicate',
+            category: 'operators',
+            spec: '%s < %s'
+        },
+        reportLessThanOrEquals: {
+            type: 'predicate',
+            category: 'operators',
+            spec: '%s \u2264 %s'
+        },
         reportGreaterThan: {
             type: 'predicate',
             category: 'operators',
             spec: '%s > %s'
+        },
+        reportGreaterThanOrEquals: {
+            type: 'predicate',
+            category: 'operators',
+            spec: '%s \u2265 %s'
         },
         reportAnd: {
             type: 'predicate',
@@ -1125,6 +1190,7 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'predicate',
             category: 'operators',
             spec: '%bool',
+            defaults: [true],
             alias: 'true boolean'
         },
         reportFalse: { // special case for keyboard entry and search
@@ -1168,7 +1234,7 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'predicate',
             category: 'operators',
             spec: 'is %s a %typ ?',
-            defaults: [5]
+            defaults: [5, ['number']]
         },
         reportIsIdentical: {
             type: 'predicate',
@@ -1265,10 +1331,16 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'lists',
             spec: 'all but first of %l'
         },
-        reportListLength: {
+        reportListLength: { // deprecated as of v6.6
             type: 'reporter',
             category: 'lists',
             spec: 'length of %l'
+        },
+        reportListAttribute: {
+            type: 'reporter',
+            category: 'lists',
+            spec: '%la of %l',
+            defaults: [['length']]
         },
         reportListContainsItem: {
             type: 'predicate',
@@ -1320,13 +1392,43 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'numbers from %n to %n',
             defaults: [1, 10]
         },
-
-        reportConcatenatedLists: { // only in dev mode - experimental
-            dev: true,
+    /*
+        reportListCombination: { // currently not in use
+            type: 'reporter',
+            category: 'lists',
+            spec: '%mlfunc %lists',
+            defaults: [['append']]
+        },
+    */
+        reportConcatenatedLists: {
             type: 'reporter',
             category: 'lists',
             spec: 'append %lists'
         },
+        reportCrossproduct: {
+            type: 'reporter',
+            category: 'lists',
+            spec: 'combinations %lists'
+        },
+        reportTranspose: { // deprecated
+            type: 'reporter',
+            category: 'lists',
+            spec: 'transpose %l'
+        },
+        reportReshape: {
+            type: 'reporter',
+            category: 'lists',
+            spec: 'reshape %l to %nums',
+            defaults: [null, [4, 3]]
+        },
+    /*
+        reportSlice: { // currently not in use
+            type: 'reporter',
+            category: 'lists',
+            spec: 'slice %l by %nums',
+            defaults: [null, [2, -1]]
+        },
+    */
 
         // HOFs
         reportMap: {
@@ -1485,22 +1587,22 @@ SpriteMorph.prototype.initBlockMigrations = function () {
             inputs: [['front']]
         },
         setHue: {
-            selector: 'setPenHSVA',
+            selector: 'setPenColorDimension',
             inputs: [['hue']],
             offset: 1
         },
         setBrightness: {
-            selector: 'setPenHSVA',
+            selector: 'setPenColorDimension',
             inputs: [['brightness']],
             offset: 1
         },
         changeHue: {
-            selector: 'changePenHSVA',
+            selector: 'changePenColorDimension',
             inputs: [['hue']],
             offset: 1
         },
         changeBrightness: {
-            selector: 'changePenHSVA',
+            selector: 'changePenColorDimension',
             inputs: [['brightness']],
             offset: 1
         },
@@ -1575,11 +1677,10 @@ SpriteMorph.prototype.blockAlternatives = {
     up: ['down', 'clear', 'doStamp'],
     doStamp: ['clear', 'down', 'up'],
 
-    setPenHSVA: ['changePenHSVA'],
-    changePenHSVA: ['setPenHSVA'],
-
-    setBackgroundHSVA: ['changeBackgroundHSVA'],
-    changeBackgroundHSVA: ['setBackgroundHSVA'],
+    setPenColorDimension: ['changePenColorDimension'],
+    changePenColorDimension: ['setPenColorDimension'],
+    setBackgroundColorDimension: ['changeBackgroundColorDimension'],
+    changeBackgroundColorDimension: ['setBackgroundColorDimension'],
 
     changeSize: ['setSize'],
     setSize: ['changeSize'],
@@ -1608,21 +1709,54 @@ SpriteMorph.prototype.blockAlternatives = {
     reportMouseY: ['reportMouseX'],
 
     // operators:
-    reportSum: ['reportDifference', 'reportProduct', 'reportQuotient',
-        'reportPower', 'reportModulus'],
-    reportDifference: ['reportSum', 'reportProduct', 'reportQuotient',
-        'reportPower', 'reportModulus'],
-    reportProduct: ['reportDifference', 'reportSum', 'reportQuotient',
-        'reportPower', 'reportModulus'],
-    reportQuotient: ['reportDifference', 'reportProduct', 'reportSum',
-        'reportPower', 'reportModulus'],
-    reportPower: ['reportDifference', 'reportProduct', 'reportSum',
-        'reportQuotient', 'reportModulus'],
-    reportModulus: ['reportDifference', 'reportProduct', 'reportSum',
-        'reportQuotient', 'reportPower'],
-    reportLessThan: ['reportEquals', 'reportGreaterThan'],
-    reportEquals: ['reportLessThan', 'reportGreaterThan'],
-    reportGreaterThan: ['reportEquals', 'reportLessThan'],
+    reportVariadicSum: ['reportDifference', 'reportVariadicProduct',
+        'reportQuotient', 'reportPower', 'reportModulus', 'reportAtan2',
+        'reportVariadicMin', 'reportVariadicMax'],
+    reportDifference: ['reportVariadicSum', 'reportVariadicProduct',
+        'reportQuotient', 'reportPower', 'reportModulus', 'reportAtan2',
+        'reportVariadicMin', 'reportVariadicMax'],
+    reportVariadicProduct: ['reportDifference', 'reportVariadicSum',
+        'reportQuotient', 'reportPower', 'reportModulus', 'reportAtan2',
+        'reportVariadicMin', 'reportVariadicMax'],
+    reportQuotient: ['reportDifference', 'reportVariadicProduct',
+        'reportVariadicSum', 'reportPower', 'reportModulus', 'reportAtan2',
+        'reportVariadicMin', 'reportVariadicMax'],
+    reportPower: ['reportDifference', 'reportVariadicProduct',
+        'reportVariadicSum', 'reportQuotient', 'reportModulus', 'reportAtan2',
+        'reportVariadicMin', 'reportVariadicMax'],
+    reportModulus: ['reportAtan2', 'reportDifference', 'reportVariadicProduct',
+        'reportVariadicSum','reportQuotient', 'reportPower',
+        'reportVariadicMin', 'reportVariadicMax'],
+    reportAtan2: ['reportModulus', 'reportDifference', 'reportVariadicProduct',
+        'reportVariadicSum','reportQuotient', 'reportPower',
+        'reportVariadicMin', 'reportVariadicMax'],
+    reportVariadicMin: ['reportVariadicMax', 'reportVariadicSum',
+        'reportDifference', 'reportVariadicProduct', 'reportQuotient',
+        'reportPower', 'reportModulus', 'reportAtan2'],
+    reportVariadicMax: ['reportVariadicMin', 'reportVariadicSum',
+        'reportDifference', 'reportVariadicProduct', 'reportQuotient',
+        'reportPower', 'reportModulus', 'reportAtan2'],
+    reportLessThan: ['reportLessThanOrEquals', 'reportEquals',
+        'reportIsIdentical', 'reportNotEquals', 'reportGreaterThan',
+        'reportGreaterThanOrEquals'],
+    reportEquals: ['reportIsIdentical', 'reportNotEquals', 'reportLessThan',
+        'reportLessThanOrEquals', 'reportGreaterThan',
+        'reportGreaterThanOrEquals'],
+    reportNotEquals: ['reportEquals', 'reportIsIdentical', 'reportLessThan',
+        'reportLessThanOrEquals', 'reportGreaterThan',
+        'reportGreaterThanOrEquals'],
+    reportGreaterThan: ['reportGreaterThanOrEquals', 'reportEquals',
+        'reportIsIdentical', 'reportNotEquals', 'reportLessThan',
+        'reportLessThanOrEquals'],
+    reportLessThanOrEquals: ['reportLessThan', 'reportEquals',
+        'reportIsIdentical', 'reportNotEquals', 'reportGreaterThan',
+        'reportGreaterThanOrEquals'],
+    reportGreaterThanOrEquals: ['reportGreaterThan', 'reportEquals',
+        'reportIsIdentical', 'reportNotEquals', 'reportLessThan',
+        'reportLessThanOrEquals'],
+    reportIsIdentical: ['reportEquals', 'reportNotEquals', 'reportLessThan',
+        'reportLessThanOrEquals', 'reportGreaterThan',
+        'reportGreaterThanOrEquals'],
     reportAnd: ['reportOr'],
     reportOr: ['reportAnd'],
 
@@ -2367,8 +2501,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getPenDown', this.inheritsAttribute('pen down?')));
         blocks.push('-');
         blocks.push(block('setColor'));
-        blocks.push(block('changePenHSVA'));
-        blocks.push(block('setPenHSVA'));
+        blocks.push(block('changePenColorDimension'));
+        blocks.push(block('setPenColorDimension'));
         blocks.push(block('getPenAttribute'));
         blocks.push('-');
         blocks.push(block('changeSize'));
@@ -2467,6 +2601,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doReport'));
         blocks.push(block('doStopThis'));
         blocks.push('-');
+        blocks.push(block('doTryCatch'));
+        blocks.push(block('doThrow'));
+        blocks.push('-');
         blocks.push(block('doRun'));
         blocks.push(block('fork'));
         blocks.push(block('evaluate'));
@@ -2551,6 +2688,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('reportThreadCount'));
             blocks.push(block('reportStackSize'));
             blocks.push(block('reportFrameCount'));
+
+            blocks.push(block('reportHTTPRequest'));
         }
 
 	/////////////////////////////////
@@ -2562,9 +2701,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reifyPredicate'));
         blocks.push('#');
         blocks.push('-');
-        blocks.push(block('reportSum'));
+        blocks.push(block('reportVariadicSum'));
         blocks.push(block('reportDifference'));
-        blocks.push(block('reportProduct'));
+        blocks.push(block('reportVariadicProduct'));
         blocks.push(block('reportQuotient'));
         blocks.push(block('reportPower'));
         blocks.push('-');
@@ -2716,7 +2855,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportListItem'));
         blocks.push(block('reportCDR'));
         blocks.push('-');
-        blocks.push(block('reportListLength'));
+        blocks.push(block('reportListAttribute'));
         blocks.push(block('reportListIndex'));
         blocks.push(block('reportListContainsItem'));
         blocks.push(block('reportListIsEmpty'));
@@ -2728,12 +2867,14 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doForEach'));
         blocks.push('-');
-        blocks.push(block('reportConcatenatedLists'));
-        blocks.push('-');
         blocks.push(block('doAddToList'));
         blocks.push(block('doDeleteFromList'));
         blocks.push(block('doInsertInList'));
         blocks.push(block('doReplaceInList'));
+        blocks.push('-');
+        blocks.push(block('reportConcatenatedLists'));
+        blocks.push(block('reportReshape'));
+        blocks.push(block('reportCrossproduct'));
 
     // for debugging: ///////////////
 
@@ -2866,7 +3007,7 @@ SpriteMorph.prototype.freshPalette = function (category) {
     palette.growth = new Point(0, MorphicPreferences.scrollBarSize);
 
     // toolbar:
-    
+
     palette.toolBar = new AlignmentMorph('column');
 
     searchButton = new PushButtonMorph(
@@ -3015,6 +3156,11 @@ SpriteMorph.prototype.freshPalette = function (category) {
                     SnapUndo.undo('palette');
                 });
         }
+
+        if (NetsBloxExtensions) {
+            NetsBloxExtensions.getUserMenu(this, menu);
+        }
+
         return menu;
     };
 
@@ -3310,7 +3456,7 @@ SpriteMorph.prototype.searchBlocks = function (
     searchPane.color = this.paletteColor;
     searchPane.contents.color = this.paletteColor;
     searchPane.addContents(searchBar);
-    searchBar.setWidth(ide.logo.width() - 30);
+    searchBar.setWidth(ide.logo.width() - 40);
     searchBar.contrast = 90;
     searchBar.setPosition(
         searchPane.contents.topLeft().add(new Point(10, 10))
@@ -3390,7 +3536,7 @@ SpriteMorph.prototype.reporterize = function (expressionString) {
     function parseInfix(expression, operator, already) {
         // very basic diadic infix parser for arithmetic expressions
         // with strict left-to-right operator precedence (as in Smalltalk)
-        // which can be overriden by - nested - parentheses.
+        // which can be overridden by - nested - parentheses.
         // assumes well-formed expressions, no graceful error handling yet.
 
         var inputs = ['', ''],
@@ -3480,9 +3626,9 @@ SpriteMorph.prototype.reporterize = function (expressionString) {
             off = 1,
             reverseDict = {};
         selectors = {
-            '+': 'reportSum',
+            '+': 'reportVariadicSum',
             '-': 'reportDifference',
-            '*': 'reportProduct',
+            '*': 'reportVariadicProduct',
             '/': 'reportQuotient',
             '%': 'reportModulus',
             '^': 'reportPower',
@@ -3494,8 +3640,9 @@ SpriteMorph.prototype.reporterize = function (expressionString) {
             round: 'reportRound',
             not: 'reportNot'
         };
-        monads = ['abs', 'ceiling', 'floor', 'sqrt', 'sin', 'cos', 'tan',
-            'asin', 'acos', 'atan', 'ln', 'log', 'round', 'not'];
+        monads = ['abs', 'neg', 'ceiling', 'floor', 'sqrt', 'sin', 'cos',
+            'tan', 'asin', 'acos', 'atan', 'ln', 'log', 'lg', 'id', 'round',
+            'not'];
         alias = {
             ceil: 'ceiling',
             '!' : 'not'
@@ -3993,6 +4140,11 @@ SpriteMorph.prototype.userMenu = function () {
         });
     }
     menu.addItem("export...", 'exportSprite');
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu);
+    }
+
     return menu;
 };
 
@@ -4260,7 +4412,7 @@ SpriteMorph.prototype.setVisibility = function (bool, noShadow) {
         }
     }
 
-    // progagate to parts
+    // propagate to parts
     this.parts.forEach(part => part.setVisibility(bool));
 
     // propagate to children that inherit my visibility
@@ -4285,7 +4437,7 @@ SpriteMorph.prototype.reportShown = function () {
 
 // SpriteMorph pen color
 
-SpriteMorph.prototype.setColorComponentHSVA = function (idx, num) {
+SpriteMorph.prototype.setColorDimension = function (idx, num) {
     var x = this.xPosition(),
         y = this.yPosition(),
         n = +num;
@@ -4311,7 +4463,7 @@ SpriteMorph.prototype.setColorComponentHSVA = function (idx, num) {
     this.gotoXY(x, y);
 };
 
-SpriteMorph.prototype.getColorComponentHSLA = function (idx) {
+SpriteMorph.prototype.getColorDimension = function (idx) {
     idx = +idx;
     if (idx === 3) {
         return (1 - this.color.a) * 100;
@@ -4319,11 +4471,143 @@ SpriteMorph.prototype.getColorComponentHSLA = function (idx) {
     return (this.cachedHSV[idx] || 0) * 100;
 };
 
-SpriteMorph.prototype.changeColorComponentHSVA = function (idx, delta) {
-    this.setColorComponentHSVA(
+SpriteMorph.prototype.changeColorDimension = function (idx, delta) {
+    this.setColorDimension(
         idx,
-        this.getColorComponentHSLA(idx) + (+delta || 0)
+        this.getColorDimension(idx) + (+delta || 0)
     );
+};
+
+SpriteMorph.prototype.setColorRGBA = function (dta) {
+    // dta can be one of the following:
+    // - a 4 item list representing r-g-b-a each on a scale of 0-255
+    // - a 3 item list representing r-g-b leaving a unchanged
+    // - a 1 item list representing greyscale from 0-255 leaving alpha unchanged
+    // - a 2 item list representing greyscale and alpha each from 0-255
+    // - a number representing greyscale from 0-255 leaving alpha unchanged
+    var clr = this.color.copy(),
+        num;
+    if (dta instanceof List) {
+        switch (dta.length()) {
+        case 1:
+            num = Math.max(0, Math.min(+(dta.at(1)), 255));
+            if (isNaN(num)) {return; }
+            clr.r = num;
+            clr.g = num;
+            clr.b = num;
+            break;
+        case 2:
+            num = Math.max(0, Math.min(+(dta.at(1)), 255));
+            if (isNaN(num)) {return; }
+            clr.r = num;
+            clr.g = num;
+            clr.b = num;
+            num = Math.max(0, Math.min(+(dta.at(2)), 255));
+            if (isNaN(num)) {return; }
+            clr.a = num / 255;
+            break;
+        case 3:
+            num = Math.max(0, Math.min(+(dta.at(1)), 255));
+            if (isNaN(num)) {return; }
+            clr.r = num;
+            num = Math.max(0, Math.min(+(dta.at(2)), 255));
+            if (isNaN(num)) {return; }
+            clr.g = num;
+            num = Math.max(0, Math.min(+(dta.at(3)), 255));
+            if (isNaN(num)) {return; }
+            clr.b = num;
+            break;
+        case 4:
+            num = Math.max(0, Math.min(+(dta.at(1)), 255));
+            if (isNaN(num)) {return; }
+            clr.r = num;
+            num = Math.max(0, Math.min(+(dta.at(2)), 255));
+            if (isNaN(num)) {return; }
+            clr.g = num;
+            num = Math.max(0, Math.min(+(dta.at(3)), 255));
+            if (isNaN(num)) {return; }
+            clr.b = num;
+            num = Math.max(0, Math.min(+(dta.at(4)), 255));
+            if (isNaN(num)) {return; }
+            clr.a = num / 255;
+            break;
+        default:
+            return;
+        }
+    } else {
+        num = Math.max(0, Math.min(+dta, 255));
+        if (isNaN(num)) {return; }
+        clr.r = num;
+        clr.g = num;
+        clr.b = num;
+    }
+    this.setColor(clr);
+};
+
+SpriteMorph.prototype.changeColorRGBA = function (dta) {
+    // dta can be one of the following:
+    // - a 4 item list representing r-g-b-a each on a scale of 0-255
+    // - a 3 item list representing r-g-b leaving a unchanged
+    // - a 1 item list representing greyscale from 0-255 leaving alpha unchanged
+    // - a 2 item list representing greyscale and alpha each from 0-255
+    // - a number representing greyscale from 0-255 leaving alpha unchanged
+    var clr = this.color.copy(),
+        num;
+    if (dta instanceof List) {
+        switch (dta.length()) {
+        case 1:
+            num = +(dta.at(1));
+            if (isNaN(num)) {return; }
+            clr.r = Math.max(0, Math.min(clr.r + num, 255));
+            clr.g = Math.max(0, Math.min(clr.g + num, 255));
+            clr.b = Math.max(0, Math.min(clr.b + num, 255));
+            break;
+        case 2:
+            num = +(dta.at(1));
+            if (isNaN(num)) {return; }
+            clr.r = Math.max(0, Math.min(clr.r + num, 255));
+            clr.g = Math.max(0, Math.min(clr.g + num, 255));
+            clr.b = Math.max(0, Math.min(clr.b + num, 255));
+            num = +(dta.at(2));
+            if (isNaN(num)) {return; }
+            clr.a = Math.max(0, Math.min((clr.a * 255) + num, 255)) / 255;
+            break;
+        case 3:
+            num = +(dta.at(1));
+            if (isNaN(num)) {return; }
+            clr.r = Math.max(0, Math.min(clr.r + num, 255));
+            num = +(dta.at(2));
+            if (isNaN(num)) {return; }
+            clr.g = Math.max(0, Math.min(clr.g + num, 255));
+            num = +(dta.at(3));
+            if (isNaN(num)) {return; }
+            clr.b = Math.max(0, Math.min(clr.b + num, 255));
+            break;
+        case 4:
+            num = +(dta.at(1));
+            if (isNaN(num)) {return; }
+            clr.r = Math.max(0, Math.min(clr.r + num, 255));
+            num = +(dta.at(2));
+            if (isNaN(num)) {return; }
+            clr.g = Math.max(0, Math.min(clr.g + num, 255));
+            num = +(dta.at(3));
+            if (isNaN(num)) {return; }
+            clr.b = Math.max(0, Math.min(clr.b + num, 255));
+            num = +(dta.at(4));
+            if (isNaN(num)) {return; }
+            clr.a = Math.max(0, Math.min((clr.a * 255) + num, 255)) / 255;
+            break;
+        default:
+            return;
+        }
+    } else {
+        num = +dta;
+        if (isNaN(num)) {return; }
+        clr.r = Math.max(0, Math.min(clr.r + num, 255));
+        clr.g = Math.max(0, Math.min(clr.g + num, 255));
+        clr.b = Math.max(0, Math.min(clr.b + num, 255));
+    }
+    this.setColor(clr);
 };
 
 SpriteMorph.prototype.setColor = function (aColor) {
@@ -4347,7 +4631,15 @@ SpriteMorph.prototype.getPenAttribute = function (attrib) {
     if (name === 'size') {
         return this.size || 0;
     }
-    return this.getColorComponentHSLA(options.indexOf(name));
+    if (name === 'r-g-b-a') {
+        return new List([
+            this.color.r,
+            this.color.g,
+            this.color.b,
+            Math.round(this.color.a * 255)
+        ]);
+    }
+    return this.getColorDimension(options.indexOf(name));
 };
 
 // SpriteMorph layers
@@ -5134,7 +5426,7 @@ SpriteMorph.prototype.setEffect = function (effect, value) {
                 'pixelate',
                 'mosaic',
                 'negative',
-                // depracated, but still supported in legacy projects:
+                // deprecated, but still supported in legacy projects:
                 'duplicate',
                 'comic',
                 'confetti'
@@ -5913,7 +6205,7 @@ SpriteMorph.prototype.allSendersOf = function (message, receiverName) {
     });
 };
 
-SpriteMorph.prototype.allHatBlocksFor = function (message) {
+SpriteMorph.prototype.allHatBlocksFor = function (message, allowCustom = false) {
     if (typeof message === 'number') { message = message.toString(); }
     return this.scripts.children.filter(morph => {
         var event;
@@ -5930,6 +6222,11 @@ SpriteMorph.prototype.allHatBlocksFor = function (message) {
             }
             if (morph.selector === 'receiveOnClone') {
                 return message === '__clone__init__';
+            }
+
+            // Allows for custom hat blocks
+            if(allowCustom && morph.selector === message) {
+                return true;
             }
         }
         return false;
@@ -6851,7 +7148,7 @@ SpriteMorph.prototype.refreshInheritedAttribute = function (aName) {
             this.wearCostume(this.exemplar.costume, true);
         } else {
             // otherwise switch to the own costume of the
-            // corresponing number
+            // corresponding number
             this.doSwitchToCostume(this.getCostumeIdx(), true);
         }
         break;
@@ -7101,7 +7398,7 @@ SpriteMorph.prototype.inheritedMethods = function () {
 
 SpriteMorph.prototype.thumbnail = function (extentPoint, recycleMe) {
     // answer a new Canvas of extentPoint dimensions containing
-    // my thumbnail representation keeping the originial aspect ratio
+    // my thumbnail representation keeping the original aspect ratio
     // a "recycleMe canvas can be passed for re-use
     var src = this.getImage(), // at this time sprites aren't composite morphs
         w = this.width(),
@@ -7786,6 +8083,15 @@ StageMorph.prototype.clearPenTrails = function () {
     this.changed();
 };
 
+StageMorph.prototype.resizePenTrails = function () {
+    var oldCanvas = this.trailsCanvas;
+    this.cachedPenTrailsMorph = null;
+    this.trailsCanvas = newCanvas(this.dimensions, null, this.trailsCanvas);
+    this.trailsCanvas.getContext('2d').drawImage(oldCanvas, 0, 0);
+    this.trailsLog = [];
+    this.changed();
+};
+
 StageMorph.prototype.penTrails = function () {
     if (!this.trailsCanvas) {
         this.trailsCanvas = newCanvas(this.dimensions);
@@ -8442,6 +8748,11 @@ StageMorph.prototype.runStopScripts = function () {
             morph.receiveUserInteraction('stopped', true, true);
         }
     });
+
+    var ide = this.parentThatIsA(IDE_Morph);
+    if (ide) {
+        ide.extensions.onStopAllScripts();
+    }
 };
 
 StageMorph.prototype.removeAllClones = function () {
@@ -8667,8 +8978,8 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('clear'));
         blocks.push('-');
         blocks.push(block('setBackgroundColor'));
-        blocks.push(block('changeBackgroundHSVA'));
-        blocks.push(block('setBackgroundHSVA'));
+        blocks.push(block('changeBackgroundColorDimension'));
+        blocks.push(block('setBackgroundColorDimension'));
         blocks.push('-');
         blocks.push(block('reportPenTrailsAsCostume'));
         blocks.push('-');
@@ -8756,6 +9067,9 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doReport'));
         blocks.push(block('doStopThis'));
         blocks.push('-');
+        blocks.push(block('doTryCatch'));
+        blocks.push(block('doThrow'));
+        blocks.push('-');
         blocks.push(block('doRun'));
         blocks.push(block('fork'));
         blocks.push(block('evaluate'));
@@ -8833,6 +9147,8 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('reportThreadCount'));
             blocks.push(block('reportStackSize'));
             blocks.push(block('reportFrameCount'));
+
+            blocks.push(block('reportHTTPRequest'));
         }
 
     /////////////////////////////////
@@ -8844,9 +9160,9 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reifyPredicate'));
         blocks.push('#');
         blocks.push('-');
-        blocks.push(block('reportSum'));
+        blocks.push(block('reportVariadicSum'));
         blocks.push(block('reportDifference'));
-        blocks.push(block('reportProduct'));
+        blocks.push(block('reportVariadicProduct'));
         blocks.push(block('reportQuotient'));
         blocks.push(block('reportPower'));
         blocks.push('-');
@@ -8981,7 +9297,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportListItem'));
         blocks.push(block('reportCDR'));
         blocks.push('-');
-        blocks.push(block('reportListLength'));
+        blocks.push(block('reportListAttribute'));
         blocks.push(block('reportListIndex'));
         blocks.push(block('reportListContainsItem'));
         blocks.push(block('reportListIsEmpty'));
@@ -8993,12 +9309,14 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doForEach'));
         blocks.push('-');
-        blocks.push(block('reportConcatenatedLists'));
-        blocks.push('-');
         blocks.push(block('doAddToList'));
         blocks.push(block('doDeleteFromList'));
         blocks.push(block('doInsertInList'));
         blocks.push(block('doReplaceInList'));
+        blocks.push('-');
+        blocks.push(block('reportConcatenatedLists'));
+        blocks.push(block('reportReshape'));
+        blocks.push(block('reportCrossproduct'));
 
     // for debugging: ///////////////
 
@@ -9099,6 +9417,11 @@ StageMorph.prototype.userMenu = function () {
             'export pen trails\nline segments as SVG'
         );
     }
+
+    if (NetsBloxExtensions) {
+        NetsBloxExtensions.getUserMenu(this, menu);
+    }
+
     return menu;
 };
 
@@ -9121,11 +9444,45 @@ StageMorph.prototype.edit = SpriteMorph.prototype.edit;
 
 StageMorph.prototype.fullImage = Morph.prototype.fullImage;
 
+// Performer mode button
+
+StageMorph.prototype.addSwitchToScriptsButton = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        scrollFrame = ide.currentSprite.scripts.parentThatIsA(ScrollFrameMorph),
+        padding = 4,
+        switchToScriptsButton = new PushButtonMorph(
+            this, // target
+            "switchToScripts",
+            new SymbolMorph('turtle', 12)
+        );
+
+    this.switchToScriptsButton = switchToScriptsButton;
+
+    switchToScriptsButton.alpha = 0.2;
+    switchToScriptsButton.padding = padding;
+    switchToScriptsButton.edge = 0;
+    switchToScriptsButton.hint =
+        'toggle focus between stage\nand scripting area';
+    switchToScriptsButton.labelShadowColor =
+        scrollFrame.toolBar.keyboardButton.labelShadowColor;
+    switchToScriptsButton.fixLayout();
+    this.add(switchToScriptsButton);
+    switchToScriptsButton.setRight(this.right() - padding);
+    switchToScriptsButton.setTop(this.top() + padding);
+};
+
+StageMorph.prototype.switchToScripts = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        scrollFrame = ide.currentSprite.scripts.parentThatIsA(ScrollFrameMorph);
+    this.switchToScriptsButton.destroy();
+    scrollFrame.show();
+};
+
 // StageMorph thumbnail
 
 StageMorph.prototype.thumbnail = function (extentPoint, recycleMe) {
     // answer a new Canvas of extentPoint dimensions containing
-    // my thumbnail representation keeping the originial aspect ratio
+    // my thumbnail representation keeping the original aspect ratio
     // a "recycleMe canvas can be passed for re-use
     return this.fancyThumbnail(extentPoint, null, false, recycleMe);
 };
@@ -9278,7 +9635,7 @@ StageMorph.prototype.newClone = nop;
 
 // StageMorph background color setting
 
-StageMorph.prototype.setColorComponentHSVA = function (idx, num) {
+StageMorph.prototype.setColorDimension = function (idx, num) {
     var n = +num;
 
     idx = +idx;
@@ -9299,11 +9656,17 @@ StageMorph.prototype.setColorComponentHSVA = function (idx, num) {
     this.rerender();
 };
 
-StageMorph.prototype.getColorComponentHSLA
-    = SpriteMorph.prototype.getColorComponentHSLA;
+StageMorph.prototype.getColorDimension =
+    SpriteMorph.prototype.getColorDimension;
 
-StageMorph.prototype.changeColorComponentHSVA
-    = SpriteMorph.prototype.changeColorComponentHSVA;
+StageMorph.prototype.changeColorDimension =
+    SpriteMorph.prototype.changeColorDimension;
+
+StageMorph.prototype.setColorRGBA =
+    SpriteMorph.prototype.setColorRGBA;
+
+StageMorph.prototype.changeColorRGBA =
+    SpriteMorph.prototype.changeColorRGBA;
 
 StageMorph.prototype.setColor = function (aColor) {
     if (!this.color.eq(aColor, true)) { // observeAlpha
@@ -9680,7 +10043,7 @@ StageMorph.prototype.reportPenTrailsAsCostume = function () {
 // SpriteBubbleMorph ////////////////////////////////////////////////////////
 
 /*
-    I am a sprite's scaleable speech bubble. I rely on SpriteMorph
+    I am a sprite's scalable speech bubble. I rely on SpriteMorph
     for my preferences settings
 */
 
@@ -10179,7 +10542,7 @@ Costume.prototype.shrinkToFit = function (extentPoint) {
 
 Costume.prototype.thumbnail = function (extentPoint, recycleMe) {
     // answer a new Canvas of extentPoint dimensions containing
-    // my thumbnail representation keeping the originial aspect ratio
+    // my thumbnail representation keeping the original aspect ratio
     // a "recycleMe canvas can be passed for re-use
     var src = this.contents, // at this time sprites aren't composite morphs
         scale = Math.min(
@@ -12211,6 +12574,27 @@ WatcherMorph.prototype.userMenu = function () {
                 menu.addLine();
                 vNames.forEach(vName => monitor(vName));
             }
+        } else if (this.currentValue instanceof Sound) {
+            menu.addItem(
+                'export...',
+                function () {
+                    var ide = myself.parentThatIsA(IDE_Morph);
+                    const audioSrc = this.currentValue.audio.src;
+                    if (audioSrc.includes('data:')) {
+                        ide.saveFileAs(
+                            myself.currentValue.audio.src,
+                            'audio/wav',
+                            myself.getter
+                        )
+                    } else {
+                        ide.saveFileAs(
+                            myself.currentValue.audioBuffer,
+                            'audio/wav',
+                            myself.getter
+                        )
+                    }
+                }
+            )
         }
 
         if (this.currentValue.blockify) {
@@ -13313,3 +13697,497 @@ ReplayControls.prototype.getInverseEvent = function(event) {
         }
     }
 };
+
+////// READING MUSICXML //////
+
+/**
+ * @description - Creates and instance of an object representing a note in a musical work.
+ * @param {Element} src - The contents of a <note> tag in a .musicxml file. 
+ */
+function XmlNote(src) {
+    this.src = src;
+
+    this.initPitch = function () {
+        if (this.src.getElementsByTagName("rest").length > 0 || 
+        this.src.getElementsByTagName("step").length == 0 ||
+        this.src.getElementsByTagName("octave").length == 0) {
+            return "Rest";
+        }
+        const step = this.src.getElementsByTagName("step")[0].childNodes[0].nodeValue;
+        const octave = this.src.getElementsByTagName("octave")[0].childNodes[0].nodeValue;
+        return step + octave;
+    }
+
+    this.initType = function () {
+        const element = this.src.getElementsByTagName("type");
+        if (element.length == 0) {
+            return "Whole";
+        }
+        const temp = element[0].childNodes[0].nodeValue;
+        return temp.charAt(0).toUpperCase() + temp.slice(1);
+    }
+
+    this.initDotted = function () {
+        const element = this.src.getElementsByTagName("dot");
+        return element.length != 0;
+    }
+
+    this.pitch = this.initPitch();
+    this.type = this.initType();
+    this.dotted = this.initDotted();
+}
+
+/**
+ * @description - Creates and instance of an object representing a part in a musical work.
+ * @param {Element} src - The contents of a <part> tag in a .musicxml file. 
+ * @param {String} name - The name of the part.
+ */
+function Part(src, name="untitled") {
+    this.src = src;
+    this.notes = [];
+    this.name = name;
+    const xmlMeasures = this.src.getElementsByTagName("measure");
+    for (let i = 0; i < xmlMeasures.length; ++i) {
+        const xmlNotes = xmlMeasures[i].getElementsByTagName("note");
+        for (let j = 0; j < xmlNotes.length; ++j) this.notes.push(new XmlNote(xmlNotes[j]));
+    }
+}
+
+/**
+ * @description - Creates a MusicReader object that parses MusicXML files.
+ * @constructor
+ * @param {String} src - The contents of a .musicxml file.
+ * @param {String} name - The name of the MusicReader.
+ */
+function MusicReader(src, name = "untitled") {
+    this.src = src;
+    this.name = name;
+    this.parts = [];
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(this.src, "text/xml");
+    const parts = xmlDoc.getElementsByTagName("part");
+    const scoreParts = xmlDoc.getElementsByTagName("part-name");
+    for (let i = 0; i < parts.length; ++i) {
+        this.parts.push(new Part(parts[i], scoreParts[i].textContent));
+    }
+}
+
+/**
+ * @description - Creates a MusicWriter object with the data from a MusicReader.
+ * @constructor
+ * @param {MusicReader} musicReader - The contents of a MusicReader.
+ */
+function MusicWriter(musicReader) {
+    const DEFAULT_TEMP0 = 60;
+    this.mMusicReader = musicReader;
+    this.myRoot = new Document();
+}
+
+/**
+ * @description - Creates a .xml file to pass back to the user.
+ * @returns {String} - A String holding the contents of the .xml file.
+ */
+MusicWriter.prototype.getFile = function () {
+    this.initFile()
+    return new XMLSerializer().serializeToString(this.myRoot.documentElement);
+}
+
+/**
+ * @description - This function starts the process of converting a Music XML file into a usable 
+ *                NetsBlox project.
+ */
+MusicWriter.prototype.initFile = function () {
+    const room = this.createRoom();
+    this.myRoot.appendChild(room);
+}
+
+/**
+ * @description - This function creates the content of a <room> tag in a NetsBlox project.
+ * @returns {Element} - The <room> tag.
+ */
+MusicWriter.prototype.createRoom = function () {
+    const room = this.myRoot.createElement("room");
+    room.setAttribute("name", this.mMusicReader.name);
+    room.setAttribute("app", "NetsBlox 2.3.2, http://netsblox.org");
+    const role = this.createRole("myRole");
+    room.appendChild(role);
+    return room;
+}
+
+/**
+ * @description - This function creates the content of a <role> tag in a NetsBlox project.
+ * @param {String} name - The name of the role.
+ * @returns {Element} - The <role> tag.
+ */
+MusicWriter.prototype.createRole = function (name) {
+    const role = this.myRoot.createElement("role");
+    role.setAttribute("name", name);
+    const project = this.createProject(name);
+    role.appendChild(project);
+    return role;
+}
+
+/**
+ * @description - This function creates the content of a <project> tag in a NetsBlox project.
+ * @param {String} roleName - The name of the role the project is being created in.
+ * @returns {Element} - The <project> tag.
+ */
+MusicWriter.prototype.createProject = function (roleName) {
+    const project = this.myRoot.createElement("project");
+    project.setAttribute("name", roleName);
+    project.setAttribute("app", "NetsBlox 2.3.2, http://netsblox.org");
+    project.setAttribute("version", "2.3.2");
+    const stage = this.createStage();
+    project.appendChild(stage);
+    const variables = this.createVariables();
+    project.appendChild(variables);
+    return project;
+}
+
+/**
+ * @description - This function creates the content of a <stage> tag in a NetsBlox project.
+ * @param {Element} name  - The name of the stage.
+ * @returns {Element} - The <stage> tag.
+ */
+MusicWriter.prototype.createStage = function (name = "Stage") {
+    const stage = this.myRoot.createElement("stage");
+    stage.setAttribute("name", name);
+    stage.setAttribute("temp", this.DEFAULT_TEMP0);
+    const blocks = this.createBlocks();
+    stage.appendChild(blocks);
+    const scripts = this.createScripts();
+    scripts.appendChild(this.createStartScript());
+    stage.appendChild(scripts);
+    const variables = this.createVariables();
+    stage.appendChild(variables);
+    const sprites = this.createSprites();
+    stage.appendChild(sprites);
+    return stage;
+}
+
+/**
+ * @description - This function creates the content of a <blocks> tag in a NetsBlox project. It 
+ *                populates it with previously created <block> elements.
+ * @param {[Element]} blocksContent - The <block> elements being put inside the <blocks> tag. If 
+ *                                    the array is empty, an empty <blocks> tag is returned.
+ * @returns {Element} - The <blocks> tag.
+ * @see MusicWriter.prototype.createBlock
+ */
+MusicWriter.prototype.createBlocks = function (blocksContent = []) {
+    const blocks = this.myRoot.createElement("blocks");
+    for (let i = 0; i < blocksContent.length; ++i) {
+        blocks.appendChild(blocksContent[i]);
+    }
+    return blocks;
+}
+
+/**
+ * @description - This function creates the content of a <scripts> tag in a NetsBlox project. It 
+ *                populates it with previously created <script> elements.
+ * @param {[Element]} scriptsContent - The <script> elements being put inside the <scripts> tag. If 
+ *                                     the array is empty, an empty <scripts> tag is returned.
+ * @returns {Element} - The <scripts> tag.
+ * @see MusicWriter.prototype.createScript
+ */
+MusicWriter.prototype.createScripts = function (scriptsContent = []) {
+    const scripts = this.myRoot.createElement("scripts");
+    for (let i = 0; i < scriptsContent.length; ++i) {
+        scripts.appendChild(scriptsContent[i]);
+    }
+    return scripts;
+}
+
+/**
+ * @description - This function creates the content of a <variables> tag in a NetsBlox project. It 
+ *                populates it with previously created <variable> elements.
+ * @param {[Element]} variablesContent - The <variable> elements being put inside the <variables> 
+ *                                       tag. If the array is empty, an empty <variables> tag is
+ *                                       returned.
+ * @returns {Element} - The <variables> tag.
+ * @see MusicWriter.prototype.createVariable
+ */
+MusicWriter.prototype.createVariables = function (variablesContent = []) {
+    const variables = this.myRoot.createElement("variables");
+    for (let i = 0; i < variablesContent.length; ++i) {
+        variables.appendChild(variablesContent[i]);
+    }
+    return variables;
+}
+
+/**
+ * @description - This function creates the content of a <sprites> tag in a NetsBlox project. Each 
+ *                part in a score becomes its own sprite.
+ * @returns {Element} - The <sprites> tag.
+ * @see MusicWriter.prototype.createSprite
+ */
+MusicWriter.prototype.createSprites = function () {
+    const sprites = this.myRoot.createElement("sprites");
+    for (let i = 0; i < this.mMusicReader.parts.length; ++i) {
+        const sprite = this.createSprite(this.mMusicReader.parts[i]);
+        sprites.appendChild(sprite);
+    }
+    return sprites;
+}
+
+/**
+ * @description - This function creates a sprite in a NetsBlox project. Each sprite represents a 
+ *                part in a musical score.
+ * @param {Element} part - The part in the score
+ * @returns {Element} - The <sprite> tag.
+ */
+MusicWriter.prototype.createSprite = function (part) {
+    // set up the sprite block
+    const sprite = this.myRoot.createElement("sprite");
+    sprite.setAttribute("name", part.name);
+    sprite.setAttribute("scale", "1");
+    sprite.setAttribute("draggable", "true");
+    sprite.setAttribute("volume", "100");
+    sprite.setAttribute("pan", "0");
+    const blocks = this.createBlocks();
+    sprite.appendChild(blocks);
+    const scripts = this.createScripts([this.writeMusic(part)]);
+    sprite.appendChild(scripts);
+    // create arrays to hold the note data and set them to NetsBlox variables
+    let noteNamesData = [], noteDurationsData = [], noteDottedData = [];
+    for (let i = 0; i < part.notes.length; ++i) {
+        noteNamesData.push(part.notes[i].pitch);
+        if (part.notes[i].type == "16th") {
+            noteDurationsData.push("Sixteenth");
+        } else if (part.notes[i].type == "32nd") {
+            noteDurationsData.push("ThirtySecond")
+        } else {
+            noteDurationsData.push(part.notes[i].type);
+        }
+        if (part.notes[i].dotted) {
+            noteDottedData.push("Dotted");
+        } else {
+            noteDottedData.push("");
+        }
+    }
+    // create the variables going into the sprite block. Each variable contains data on the music
+    // that the sprite is playing.
+    const variableList = [
+        this.createVariable("notes", noteNamesData),
+        this.createVariable("duration", noteDurationsData),
+        this.createVariable("dotted", noteDottedData),
+    ];
+    const variables = this.createVariables(variableList);
+    sprite.appendChild(variables);
+    return sprite;
+}
+
+/**
+ * @description - Converts a music staff into NetsBlox code.
+ * @param {Part} part - An object that models a <part> tag in a MusicXML file.
+ * @returns {Element} - A <script> tag.
+ */
+MusicWriter.prototype.writeMusic = function (part) {
+    const script = this.myRoot.createElement("script");
+
+    // create the broadcast receiver.
+    const receiver = this.myRoot.createElement("block");
+    receiver.setAttribute("s", "receiveMessage");
+    const l = this.myRoot.createElement("l");
+    const text = this.myRoot.createTextNode("play");
+    l.appendChild(text);
+    receiver.appendChild(l);
+    script.appendChild(receiver);
+
+    // set default instrument
+    const instrument = this.setInstrument();
+    script.appendChild(instrument);
+
+    // create a script to play the notes.
+    const length = this.createLengthOption("notes");
+    const getDuration = this.listGetAtI("duration");
+    const getDotted = this.listGetAtI("dotted");
+    const getNote = this.listGetAtI("notes");
+    const playNote = this.createNoteBlock(getDuration, getDotted, getNote);
+    const scriptContainer = this.myRoot.createElement("script");
+    scriptContainer.appendChild(playNote);
+    const loop = this.createForLoop(length, scriptContainer);
+    script.appendChild(loop);
+    
+    return script;
+}
+
+/**
+ * @description - A helper function to create a NetsBlox list.
+ * @param {[String]} data - The data being entered into the list.
+ * @return {Element} - The <block> tag holding a list.
+ */
+MusicWriter.prototype.createListBlock = function (data) {
+    const block = this.myRoot.createElement("block");
+    block.setAttribute("s", "reportNewList");
+    const list = this.createList(data);
+    block.appendChild(list);
+    return block;
+}
+
+/**
+ * @description - A helper function to create a NetsBlox variable.
+ * @param {String} name - The name of the variable.
+ * @param {Element} value - The value of the variable.
+ * @returns {Element} - The <block> tag holding a set block.
+ */
+MusicWriter.prototype.createSetBlock = function (name, value) {
+    const block = this.myRoot.createElement("block");
+    block.setAttribute("s", "doSetVar");
+    const nameTag = this.myRoot.createElement("l");
+    const nameText = this.myRoot.createTextNode(name);
+    nameTag.appendChild(nameText);
+    block.appendChild(nameTag);
+    block.appendChild(value);
+    return block;
+}
+
+/**
+ * @description - A helper function to create the <block> tag in the document.
+ * @param {Element} duration - A reporter that has the duration of the note.
+ * @param {Element} dotted - A reporter that indicated if a note is dotted.
+ * @param {Element} note - A reporter that has the name of the note.
+ * @returns {Element} - The <block> tag.
+ */
+MusicWriter.prototype.createNoteBlock = function (duration, dotted, note) {
+    const block = this.myRoot.createElement("block");
+    block.setAttribute("s", "playNote");
+    block.appendChild(duration);
+    block.appendChild(dotted);
+    block.appendChild(note);
+    return block;
+}
+
+/**
+ * @description - Creates a uninitialized NetsBlox variable.
+ * @param {String} name - The name of the variable.
+ * @param {Element} data - The data going into the variable tag.
+ * @returns {Element} - The <variable> tag.
+ */
+MusicWriter.prototype.createVariable = function (name, data=[]) {
+    const variable = this.myRoot.createElement("variable");
+    variable.setAttribute("name", name);
+    if (data.length != 0) {
+        const value = this.createList(data);
+        value.setAttribute("struct", "atomic");
+        variable.appendChild(value);
+    } else {
+        const l = this.myRoot.createElement("l");
+        const value = this.myRoot.createTextNode("0");
+        l.appendChild(value);
+        variable.appendChild(l);
+    }
+    return variable;
+}
+
+/**
+ * @description - Creates a NetsBlox for-loop.
+ * @param {Element} upperBound - The upper bound of the for-loop as a reporter.
+ * @param {Element} script - The script being inserted in the for-loop.
+ * @returns {Element} - A <block> tag.
+ */
+MusicWriter.prototype.createForLoop = function (upperBound, script) {
+    const loop = this.myRoot.createElement("block");
+    loop.setAttribute("s", "doFor");
+    const indexContainer = this.myRoot.createElement("l");
+    const indexText = this.myRoot.createTextNode("i");
+    indexContainer.appendChild(indexText);
+    loop.appendChild(indexContainer);
+    const startContainer = this.myRoot.createElement("l");
+    const startText = this.myRoot.createTextNode("1");
+    startContainer.appendChild(startText);
+    loop.appendChild(startContainer);
+    loop.appendChild(upperBound);
+    loop.appendChild(script);
+    return loop;
+}
+
+/**
+ * @description - This block creates a reporter that returns the length of an array.
+ * @param {String} name - The name of the variable holding the list.
+ * @returns {Element} - A <block> tag.
+ */
+MusicWriter.prototype.createLengthOption = function (name) {
+    const reporter = this.myRoot.createElement("block");
+    reporter.setAttribute("s", "reportListAttribute");
+    const l = this.myRoot.createElement("l");
+    const option = this.myRoot.createElement("option")
+    const text = this.myRoot.createTextNode("length");
+    option.appendChild(text);
+    l.appendChild(option);
+    reporter.appendChild(l);
+    const variable = this.myRoot.createElement("block");
+    variable.setAttribute("var", name);
+    reporter.appendChild(variable);
+    return reporter;
+}
+
+/**
+ * @description - This block creates a report that gets a value at the ith index in a list.
+ * @param {String} name - The name of the list.
+ * @return {Element} - A <block> tag.
+ */
+MusicWriter.prototype.listGetAtI = function (name) {
+    const block = this.myRoot.createElement("block");
+    block.setAttribute("s", "reportListItem");
+    const i = this.myRoot.createElement("block");
+    i.setAttribute("var", "i");
+    block.appendChild(i);
+    const notes = this.myRoot.createElement("block");
+    notes.setAttribute("var", name);
+    block.appendChild(notes);
+    return block;
+}
+
+/**
+ * @description - This function creates a setInstrument block.
+ * @param {String} name - The name of the instrument.
+ * @returns {Element} - A block tag.
+ */
+MusicWriter.prototype.setInstrument = function (name = "Grand Piano") {
+    const instrument = this.myRoot.createElement("block");
+    instrument.setAttribute("s", "setInstrument");
+    const l = this.myRoot.createElement("l");
+    const text = this.myRoot.createTextNode(name);
+    l.appendChild(text);
+    instrument.appendChild(l);
+    return instrument;
+}
+
+/**
+ * @description - This function create the first script that gets loaded onto the stage when the 
+ *                project is opened.
+ * @returns {Element} - A <script> tag
+ */
+MusicWriter.prototype.createStartScript = function () {
+    const startScript = this.myRoot.createElement("script");
+    const start = this.myRoot.createElement("block");
+    start.setAttribute("s", "receiveGo");
+    const broadcast = this.myRoot.createElement("block");
+    broadcast.setAttribute("s", "doBroadcast");
+    const l = this.myRoot.createElement("l");
+    const text = this.myRoot.createTextNode("play");
+    l.appendChild(text);
+    broadcast.appendChild(l);
+    startScript.appendChild(start);
+    startScript.appendChild(broadcast);
+    return startScript;
+}
+
+/**
+ * @description - A helper function that creates a NetsBlox list.
+ * @param {[String]} data - The data being entered into the list.
+ * @return {Element}  -The <list> tag holding the list.
+ */
+MusicWriter.prototype.createList = function (data) {
+    const list = this.myRoot.createElement("list");
+    for (let i = 0; i < data.length; ++i) {
+        let text;
+        if (i == data.length - 1) {
+            text = this.myRoot.createTextNode(data[i]);
+        } else {
+            text = this.myRoot.createTextNode(data[i] + ",");
+        }
+        list.appendChild(text);
+    }
+    return list;
+}

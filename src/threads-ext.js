@@ -1,7 +1,26 @@
 /* global Process, IDE_Morph, Costume, StageMorph, List, SnapActions,
- isObject, newCanvas, Point, SnapCloud, Services, localize */
+ isObject, newCanvas, Point, localize */
 
 // Additional Process Capabilities
+Process.prototype.resolveAddresses = function (ide, targets) {
+    return targets.flatMap(addr => {
+        if (addr.includes('@')) {  // public address already
+            return [addr];
+        }
+
+        let targets = [addr];
+        if (addr === 'everyone in room') {
+            targets = ide.room.getRoleNames();
+        } else if (addr === 'others in room') {
+            targets = ide.room.getRoleNames().filter(name => name !== ide.projectName);
+        }
+
+        const ownerId = ide.room.ownerId;
+        const project = ide.room.name;
+        return targets.map(addr => `${addr}@${project}@${ownerId}`);
+    });
+};
+
 Process.prototype.doSocketMessage = function (msgInfo) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         targetRole = arguments[arguments.length-1],
@@ -12,7 +31,7 @@ Process.prototype.doSocketMessage = function (msgInfo) {
         contents;
 
     // check if collaborating. If so, show a message but don't send
-    const isCollaborating = SnapActions.isCollaborating() && !SnapActions.isLeader;
+    const isCollaborating = SnapActions.isCollaborating();
     if (isCollaborating && !ide.allowMsgsWhileCollaborating) {
         const isUsingDefaultMsgSendingOption = ide.allowMsgsWhileCollaborating === null;
         if (isUsingDefaultMsgSendingOption) {
@@ -40,7 +59,9 @@ Process.prototype.doSocketMessage = function (msgInfo) {
         contents[fieldNames[i]] = fieldValues[i] || '';
     }
 
-    var dstId = targetRole instanceof List ? targetRole.asArray() : targetRole;
+    const targets = (targetRole instanceof List ? targetRole.asArray() : [targetRole]).flat();
+    const dstId = this.resolveAddresses(ide, targets);
+
     var sendMessage = function() {
         ide.sockets.sendMessage({
             type: 'message',
@@ -84,10 +105,8 @@ Process.prototype.MESSAGE_REPLY_TIMEOUT = 1500;
 Process.prototype.doSocketRequest = function (msgInfo) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         targetRole = arguments[arguments.length-1],
-        myRole = ide.projectName,  // same as seat name
-        roomName = ide.room.name,
-        ownerId = ide.room.ownerId,
-        name = msgInfo[0], //msg name | resource name
+        srcId = [ide.projectName, ide.room.name, ide.room.ownerId].join('@'),
+        name = msgInfo[0],
         fieldNames = msgInfo[1],
         fieldValues = Array.prototype.slice.call(arguments, 1, fieldNames.length + 1),
         contents,
@@ -106,8 +125,8 @@ Process.prototype.doSocketRequest = function (msgInfo) {
 
     // if there is no requestId then init the requestId
     if (!this.requestId){
-        requestId= '__REQ' + Date.now();
-        //save the request id to check for later
+        requestId = '__REQ' + Date.now();
+        // save the request id to check for later
         this.requestId = requestId;
 
         // Create the message
@@ -116,10 +135,14 @@ Process.prototype.doSocketRequest = function (msgInfo) {
         for (var i = fieldNames.length; i--;) {
             contents[fieldNames[i]] = fieldValues[i] || '';
         }
+
+        const targets = (targetRole instanceof List ? targetRole.asArray() : [targetRole]).flat();
+        const dstId = this.resolveAddresses(ide, targets);
+
         ide.sockets.sendMessage({
             type: 'message',
-            dstId: targetRole,
-            srcId: myRole+'@'+roomName+'@'+ownerId,
+            dstId: dstId,
+            srcId: srcId,
             msgType: name,
             requestId: requestId,
             content: contents
@@ -130,7 +153,7 @@ Process.prototype.doSocketRequest = function (msgInfo) {
         requestId = this.requestId;
         var reply = this.reply;
 
-        if (this.requestId === requestId ) {
+        if (this.requestId === requestId) {
             this.requestId = null;
             this.reply = null;
             this.messageSentAt = null;
@@ -202,18 +225,11 @@ Process.prototype.receiveSocketMessage = function (fields) {
 };
 
 Process.prototype.createRPCUrl = function (url) {
-    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
-        uuid = ide.sockets.uuid,
-        projectId = encodeURIComponent(SnapCloud.projectId),
-        roleId = encodeURIComponent(SnapCloud.roleId);
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
+    const {clientId} = ide.cloud;
 
-    url += '?uuid=' + uuid + '&projectId=' +
-        projectId + '&roleId=' + roleId;
-
-    if (SnapCloud.username) {
-        url += '&username=' + SnapCloud.username;
-    }
-    return url;
+    // TODO: add a client secret?
+    return url + '?clientId=' + clientId;
 };
 
 Process.prototype.callRPC = function (baseUrl, params, noCache) {
@@ -261,6 +277,17 @@ Process.prototype.callRPC = function (baseUrl, params, noCache) {
                 this.rpcRequest = null;
             }
             return image;
+        } else if (contentType && contentType.startsWith('audio')){
+            const soundArrayBuffer = this.rpcRequest.response;
+            var audioTo64 = btoa(
+                new Uint8Array(soundArrayBuffer)
+                  .reduce((data, byte) => data + String.fromCharCode(byte), '')
+              );
+            base64 = `data:audio/mpeg;base64,${audioTo64}`;
+            const audio = new Audio(base64);
+            const sound = new Sound(audio, "name");
+            this.rpcRequest = null;
+            return sound;
         } else {  // assume text
             var text = new TextDecoder('utf-8').decode(new Uint8Array(this.rpcRequest.response));
             response = decodeURIComponent(encodeURIComponent(text));
@@ -397,10 +424,13 @@ Process.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
 };
 
 Process.prototype.getJSFromRPCDropdown = function (service, rpc, params) {
-    if (service && rpc) {
+    const ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
+
+    if (service && rpc && ide) {
+        const services = ide.services;
         const isServiceURL = service instanceof Array;
-        const serviceURL = isServiceURL ? service[0] : Services.defaultHost.url + '/' + service;
-        if (!Services.isRegisteredServiceURL(serviceURL)) {
+        const serviceURL = isServiceURL ? service[0] : services.defaultHost.url + '/' + service;
+        if (!services.isRegisteredServiceURL(serviceURL)) {
             const serviceName = serviceURL.split('/').pop();
             const msg = 'Service "' + serviceName + '" is not available';
             throw new Error(msg);
@@ -465,12 +495,12 @@ Process.prototype.reportLongitude = function () {
 // TODO: I can probably move these next two to the Sprite/StageMorphs
 Process.prototype.reportStageWidth = function () {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-    return stage.dimensions.x;
+    return Math.round(stage.dimensions.x); // round for convenience with performer mode and int-based rpcs (e.g., google maps)
 };
 
 Process.prototype.reportStageHeight = function () {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-    return stage.dimensions.y;
+    return Math.round(stage.dimensions.y); // round for convenience with performer mode and int-based rpcs (e.g., google maps)
 };
 
 Process.prototype.reportImageOfObject = function (object) {
@@ -478,6 +508,75 @@ Process.prototype.reportImageOfObject = function (object) {
     if (object !== undefined) {
         return new Costume(object.fullImage());
     }
+};
+
+Process.prototype.reportHTTPRequest = function (method, url, data, headers) {
+    if (!this.httpRequest) {
+        this.httpRequest = new XMLHttpRequest();
+        this.httpRequest.open(method, url, true);
+
+        this.assertType(headers, 'list');
+        for (let i = 1; i <= headers.length(); i += 1) {
+            const header = headers.at(i);
+            this.assertType(header, 'list');
+            this.httpRequest.setRequestHeader(
+                header.at(1),
+                header.at(2)
+            );
+        }
+        if (utils.isNetsBloxDomain(url)) {
+            this.httpRequest.setRequestHeader('X-Source', 'NetsBlox'); // flag this as coming from the NetsBlox client
+        }
+
+        this.httpRequest.send(data || null);
+    } else if (this.httpRequest.readyState === 4) {
+        const res = this.httpRequest.responseText;
+        this.httpRequest = null;
+        return res;
+    }
+    this.pushContext('doYield');
+    this.pushContext();
+};
+
+Process.prototype.doTryCatch = function (code, upvar, handler) {
+    const resetOnce = () => {
+        const f = this.context.doTryCatchState.reset;
+        this.context.doTryCatchState.reset = null;
+        if (f) f();
+    };
+
+    if (!this.context.doTryCatchState) { // first pass through this function
+        const oldIsCatchingErrors = this.isCatchingErrors;
+        const oldHandleError = this.handleError;
+        const thisContext = this.context;
+
+        this.context.doTryCatchState = {
+            reset: () => {
+                this.isCatchingErrors = oldIsCatchingErrors;
+                this.handleError = oldHandleError;
+            },
+        };
+
+        this.isCatchingErrors = true;
+        this.handleError = (error, element) => {
+            while (this.context !== thisContext) this.popContext(); // unwind the stack back to the try/catch context
+            resetOnce();
+
+            this.context.outerContext.variables.addVar(upvar);
+            this.context.outerContext.variables.setVar(upvar, (error.message || error).toString());
+
+            this.pushContext(); // push a sacrificial context so we don't kill the current context
+            this.evaluate(handler, new List([]), true); // this returns right away
+        };
+
+        this.pushContext(); // push a sacrificial context so we don't kill the current context
+        this.evaluate(code, new List([]), true); // this returns right away
+    } else { // second pass through this function
+        resetOnce();
+    }
+};
+Process.prototype.doThrow = function (err) {
+    throw Error(err.toString());
 };
 
 // helps executing async functions in custom js blocks

@@ -1,11 +1,7 @@
 /* globals utils, nop, DialogBoxMorph, ScriptsMorph, BlockMorph, InputSlotMorph, StringMorph, Color
-   ReporterBlockMorph, CommandBlockMorph, MultiArgMorph, localize, SnapCloud, contains,
-   world, Services, BLACK, SERVER_URL*/
+   ReporterBlockMorph, CommandBlockMorph, MultiArgMorph, localize, contains,
+   world, BLACK, SERVER_URL*/
 // Extensions to the Snap blocks
-
-function getInputTypeMeta() {
-    return utils.getUrlSyncCached(`${SERVER_URL}/services/input-types`, x => JSON.parse(x));
-}
 
 function sortDict(dict) {
     var keys = Object.keys(dict).sort(),
@@ -22,19 +18,50 @@ function sortDict(dict) {
     return sortedDict;
 }
 
+BlockMorph.prototype.showCustomHelp = async function (help) {
+    if (typeof(help) === 'function') help = await help(this);
+    if (typeof(help) !== 'object') help = { msg: help };
+    const { msg, keptInputs = [] } = help;
+
+    const cpy = this.fullCopy();
+    if (cpy instanceof CommandBlockMorph) {
+        const next = cpy.nextBlock();
+        if (next) next.destroy();
+    }
+
+    const inputs = cpy.inputs();
+    for (let i = 0; i < inputs.length; ++i) {
+        if (keptInputs.includes(i)) continue;
+        const input = inputs[i];
+
+        if (input.setContents) {
+            input.setContents('');
+        } else {
+            input.userDestroy();
+        }
+    }
+
+    new DialogBoxMorph().inform(
+        'Help',
+        msg,
+        this.world(),
+        cpy.fullImage()
+    );
+};
 
 // support for help dialogbox on service blocks
 BlockMorph.prototype._showHelp = BlockMorph.prototype.showHelp;
 BlockMorph.prototype.showHelp = async function() {
+    const blockInfo = SpriteMorph.prototype.blocks[this.selector];
+    if (blockInfo && blockInfo.help) return this.showCustomHelp(blockInfo.help);
     if (!this.isServiceBlock()) return this._showHelp();
-    var myself = this,
-        help,
-        block,
-        nb,
+    var help,
         inputs = this.inputs(),
         serviceName = inputs[0].evaluate(),
         methodName = inputs[1].evaluate()[0],
         isServiceURL = !!inputs[0].constant,
+        ide = this.parentThatIsA(IDE_Morph) ?? world?.children[0],  // FIXME: Is it possible that this is undefined?
+        services = ide.services,
         serviceNames,
         metadata;
 
@@ -43,8 +70,8 @@ BlockMorph.prototype.showHelp = async function() {
         // service description will go here
         // if a method is selected append rpc specific description
         metadata = isServiceURL ?
-            await Services.getServiceMetadataFromURL(serviceName) :
-            await Services.getServiceMetadata(serviceName);
+            await services.getServiceMetadataFromURL(serviceName) :
+            await services.getServiceMetadata(serviceName);
         if (methodName !== '') {
             metadata = metadata.rpcs[methodName];
             help = metadata.description;
@@ -63,35 +90,13 @@ BlockMorph.prototype.showHelp = async function() {
         }
         if (!help) help = 'Description not available';
     } else {
-        metadata = await Services.getServicesMetadata();
+        metadata = await services.getServicesMetadata();
         serviceNames = metadata.slice(0,3).map(function(md) {return md.name;});
         help = 'Get information from different providers, save information and more. \nTo get more help select one of the services: '
             + serviceNames.join(', ') + ' ...';
     }
 
-    // Get a copy of the block to display to the user
-    block = this.fullCopy();
-    if (block instanceof CommandBlockMorph) {
-        nb = block.nextBlock();
-        if (nb) {
-            nb.destroy();
-        }
-    }
-    block.inputs().slice(2).forEach(function(child) {  // clear rpc args
-        if (child instanceof HintInputSlotMorph) {
-            child.setContents('');
-        } else {
-            child.userDestroy();
-        }
-    })
-    block.addShadow();
-
-    new DialogBoxMorph().inform(
-        'Help',
-        help,
-        myself.world(),
-        block.fullImage()
-    );
+    return this.showCustomHelp({ msg: help, keptInputs: [0, 1] });
 };
 
 BlockMorph.prototype.isServiceBlock = function() {
@@ -164,6 +169,41 @@ MultiHintArgMorph.prototype.addInput = function () {
     this.children.splice(idx, 0, newPart);
     newPart.rerender();
     this.fixLayout();
+};
+
+MultiHintArgMorph.prototype.mouseClickLeft = function (pos) {
+    
+    // if the <shift> key is pressed, repeat action 3 times
+    var target = this.selectForEdit(),
+        arrows = target.arrows(),
+        leftArrow = arrows.children[0],
+        rightArrow = arrows.children[1],
+        repetition = target.world().currentKey === 16 ? 3 : 1,
+        i;
+
+    if (rightArrow.bounds.containsPoint(pos)) {
+        for (i = 0; i < repetition; i += 1) {
+            if (rightArrow.isVisible) {
+                target.addInput();
+            }
+        }
+        // if (ide) {
+        //     ide.recordUnsavedChanges();
+        // }
+    } else if (
+        leftArrow.bounds.expandBy(this.fontSize / 3).containsPoint(pos)
+    ) {
+        for (i = 0; i < repetition; i += 1) {
+            if (leftArrow.isVisible) {
+                target.removeInput();
+            }
+        }
+        // if (ide) {
+        //     ide.recordUnsavedChanges();
+        // }
+    } else {
+        target.escalateEvent('mouseClickLeft', pos);
+    }
 };
 
 StructInputSlotMorph.prototype = new InputSlotMorph();
@@ -265,13 +305,30 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
     }
 };
 
-StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value, meta) {
+StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value, meta={}) {
     // Input slot is empty or has a string
     if (!value || typeof value === 'string') {
-        const typeMeta = getInputTypeMeta();
+        const ide = this.parentThatIsA(IDE_Morph) ?? world?.children[0];  // This fallback isn't an ideal way to get the IDE morph...
+        const hosts = ide?.services ? ide.services.allHosts() : [];
+        if (hosts.length === 0) return new HintInputSlotMorph(value || '', fieldname, false, undefined, false);
+
+        const typeMetas = hosts.map(host => {
+            const hostUrl = host.url;
+            try {
+              return utils.getUrlSyncCached(
+                  `${hostUrl}/input-types`,
+                  x => JSON.parse(x),
+                  {ttl: 5000, cacheFailures: true},
+              );
+            } catch (err) {
+              console.warn("No input types found for " + hostUrl);
+              return {};
+            }
+        });
+        const typeMeta = Object.assign(...typeMetas);
 
         // follow the base type chain to see if we can make a strongly typed slot
-        for (let type = (meta || {}).type; type; type = (typeMeta[type.name] || {}).baseType) {
+        for (let type = meta.type; type; type = typeMeta[type.name].baseType) {
             if (type.name === 'Number') {
                 return new HintInputSlotMorph(value || '', fieldname, true, undefined, false);
             }
@@ -290,42 +347,45 @@ StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value, meta) 
 };
 
 InputSlotMorph.prototype.serviceNames = async function () {
-    var services = await Services.getServicesMetadata(),
-        hasAuthoredServices,
-        menuDict = {},
-        category,
-        subMenu,
-        name;
+    const ide = this.parentThatIsA(IDE_Morph) ?? world?.children[0];
+    const services = await ide.services.getServicesMetadata();
+    let menuDict = {};
 
-    for (var i = services.length; i--;) {
-        name = services[i].name;
-        const url = services[i].url;
-        if (services[i].categories.length) {
-            for (var j = services[i].categories.length; j--;) {
-                category = services[i].categories[j];
-                subMenu = menuDict;
-                for (var c = 0; c < category.length; c++) {
-                    if (!subMenu[category[c]]) {
-                        subMenu[category[c]] = {};
-                    }
-                    subMenu = subMenu[category[c]];
-                }
-                subMenu[name] = url ? [url + '/' + name] : name;
+    for (let i = services.length; i--;) {
+        const {name, url, categories} = services[i];
+        const putGlobal = () => { menuDict[name] = url ? [url + '/' + name] : name; };
+
+        if (categories.length === 0) {
+            putGlobal();
+            continue;
+        }
+
+        for (let j = categories.length; j--;) {
+            const category = categories[j];
+            if (category.length === 0) {
+                putGlobal();
+                continue;
             }
-        } else {
-            menuDict[name] = url ? [url + '/' + name] : name;
+
+            let subMenu = menuDict;
+            for (const c of category) {
+                if (!subMenu[c]) { subMenu[c] = {}; }
+                subMenu = subMenu[c];
+            }
+            subMenu[name] = url ? [url + '/' + name] : name;
         }
     }
 
     menuDict = sortDict(menuDict);
 
-    hasAuthoredServices = SnapCloud.username && menuDict.Community &&
-        menuDict.Community[SnapCloud.username];
+    const cloud = ide.cloud;
+    const hasAuthoredServices = cloud.username && menuDict.Community &&
+        menuDict.Community[cloud.username];
     if (hasAuthoredServices) {
-        subMenu = {};
-        subMenu[SnapCloud.username] = menuDict.Community[SnapCloud.username];
+        const subMenu = {};
+        subMenu[cloud.username] = menuDict.Community[cloud.username];
         Object.keys(menuDict.Community).forEach(function(key) {
-            if (key !== SnapCloud.username) {
+            if (key !== cloud.username) {
                 subMenu[key] = menuDict.Community[key];
             }
         });
@@ -341,6 +401,10 @@ RPCInputSlotMorph.uber = StructInputSlotMorph.prototype;
 
 function RPCInputSlotMorph() {
     const getFields = rpcName => {
+        if (!rpcName) {
+            return [];
+        }
+
         if (!this.fieldsFor || !this.fieldsFor[rpcName]) {
             this.methodSignature();
             var isSupported = !!this.fieldsFor;
@@ -390,10 +454,18 @@ RPCInputSlotMorph.prototype.getServiceName = function () {
 
 RPCInputSlotMorph.prototype.getServiceMetadata = function () {
     const field = this.getServiceInputSlot();
-    const url = field.constant ? field.evaluate()[0] :
-        Services.defaultHost.url + '/' + field.evaluate();
+    const serviceName = field.constant ?
+        field.evaluate()[0] : field.evaluate();
 
-    return Services.getServiceMetadataFromURLSync(url);
+    // The IDE_Morph is undefined when cloning or dragging from the part browser.
+    // Collaborative edits result in the same issue.
+    let ide = this.parentThatIsA(IDE_Morph) ?? world?.children[0];
+
+    const services = ide.services;
+    const url = field.constant ? field.evaluate()[0] :
+        services.defaultHost.url + '/' + field.evaluate();
+
+    return services.getServiceMetadataFromURLSync(url);
 };
 
 // sets this.fieldsFor and returns the method signature dict
@@ -519,15 +591,25 @@ HintInputSlotMorph.prototype.setContents = function(value) {
 
 // Check if the given morph has been changed
 HintInputSlotMorph.prototype.changed = function() {
-    var txtMorph = this.contents();
-    if (txtMorph) {
-        this.empty = txtMorph.text === this.hintText;
-    }
     return InputSlotMorph.prototype.changed.call(this);
 };
 
 HintInputSlotMorph.prototype.isEmptySlot = function() {
     return this.empty;
+};
+
+HintInputSlotMorph.prototype.updateFieldValue = function (newValue) {
+    var block = this.parentThatIsA(BlockMorph);
+
+    newValue = newValue !== undefined ? newValue : this.contents().text;
+    const changed = newValue !== this.lastValue;
+    if (block.id && changed) {  // not in the palette
+        this.setContents(this.lastValue);  // set to original value in case it fails
+        return SnapActions.setField(this, newValue);
+    } else {
+        // Handle use in message creation dialog
+        this.setContents(newValue);
+    }
 };
 
 var addStructReplaceSupport = function(fn) {

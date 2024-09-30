@@ -23,6 +23,10 @@ SnapDriver.prototype.ide = function() {
     return this.world().children[0];
 };
 
+SnapDriver.prototype.cloud = function() {
+    return this.ide().cloud;
+};
+
 SnapDriver.prototype.palette = function() {
     return this.world().children[0].palette;
 };
@@ -44,11 +48,11 @@ SnapDriver.prototype.reset = async function() {
     dialogs.forEach(dialog => dialog.destroy());
 
     this.ide().exitReplayMode();
-    const {SnapCloud} = this.globals();
-    const projectId = SnapCloud.projectId;
+    const {cloud} = this.ide();
+    const projectId = cloud.projectId;
     await this.ide().newProject();
     await this.expect(
-        () => this.ide().room.version !== -1 && SnapCloud.projectId !== projectId,
+        () => this.ide().room.version !== -1 && cloud.projectId !== projectId,
         'No room state received'
     );
 };
@@ -276,11 +280,17 @@ SnapDriver.prototype.moveToRole = function(name) {
 };
 
 SnapDriver.prototype.login = async function(name, password='password', opts) {
+    const getMenuDialog = () => {
+        const dialog = this.dialog();
+        if (dialog instanceof this.globals().MenuMorph) {
+            return dialog;
+        }
+    };
     const btn = this.ide().controlBar.cloudButton;
     this.click(btn);
 
     let dropdown = await this.expect(
-        () => this.dialog(),
+        getMenuDialog,
         new Error('Cloud menu never appeared'),
         opts
     );
@@ -290,8 +300,8 @@ SnapDriver.prototype.login = async function(name, password='password', opts) {
     if (isLoggedIn) {
         this.click(logoutBtn);
         await this.expect(
-            () => this.isShowingDialogTitle(title => title.includes('disconnected')),
-            `Did not see logout message`,
+            () => this.ide().cloud.username === null,
+            `Did not clear user on logout`,
             opts
         );
     }
@@ -300,7 +310,7 @@ SnapDriver.prototype.login = async function(name, password='password', opts) {
 
     // click the login button
     dropdown = await this.expect(
-        () => this.dialog(),
+        getMenuDialog,
         new Error('Cloud menu never appeared'),
         opts
     );
@@ -313,8 +323,18 @@ SnapDriver.prototype.login = async function(name, password='password', opts) {
     userField.setContents(name);
     passwordField.setContents(password);
     this.dialog().ok();
+    // TODO: either show a new dialog or log the user in
+    const dialogs = this.dialogs();
+    const cloud = this.ide().cloud;
+    console.log({dialogs});
     await this.expect(
-        () => !!this.isShowingDialogTitle(title => title.includes('Logged in')),
+        () => {
+            const hasCloudError = this.dialogs().find(
+                d => !dialogs.includes(d) && d.key?.includes('Cloud')
+            );
+            if (hasCloudError) throw new Error('Login failed');
+            return cloud.username === name;
+        },
         `Did not see connected message`,
         opts
     );
@@ -349,7 +369,7 @@ SnapDriver.prototype.invite = async function(username, roleName) {
     if (!role) {
         throw new Error(`Role not found: ${roleName}`);
     }
-    room.inviteGuest(username, role.id);
+    room.inviteOccupant(username, role.id);
 };
 
 SnapDriver.prototype.inviteCollaborator = async function(username) {
@@ -403,7 +423,7 @@ SnapDriver.prototype.isShowingSavedMsg = function() {
     return false;
 };
 
-SnapDriver.prototype.saveProjectAs = function(name, waitForSave=true) {
+SnapDriver.prototype.saveProjectAs = async function(name, waitForSave=true) {
     // save as
     const controlBar = this.ide().controlBar;
     this.click(controlBar.projectButton);
@@ -415,20 +435,19 @@ SnapDriver.prototype.saveProjectAs = function(name, waitForSave=true) {
     this.click(saveAsBtn);
 
     // Wait for the project list to be updated
-    return this.waitUntilProjectsLoaded()
-        .then(() => {
-            // Enter the new project name
-            this.keys(name);
-            const dialog = this.dialog();
-            const saveBtn = dialog.buttons.children[0];
-            this.click(saveBtn);
-            if (waitForSave) {
-                return this.expect(
-                    () => this.isShowingSavedMsg(),
-                    `Did not see save message after "Save"`
-                );
-            }
-        });
+    await this.waitUntilProjectsLoaded()
+    // Enter the new project name
+    const dialog = this.dialog();
+    this.click(dialog.nameField.contents());
+    this.keys(name);
+    const saveBtn = dialog.buttons.children[0];
+    this.click(saveBtn);
+    if (waitForSave) {
+        await this.expect(
+            () => this.isShowingSavedMsg(),
+            `Did not see save message after "Save"`
+        );
+    }
 };
 
 SnapDriver.prototype.getProjectList = function(projectDialog) {
@@ -448,25 +467,13 @@ SnapDriver.prototype.waitForDialogBox = function() {
 
 SnapDriver.prototype.waitUntilProjectsLoaded = async function() {
     const dialog = this.dialog();
-    const isUpdateTitle = title => title.includes('Updating\nproject');
-    const isShowingUpdateMsg = () => this.isShowingDialogTitle(isUpdateTitle);
 
     if (dialog && dialog.source.id.includes('cloud')) {
-        const oldProjectList = dialog.projectList;
+        const lastUpdate = dialog.projectListUpdated;
         await this.expect(
-            () => {
-                const hasLoadedProjects = dialog.projectList !== oldProjectList;
-                return isShowingUpdateMsg() || hasLoadedProjects;
-            },
-            'Did not see "update project list" message'
+            () => lastUpdate !== dialog.projectListUpdated,
+            'Project list not updated'
         );
-
-        await this.expect(
-            () => !isShowingUpdateMsg(),
-            '"update project list" message did not disappear'
-        );
-    } else {
-        return Promise.resolve();
     }
 };
 

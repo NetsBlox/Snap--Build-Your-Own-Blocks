@@ -1280,7 +1280,7 @@
 
 /*global window, HTMLCanvasElement, FileReader, Audio, FileList, Map*/
 
-var morphicVersion = '2020-July-23';
+var morphicVersion = '2022-November-7 (netsblox flavor)';
 var modules = {}; // keep track of additional loaded modules
 var useBlurredShadows = true;
 
@@ -3087,6 +3087,27 @@ Node.prototype.parentThatIsAnyOf = function (constructors) {
     return this.parentThatIsA.apply(this, constructors);
 };
 
+Node.prototype.childThatIsA = function () {
+    // including myself
+    // Note: you can pass in multiple constructors to test for
+    var i, hit;
+    for (i = 0; i < arguments.length; i += 1) {
+        if (this instanceof arguments[i]) {
+            return this;
+        }
+    }
+    if (!this.children.length) {
+        return null;
+    }
+    for (i = 0; i < this.children.length; i += 1) {
+        hit = this.childThatIsA.apply(this.children[i], arguments);
+        if (hit) {
+            return hit;
+        }
+    }
+    return null;
+};
+
 // Morphs //////////////////////////////////////////////////////////////
 
 // Morph: referenced constructors
@@ -3490,7 +3511,7 @@ Morph.prototype.render = function (aContext) {
 };
 
 Morph.prototype.getRenderColor = function () {
-    // can be overriden by my heirs or instances
+    // can be overridden by my heirs or instances
     return this.color;
 };
 
@@ -3951,7 +3972,7 @@ Morph.prototype.updateReferences = function (map) {
     /*
     Update intra-morph references within a composite morph that has
     been copied. For example, if a button refers to morph X in the
-    orginal composite then the copy of that button in the new composite
+    original composite then the copy of that button in the new composite
     should refer to the copy of X in new composite, not the original X.
     */
     var properties = Object.keys(this),
@@ -8548,7 +8569,7 @@ StringMorph.prototype.init = function (
     this.startMark = 0;
     this.endMark = 0;
     this.markedTextColor = WHITE;
-    this.markedBackgoundColor = new Color(60, 60, 120);
+    this.markedBackgroundColor = new Color(60, 60, 120);
 
     // initialize inherited properties:
     StringMorph.uber.init.call(this, true);
@@ -8667,7 +8688,7 @@ StringMorph.prototype.render = function (ctx) {
     for (i = start; i < stop; i += 1) {
         p = this.slotPosition(i).subtract(this.position());
         c = txt.charAt(i);
-        ctx.fillStyle = this.markedBackgoundColor.toString();
+        ctx.fillStyle = this.markedBackgroundColor.toString();
         ctx.fillRect(p.x, p.y, ctx.measureText(c).width + 1 + x,
             fontHeight(this.fontSize) + y);
         ctx.fillStyle = this.markedTextColor.toString();
@@ -9282,7 +9303,7 @@ TextMorph.prototype.init = function (
     this.startMark = 0;
     this.endMark = 0;
     this.markedTextColor = WHITE;
-    this.markedBackgoundColor = new Color(60, 60, 120);
+    this.markedBackgroundColor = new Color(60, 60, 120);
 
     // initialize inherited properties:
     TextMorph.uber.init.call(this);
@@ -9442,7 +9463,7 @@ TextMorph.prototype.render = function (ctx) {
     for (i = start; i < stop; i += 1) {
         p = this.slotPosition(i).subtract(this.position());
         c = this.text.charAt(i);
-        ctx.fillStyle = this.markedBackgoundColor.toString();
+        ctx.fillStyle = this.markedBackgroundColor.toString();
         ctx.fillRect(p.x, p.y, ctx.measureText(c).width + 1,
             fontHeight(this.fontSize));
         ctx.fillStyle = this.markedTextColor.toString();
@@ -9460,7 +9481,7 @@ TextMorph.prototype.setExtent = function (aPoint) {
     this.rerender();
 };
 
-// TextMorph mesuring:
+// TextMorph measuring:
 
 TextMorph.prototype.columnRow = function (slot) {
     // answer the logical position point of the given index ("slot")
@@ -9832,7 +9853,7 @@ TriggerMorph.prototype.init = function (
     // initialize inherited properties:
     TriggerMorph.uber.init.call(this);
 
-    // override inherited properites:
+    // override inherited properties:
     this.color = WHITE;
     this.createLabel();
 };
@@ -11814,6 +11835,7 @@ HandMorph.prototype.processDrop = function (event) {
                 // thinks OGGs are videos
             return readAudio(file);
         } else if ((file.type.indexOf("text") === 0) ||
+                suffix.includes('xml') ||  // needed to recognize musicxml as xml
                 contains(['txt', 'csv', 'json'], suffix)) {
                 // check the file-extension because Windows
                 // doesn't specify CSVs to be text/csv, sigh
@@ -12086,12 +12108,14 @@ WorldMorph.prototype.fillPage = function () {
 
 WorldMorph.prototype.getGlobalPixelColor = function (point) {
     // answer the color at the given point.
-    var dta = this.worldCanvas.getContext('2d').getImageData(
-        point.x,
-        point.y,
-        1,
-        1
-    ).data;
+    // first, create a new temporary canvas representing the fullImage
+    // and sample that one instead of the actual world canvas
+    // this slows things down but keeps Chrome from crashing
+    // in v119 in the Fall of 2023
+    var dta = Morph.prototype.fullImage.call(this)
+        .getContext('2d')
+        .getImageData(point.x, point.y, 1, 1)
+        .data;
     return new Color(dta[0], dta[1], dta[2]);
 };
 
@@ -12139,9 +12163,9 @@ WorldMorph.prototype.initKeyboardHandler = function () {
                 }
                 event.preventDefault();
             }
-            // suppress cmd-d/f/i/p/s override
+            // suppress cmd-d/f/i/o/p/s override
             if ((event.ctrlKey || event.metaKey) &&
-                    'dfips'.includes(event.key)) {
+                    'dfiops'.includes(event.key)) {
                 event.preventDefault();
             }
         },

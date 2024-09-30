@@ -1,7 +1,5 @@
 /*globals driver, TestUtils */
 describe('ProjectDialogMorph', function() {
-    this.timeout(5000);
-
     beforeEach(() => driver.reset());
 
     describe('cloud', function() {
@@ -155,7 +153,7 @@ describe('ProjectDialogMorph', function() {
         });
 
         async function makeSavedBrowserProject(name) {
-            const {SnapCloud} = driver.globals();
+            const {cloud} = driver.ide();
             await driver.addBlock('doIfElse');
 
             const xml = driver.ide().serializer.format(
@@ -165,10 +163,10 @@ describe('ProjectDialogMorph', function() {
                 driver.ide().getSerializedRole()
             );
             localStorage['-snap-project-' + name] = xml;
-            const projectId = SnapCloud.projectId;
+            const projectId = cloud.projectId;
             TestUtils.newProject();
             await driver.expect(
-                () => projectId !== SnapCloud.projectId,
+                () => projectId !== cloud.projectId,
                 'New project not created'
             );
         }

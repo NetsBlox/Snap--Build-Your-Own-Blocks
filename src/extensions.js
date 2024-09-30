@@ -5,15 +5,32 @@
             this.ide = null;
             this.registry = [];
             this.pendingExtensions = [];
+            // We will track the current non-trivial events so extensions that
+            // have been loaded async and missed the init event can still be
+            // "brought up to speed"
+            this.eventQueue = [];
         }
 
         initialize(ide) {
             this.ide = ide;
             this.pendingExtensions.forEach(ext => this.load(ext));
             this.pendingExtensions = [];
+            this.eventQueue = [];
         }
 
         load(Extension) {
+            // First, check if the extension is supported
+            const supported = Extension.prototype.isSupported();
+            if (supported !== true) {
+                if(typeof supported === 'string'){
+                    this.ide.showMessage(`Unable to load extension: ${supported}`);
+                } else {
+                    this.ide.showMessage(`Unable to load extension.`);
+                }
+                
+                return;
+            }
+
             const extension = new Extension(this.ide);  // TODO: Replace the IDE with an official API?
             if (this.isLoaded(extension.name)) {
                 return;
@@ -38,14 +55,56 @@
             this.ide.createCorralBar();
             this.ide.fixLayout();
             SpriteMorph.prototype.initBlocks();
+
+            this.eventQueue.forEach(eventHandler => extension[eventHandler]());
         }
 
         onNewProject() {
             this.registry.forEach(ext => ext.onNewProject());
+            // Since this is called after onOpenRole, it is problematic
+            // to track this event in the queue.
+            // TODO: detect project opening
+            // this.eventQueue = ['onNewProject'];
         }
 
         onOpenRole() {
             this.registry.forEach(ext => ext.onOpenRole());
+
+            if (!this.eventQueue.includes('onOpenRole')) {
+                this.eventQueue = ['onOpenRole'];
+            }
+        }
+
+        // The following events shouldn't need to be queue since
+        // the state of the project is available during one of
+        // the other initialization events (ie, onOpenRole)
+        onNewSprite(sprite) {
+            this.registry.forEach(ext => ext.onNewSprite(sprite));
+        }
+
+        onRenameSprite(spriteId, name) {
+            this.registry.forEach(ext => ext.onRenameSprite(spriteId, name));
+        }
+
+        onSetStageSize(width, height) {
+            this.registry.forEach(ext => ext.onSetStageSize(width, height));
+        }
+
+        // Transient events
+        onRunScripts() {
+            this.registry.forEach(ext => ext.onRunScripts());
+        }
+
+        onStopAllScripts() {
+            this.registry.forEach(ext => ext.onStopAllScripts());
+        }
+
+        onPauseAll() {
+            this.registry.forEach(ext => ext.onPauseAll());
+        }
+
+        onResumeAll() {
+            this.registry.forEach(ext => ext.onResumeAll());
         }
 
         register(Extension) {
@@ -135,7 +194,9 @@
                     type: block.type,
                     category: block.category,
                     spec: block.spec,
-                    defaults: block.defaults
+                    defaults: block.defaults,
+                    help: block.help,
+                    terminal: block.isTerminal,
                 };
                 const receivers = this.findWatcherReceivers(palettes, block.name);
                 receivers.forEach(rcvr => {
@@ -152,6 +213,18 @@
                 receivers.forEach(Rcvr => Rcvr.prototype[block.name] = block.impl);
             });
         }
+
+        getUserMenu(target, menu) {
+            const userMenu = this.registry.flatMap(ext => ext.getUserMenu(target));
+
+            if (userMenu.length > 0) {
+                if(menu.items.length > 0){
+                    menu.addLine();   
+                }
+
+                userMenu.forEach(item => menu.addItem(item[0], item[1]));
+            }
+        }
     }
 
     function Extension (name) {
@@ -160,6 +233,10 @@
 
     Extension.prototype.getMenu = function() {
         return null;
+    };
+
+    Extension.prototype.getSettings = function() {
+        return [];
     };
 
     Extension.prototype.getCategories = function() {
@@ -178,9 +255,62 @@
         return [];
     };
 
+    Extension.prototype.getUserMenu = function(target) {
+        return [];
+    };
+
+    Extension.prototype.onRunScripts =
+    Extension.prototype.onStopAllScripts =
+    Extension.prototype.onPauseAll =
+    Extension.prototype.onResumeAll =
+    Extension.prototype.onNewSprite =
+    Extension.prototype.onRenameSprite =
+    Extension.prototype.onSetStageSize = 
     Extension.prototype.onNewProject =
     Extension.prototype.onOpenRole = function() {
     };
+
+    Extension.prototype.triggerHatBlock = function(selector) {
+        let stage = NetsBloxExtensions.ide.stage;
+        stage.children.concat(stage).forEach(morph => {
+            if (isSnapObject(morph)) {
+                morph.allHatBlocksFor(selector, true).forEach(block =>
+                    stage.threads.startProcess(
+                        block,
+                        morph,
+                        stage.isThreadSafe
+                    )
+                );
+            }
+        });
+    }
+
+    Extension.prototype.isSupported = function() {
+        return true;
+    };
+
+    class ExtensionSetting {
+        constructor(label, toggle, test, onHint = '', offHint = '', hide = false) {
+            this.label = label;
+            this.toggle = toggle, 
+            this.test = test, 
+            this.onHint = onHint, 
+            this.offHint = offHint, 
+            this.hide = hide
+        }
+    }
+
+    ExtensionSetting.createFromLocalStorage = function(label, id, defaultValue = false, onHint = '', offHint = '', hide = false){
+        return new ExtensionSetting(
+            label,
+            () => {
+                window.localStorage.setItem(id, !((window.localStorage.getItem(id) ?? defaultValue) == 'true'));
+            },
+            () => (window.localStorage.getItem(id) ?? defaultValue) == 'true',
+            onHint, offHint, hide);
+    }
+
+    Extension.ExtensionSetting = ExtensionSetting;
 
     class LabelPart {
         constructor(spec, fn) {
@@ -205,7 +335,7 @@
     }
 
     class CustomBlock {
-        constructor(name, type, category, spec, defaults=[], impl) {
+        constructor(name, type, category, spec, defaults=[], impl, help = null) {
             this.name = name;
             this.type = type;
             this.category = category;
@@ -213,6 +343,18 @@
             this.defaults = defaults;
             this.impl = impl;
             this.receivers = [];
+            this.help = help;
+            this.isTerminal = false;
+        }
+
+        help(info) {
+            this.help = info;
+            return this;
+        }
+
+        terminal() {
+            this.isTerminal = true;
+            return this;
         }
 
         for(...receivers) {
@@ -222,7 +364,7 @@
     }
 
     class Category {
-        constructor(name, color=new Color(120, 120, 120)) {
+        constructor(name, color = new Color(120, 120, 120)) {
             this.name = name;
             this.color = color;
         }

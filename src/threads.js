@@ -61,7 +61,9 @@ StageMorph, SpriteMorph, StagePrompterMorph, Note, modules, isString, copy, Map,
 isNil, WatcherMorph, List, ListWatcherMorph, alert, console, TableMorph, BLACK,
 TableFrameMorph, ColorSlotMorph, isSnapObject, newCanvas, Symbol, SVG_Costume*/
 
-modules.threads = '2020-August-05';
+/*jshint esversion: 6*/
+
+modules.threads = '2021-November-27';
 
 var ThreadManager;
 var Process;
@@ -542,7 +544,7 @@ ThreadManager.prototype.toggleSingleStepping = function () {
     isShowingResult     boolean flag indicating whether a "report" command
                         has been executed in a user-clicked process
     exportResult        boolean flag indicating whether a picture of the top
-                        block along with the result bubble shoud be exported
+                        block along with the result bubble should be exported
     onComplete          an optional callback function to be executed when
                         the process is done
     procedureCount      number counting procedure call entries,
@@ -615,7 +617,7 @@ Process.prototype.isRunning = function () {
 // Process entry points
 
 Process.prototype.runStep = function (deadline) {
-    // a step is an an uninterruptable 'atom', it can consist
+    // a step is an an uninterruptible 'atom', it can consist
     // of several contexts, even of several blocks
 
     if (this.isPaused) { // allow pausing in between atomic steps:
@@ -720,7 +722,7 @@ Process.prototype.evaluateContext = function () {
     if (exp instanceof ArgLabelMorph) {
         return this.evaluateArgLabel(exp);
     }
-    if (exp instanceof ArgMorph || exp.bindingID) {
+    if (exp instanceof ArgMorph || exp?.bindingID) {
         return this.evaluateInput(exp);
     }
     if (exp instanceof BlockMorph) {
@@ -1376,7 +1378,7 @@ Process.prototype.runContinuation = function (aContext, args) {
     var parms = args.asArray();
 
     // determine whether the continuations is to show the result
-    // in a value-balloon becuse the user has directly clicked on a reporter
+    // in a value-balloon because the user has directly clicked on a reporter
     if (aContext.expression === 'expectReport' && parms.length) {
         this.stop();
         this.homeContext.inputs[0] = parms[0];
@@ -1850,7 +1852,6 @@ Process.prototype.shadowListAttribute = function (list) {
 // Process accessing list elements - hyper dyadic
 
 Process.prototype.reportListItem = function (index, list) {
-    var rank;
     this.assertType(list, 'list');
     if (index === '') {
         return '';
@@ -1861,70 +1862,95 @@ Process.prototype.reportListItem = function (index, list) {
     if (this.inputOption(index) === 'last') {
         return list.at(list.length());
     }
-    rank = this.rank(index);
-    if (rank > 0 && this.enableHyperOps) {
-        if (rank === 1) {
-            if (index.isEmpty()) {
-                return list.map(item => item);
-            }
-            return index.map(idx => list.at(idx));
-        }
-        return this.reportItems(index, list);
+    if (index instanceof List && this.enableHyperOps) {
+        return list.query(index);
     }
     return list.at(index);
 };
 
-Process.prototype.reportItems = function (indices, list) {
-    // This. This is it. The pinnacle of my programmer's life.
-    // After days of roaming about my house and garden,
-    // of taking showers and rummaging through the fridge,
-    // of strumming the charango and the five ukuleles
-    // sitting next to my laptop on my desk,
-    // and of letting my mind wander far and wide,
-    // to come up with this design, always thinking
-    // "What would Brian do?".
-    // And look, Ma, it's turned out all beautiful! -jens
+// Process - tabular list ops
 
-    return makeSelector(
-        this.rank(list),
-        indices.cdr(),
-        makeLeafSelector(indices.at(1))
-    )(list);
+Process.prototype.reportTranspose = function (list) {
+    this.assertType(list, 'list');
+    return list.transpose();
+};
 
-    function makeSelector(rank, indices, next) {
-        if (rank === 1) {
-            return next;
-        }
-        return makeSelector(
-            rank - 1,
-            indices.cdr(),
-            makeBranch(
-                indices.at(1) || new List(),
-                next
-            )
-        );
+Process.prototype.reportCrossproduct = function (lists) {
+    this.assertType(lists, 'list');
+    if (lists.isEmpty()) {
+        return lists;
     }
+    this.assertType(lists.at(1), 'list');
+    return lists.crossproduct();
+};
 
-    function makeBranch(indices, next) {
-        return function(data) {
-            if (indices.isEmpty()) {
-                return data.map(item => next(item));
-            }
-            return indices.map(idx => next(data.at(idx)));
-        };
-    }
+Process.prototype.reportReshape = function (list, shape) {
+    this.assertType(shape, 'list');
+    list = list instanceof List ? list : new List([list]);
+    return list.reshape(shape);
+};
 
-    function makeLeafSelector(indices) {
-        return function (data) {
-            if (indices.isEmpty()) {
-                return data.map(item => item);
-            }
-            return indices.map(idx => data.at(idx));
-        };
-    }
+Process.prototype.reportSlice = function (list, indices) {
+    // currently not in use
+    this.assertType(list, 'list');
+    this.assertType(indices, 'list');
+    return list.slice(indices);
 };
 
 // Process - other basic list accessors
+
+Process.prototype.reportListAttribute = function (choice, list) {
+    var option = this.inputOption(choice);
+    switch (option) {
+    case 'length':
+        this.assertType(list, 'list');
+        return list.length();
+    case 'size':
+        this.assertType(list, 'list');
+        return list.size();
+    case 'rank':
+        return list instanceof List ? list.rank() : 0;
+    case 'dimensions':
+        return list instanceof List ? list.shape() : new List();
+    case 'flatten':
+        return list instanceof List ? list.ravel() : new List([list]);
+    case 'columns':
+        this.assertType(list, 'list');
+        return list.columns();
+    case 'transpose':
+        this.assertType(list, 'list');
+        return list.transpose();
+    case 'reverse':
+        this.assertType(list, 'list');
+        return list.reversed();
+    case 'lines':
+        this.assertType(list, 'list');
+        if (list.canBeTXT()) {
+            return list.asTXT();
+        }
+        throw new Error(
+            localize('unable to convert to') + ' ' + localize('lines')
+        );
+    case 'csv':
+        this.assertType(list, 'list');
+        if (list.canBeCSV()) {
+            return list.asCSV();
+        }
+        throw new Error(
+            localize('unable to convert to') + ' ' + localize('CSV')
+        );
+    case 'json':
+        this.assertType(list, 'list');
+        if (list.canBeJSON()) {
+            return list.asJSON();
+        }
+        throw new Error(
+            localize('unable to convert to') + ' ' + localize('JSON')
+        );
+    default:
+        return 0;
+    }
+};
 
 Process.prototype.reportListLength = function (list) {
     this.assertType(list, 'list');
@@ -2402,7 +2428,10 @@ Process.prototype.doPauseAll = function () {
             stage.threads.pauseAll(stage);
         }
         ide = stage.parentThatIsA(IDE_Morph);
-        if (ide) {ide.controlBar.pauseButton.refresh(); }
+        if (ide) {
+            ide.extensions.onPauseAll();
+            ide.controlBar.pauseButton.refresh();
+        }
     }
 };
 
@@ -2497,7 +2526,7 @@ Process.prototype.doForEach = function (upvar, list, script) {
     this.pushContext();
     this.context.outerContext.variables.addVar(upvar);
     this.context.outerContext.variables.setVar(upvar, next);
-    this.evaluate(script, new List([next]), true);
+    this.evaluate(script, new List([]), true);  // pass [] for args to disable auto-filling slots
 };
 
 Process.prototype.doFor = function (upvar, start, end, script) {
@@ -2526,7 +2555,7 @@ Process.prototype.doFor = function (upvar, start, end, script) {
     if (dta.test()) {return; }
     this.pushContext('doYield');
     this.pushContext();
-    this.evaluate(script, dta.parms, true);
+    this.evaluate(script, new List([]), true); // pass [] for args to disable auto-filling slots
 };
 
 // Process interpolated HOF primitives
@@ -2780,12 +2809,23 @@ Process.prototype.reportCombine = function (list, reporter) {
 
     var next, current, index, parms;
     this.assertType(list, 'list');
-    if (list.length() < 2) {
-        this.returnValueToParentContext(list.length() ? list.at(1) : 0);
-        return;
-    }
     if (list.isLinked) {
         if (this.context.accumulator === null) {
+            // check for special cases to speed up
+            if (this.canRunOptimizedForCombine(reporter)) {
+                return this.reportListAggregation(
+                    list,
+                    reporter.expression.selector
+                );
+            }
+
+            // test for base cases
+            if (list.length() < 2) {
+                this.returnValueToParentContext(list.length() ? list.at(1) : 0);
+                return;
+            }
+
+            // initialize the accumulator
             this.context.accumulator = {
                 source : list.cdr(),
                 idx : 1,
@@ -2806,6 +2846,21 @@ Process.prototype.reportCombine = function (list, reporter) {
         next = this.context.accumulator.source.at(1);
     } else { // arrayed
         if (this.context.accumulator === null) {
+            // check for special cases to speed up
+            if (this.canRunOptimizedForCombine(reporter)) {
+                return this.reportListAggregation(
+                    list,
+                    reporter.expression.selector
+                );
+            }
+
+            // test for base cases
+            if (list.length() < 2) {
+                this.returnValueToParentContext(list.length() ? list.at(1) : 0);
+                return;
+            }
+
+            // initialize the accumulator
             this.context.accumulator = {
                 idx : 1,
                 target : list.at(1)
@@ -2831,6 +2886,78 @@ Process.prototype.reportCombine = function (list, reporter) {
         parms.push(list);
     }
     this.evaluate(reporter, new List(parms));
+};
+
+Process.prototype.reportListAggregation = function (list, selector) {
+    // private - used by reportCombine to optimize certain commutative
+    // operations such as sum, product, min, max hyperized all at once
+    var len = list.length(),
+        result, i, op;
+    op = {
+        reportVariadicSum: 'reportSum',
+        reportVariadicProduct: 'reportProduct',
+        reportVariadicMin: 'reportMin',
+        reportVariadicMax: 'reportMax'
+    }[selector] || selector;
+    if (len === 0) {
+        switch (op) {
+        case 'reportProduct':
+            return 1;
+        case 'reportMin':
+            return Infinity;
+        case 'reportMax':
+            return -Infinity;
+        default: // reportSum
+            return 0;
+        }
+    }
+    result = list.at(1);
+    if (len > 1) {
+        for (i = 2; i <= len; i += 1) {
+            result = this[op](result, list.at(i));
+        }
+    }
+    return result;
+};
+
+Process.prototype.canRunOptimizedForCombine = function (aContext) {
+    // private - used by reportCombine to check for optimizable
+    // special cases
+    var op = aContext.expression.selector,
+        slots,
+        eligible;
+    if (!op) {
+        return false;
+    }
+    eligible = [
+        'reportVariadicSum',
+        'reportVariadicProduct',
+        'reportVariadicMin',
+        'reportVariadicMax'
+    ];
+    if (!contains(eligible, op)) {
+        return false;
+    }
+
+    // scan the expression's inputs,
+    // make sure there are exactly two and none is
+    // a non-empty input slot or a variable getter whose name doesn't
+    // correspond to an input of the context.
+    // make sure the context has either no or exactly two inputs.
+    slots = aContext.expression.inputs()[0].inputs();
+    if (slots.length !== 2) {
+        return false;
+    }
+    if (aContext.inputs.length === 0) {
+        return slots.every(each => each.bindingID);
+    }
+    if (aContext.inputs.length !== 2) {
+        return false;
+    }
+    return slots.every(each =>
+        each.selector === 'reportGetVar' &&
+            contains(aContext.inputs, each.blockSpec)
+    );
 };
 
 // Process interpolated primitives
@@ -3360,7 +3487,6 @@ Process.prototype.reportLastAnswer = function () {
 // Process URI retrieval (interpolated)
 
 Process.prototype.reportURL = function (url) {
-    var response;
     if (!this.httpRequest) {
         // use the location protocol unless the user specifies otherwise
         if (url.indexOf('//') < 0 || url.indexOf('//') > 8) {
@@ -3373,6 +3499,10 @@ Process.prototype.reportURL = function (url) {
         }
         this.httpRequest = new XMLHttpRequest();
         this.httpRequest.open("GET", url, true);
+        if (utils.isNetsBloxDomain(url)) {
+            this.httpRequest.setRequestHeader('X-Source', 'NetsBlox'); // flag this as coming from the NetsBlox client
+        }
+
         // cache-control, commented out for now
         // added for Snap4Arduino but has issues with local robot servers
         // this.httpRequest.setRequestHeader('Cache-Control', 'max-age=0');
@@ -3384,9 +3514,9 @@ Process.prototype.reportURL = function (url) {
             return null;
         }
     } else if (this.httpRequest.readyState === 4) {
-        response = this.httpRequest.responseText;
+        const res = this.httpRequest.responseText;
         this.httpRequest = null;
-        return response;
+        return res;
     }
     this.pushContext('doYield');
     this.pushContext();
@@ -3660,6 +3790,11 @@ Process.prototype.rank = function(data) {
 
 // Process math primtives - arithmetic
 
+Process.prototype.reportVariadicSum = function (numbers) {
+    this.assertType(numbers, 'list');
+    return this.reportListAggregation(numbers, 'reportSum');
+};
+
 Process.prototype.reportSum = function (a, b) {
     return this.hyperDyadic(this.reportBasicSum, a, b);
 };
@@ -3674,6 +3809,11 @@ Process.prototype.reportDifference = function (a, b) {
 
 Process.prototype.reportBasicDifference = function (a, b) {
     return +a - +b;
+};
+
+Process.prototype.reportVariadicProduct = function (numbers) {
+    this.assertType(numbers, 'list');
+    return this.reportListAggregation(numbers, 'reportProduct');
 };
 
 Process.prototype.reportProduct = function (a, b) {
@@ -3700,16 +3840,6 @@ Process.prototype.reportBasicPower = function (a, b) {
     return Math.pow(+a, +b);
 };
 
-Process.prototype.reportModulus = function (a, b) {
-    return this.hyperDyadic(this.reportBasicModulus, a, b);
-};
-
-Process.prototype.reportBasicModulus = function (a, b) {
-    var x = +a,
-        y = +b;
-    return ((x % y) + y) % y;
-};
-
 Process.prototype.reportRandom = function (a, b) {
     return this.hyperDyadic(this.reportBasicRandom, a, b);
 };
@@ -3723,10 +3853,78 @@ Process.prototype.reportBasicRandom = function (min, max) {
     return Math.floor(Math.random() * (ceil - floor + 1)) + floor;
 };
 
+// Process math primtives - arithmetic hyperdyadic
+
+Process.prototype.reportModulus = function (a, b) {
+    return this.hyperDyadic(this.reportBasicModulus, a, b);
+};
+
+Process.prototype.reportBasicModulus = function (a, b) {
+    var x = +a,
+        y = +b;
+    return ((x % y) + y) % y;
+};
+
+Process.prototype.reportAtan2 = function (a, b) {
+    return this.hyperDyadic(this.reportBasicAtan2, a, b);
+};
+
+Process.prototype.reportBasicAtan2 = function (a, b) {
+    return degrees(Math.atan2(+a, +b));
+};
+
+Process.prototype.reportVariadicMin = function (numbers) {
+    this.assertType(numbers, 'list');
+    return this.reportListAggregation(numbers, 'reportMin');
+};
+
+Process.prototype.reportMin = function (a, b) {
+    return this.hyperDyadic(this.reportBasicMin, a, b);
+};
+
+Process.prototype.reportBasicMin = function (a, b) {
+    // return Math.min(+a, +b); // enhanced to also work with text
+    var x = +a,
+        y = +b;
+    if (isNaN(x) || isNaN(y)) {
+        x = a;
+        y = b;
+    }
+    return x < y ? x : y;
+};
+
+Process.prototype.reportVariadicMax = function (numbers) {
+    this.assertType(numbers, 'list');
+    return this.reportListAggregation(numbers, 'reportMax');
+};
+
+Process.prototype.reportMax = function (a, b) {
+    return this.hyperDyadic(this.reportBasicMax, a, b);
+};
+
+Process.prototype.reportBasicMax = function (a, b) {
+    // return Math.max(+a, +b); // enhanced to also work with text
+    var x = +a,
+        y = +b;
+    if (isNaN(x) || isNaN(y)) {
+        x = a;
+        y = b;
+    }
+    return x > y ? x : y;
+};
+
 // Process logic primitives - hyper-diadic / monadic where applicable
 
 Process.prototype.reportLessThan = function (a, b) {
     return this.hyperDyadic(this.reportBasicLessThan, a, b);
+};
+
+Process.prototype.reportLessThanOrEquals = function (a, b) {
+    return this.hyperDyadic(
+        (a, b) => !this.reportBasicGreaterThan(a, b),
+        a,
+        b
+    );
 };
 
 Process.prototype.reportBasicLessThan = function (a, b) {
@@ -3739,18 +3937,16 @@ Process.prototype.reportBasicLessThan = function (a, b) {
     return x < y;
 };
 
-Process.prototype.reportNot = function (bool) {
-    if (this.enableHyperOps) {
-        if (bool instanceof List) {
-            return bool.map(each => this.reportNot(each));
-        }
-    }
-    // this.assertType(bool, 'Boolean');
-    return !bool;
-};
-
 Process.prototype.reportGreaterThan = function (a, b) {
     return this.hyperDyadic(this.reportBasicGreaterThan, a, b);
+};
+
+Process.prototype.reportGreaterThanOrEquals = function (a, b) {
+    return this.hyperDyadic(
+        (a, b) => !this.reportBasicLessThan(a, b),
+        a,
+        b
+    );
 };
 
 Process.prototype.reportBasicGreaterThan = function (a, b) {
@@ -3765,6 +3961,20 @@ Process.prototype.reportBasicGreaterThan = function (a, b) {
 
 Process.prototype.reportEquals = function (a, b) {
     return snapEquals(a, b);
+};
+
+Process.prototype.reportNotEquals = function (a, b) {
+    return !snapEquals(a, b);
+};
+
+Process.prototype.reportNot = function (bool) {
+    if (this.enableHyperOps) {
+        if (bool instanceof List) {
+            return bool.map(each => this.reportNot(each));
+        }
+    }
+    // this.assertType(bool, 'Boolean');
+    return !bool;
 };
 
 Process.prototype.reportIsIdentical = function (a, b) {
@@ -3881,7 +4091,11 @@ Process.prototype.reportMonadic = function (fname, n) {
         result = Math.pow(2, x);
         break;
     case 'id':
-        return n;
+        result = n;
+        break;
+    case 'sign':
+        result = n < 0 ? -1 : n > 0 ? 1 : 0;
+        break;
     default:
         nop();
     }
@@ -4357,31 +4571,48 @@ Process.prototype.goToLayer = function (name) {
 
 // Process color primitives
 
-Process.prototype.setHSVA = function (name, num) {
-    var options = ['hue', 'saturation', 'brightness', 'transparency'];
-    this.blockReceiver().setColorComponentHSVA(
-        options.indexOf(this.inputOption(name)),
+Process.prototype.setColorDimension = function (name, num) {
+    var options = ['hue', 'saturation', 'brightness', 'transparency'],
+        choice = this.inputOption(name);
+    if (choice === 'r-g-b(-a)') {
+        this.blockReceiver().setColorRGBA(num);
+        return;
+    }
+    this.blockReceiver().setColorDimension(
+        options.indexOf(choice),
         +num
     );
 };
 
-Process.prototype.changeHSVA = function (name, num) {
-    var options = ['hue', 'saturation', 'brightness', 'transparency'];
-    this.blockReceiver().changeColorComponentHSVA(
-        options.indexOf(this.inputOption(name)),
+Process.prototype.changeColorDimension = function (name, num) {
+    var options = ['hue', 'saturation', 'brightness', 'transparency'],
+        choice = this.inputOption(name);
+    if (choice === 'r-g-b(-a)') {
+        this.blockReceiver().changeColorRGBA(num);
+        return;
+    }
+    this.blockReceiver().changeColorDimension(
+        options.indexOf(choice),
         +num
     );
 };
 
-Process.prototype.setPenHSVA = Process.prototype.setHSVA;
-Process.prototype.changePenHSVA = Process.prototype.changeHSVA;
-Process.prototype.setBackgroundHSVA = Process.prototype.setHSVA;
-Process.prototype.changeBackgroundHSVA = Process.prototype.changeHSVA;
+Process.prototype.setPenColorDimension =
+    Process.prototype.setColorDimension;
+
+Process.prototype.changePenColorDimension =
+    Process.prototype.changeColorDimension;
+
+Process.prototype.setBackgroundColorDimension =
+    Process.prototype.setColorDimension;
+
+Process.prototype.changeBackgroundColorDimension =
+    Process.prototype.changeColorDimension;
 
 // Process pasting primitives
 
 Process.prototype.doPasteOn = function (name, thisObj, stage) {
-    // allow for lists of sprites and also check for temparary clones,
+    // allow for lists of sprites and also check for temporary clones,
     // as in Scratch 2.0,
     var those;
     thisObj = thisObj || this.blockReceiver();
@@ -4450,7 +4681,7 @@ Process.prototype.reportTouchingObject = function (name) {
 
 Process.prototype.objectTouchingObject = function (thisObj, name) {
     // helper function for reportTouchingObject()
-    // also check for temparary clones, as in Scratch 2.0,
+    // also check for temporary clones, as in Scratch 2.0,
     // and for any parts (subsprites)
     var those,
         stage,
@@ -4688,10 +4919,19 @@ Process.prototype.spritesAtPoint = function (point, stage) {
 };
 
 Process.prototype.reportRelationTo = function (relation, name) {
+	if (this.enableHyperOps) {
+        if (name instanceof List && !this.isCoordinate(name)) {
+            return name.map(each => this.reportRelationTo(relation, each));
+        }
+    }
+
 	var rel = this.inputOption(relation);
  	if (rel === 'distance') {
   		return this.reportDistanceTo(name);
   	}
+    if (rel === 'ray length') {
+        return this.reportRayLengthTo(name);
+    }
     if (rel === 'direction') {
     	return this.reportDirectionTo(name);
     }
@@ -4725,6 +4965,178 @@ Process.prototype.reportDistanceTo = function (name) {
         return rc.distanceTo(point) / stage.scale;
     }
     return 0;
+};
+
+Process.prototype.reportRayLengthTo = function (name) {
+    // raycasting edge detection - answer the distance between the asking
+    // sprite's rotation center to the target sprite's outer edge (the first
+    // opaque pixel) in the asking sprite's current direction
+    var thisObj = this.blockReceiver(),
+        thatObj,
+        stage,
+        rc,
+        targetBounds,
+        intersections = [],
+        dir,
+        a, b, x, y,
+        top, bottom, left, right,
+        circa, hSect, vSect,
+        point, hit,
+        temp,
+        width, imageData;
+
+    circa = (num) => Math.round(num * 10000000) / 10000000; // good enough
+
+    hSect = (yLevel) => {
+        var theta = radians(dir);
+        b = rc.y - yLevel;
+        a = b * Math.tan(theta);
+        x = rc.x + a;
+        if (
+            (circa(x) === circa(rc.x) &&
+                ((dir === 180 && rc.y < yLevel) ||
+                dir === 0 && rc.y > yLevel)
+            ) ||
+            (x > rc.x && dir >= 0 && dir < 180) ||
+            (circa(x) < circa(rc.x) &&
+                dir >= 180 && dir < 360)
+        ) {
+            if (x >= left && x <= right) {
+                intersections.push(new Point(x, yLevel));
+            }
+        }
+    };
+
+    vSect = (xLevel) => {
+        var theta = radians(360 - dir - 90);
+        b = rc.x - xLevel;
+        a = b * Math.tan(theta);
+        y = rc.y + a;
+        if (
+            (circa(y) === circa(rc.y) &&
+                ((dir === 90 && rc.x < xLevel) ||
+                dir === 270 && rc.x > xLevel)
+            ) ||
+            (y > rc.y && dir >= 90 && dir < 270) ||
+            (y < rc.y && (dir >= 270 || dir < 90))
+        ) {
+            if (y >= top && y <= bottom) {
+                intersections.push(new Point(xLevel, y));
+            }
+        }
+    };
+
+    if (!thisObj) {return -1; }
+    rc = thisObj.rotationCenter();
+    point = rc;
+    stage = thisObj.parentThatIsA(StageMorph);
+    thatObj = this.getOtherObject(name, thisObj, stage);
+    if (!(thatObj instanceof SpriteMorph)) {return -1; }
+
+    // determine intersections with the target's bounding box
+    dir = thisObj.heading;
+    targetBounds = thatObj.bounds;
+    top = targetBounds.top();
+    bottom = targetBounds.bottom();
+    left = targetBounds.left();
+    right = targetBounds.right();
+
+    // test if already inside the target
+    if (targetBounds.containsPoint(rc)) {
+        intersections.push(rc);
+        hSect(top);
+        hSect(bottom);
+        vSect(left);
+        vSect(right);
+        if (intersections.length < 2) {
+            return -1;
+        }
+    } else {
+        hSect(top);
+        hSect(bottom);
+        vSect(left);
+        vSect(right);
+        if (intersections.length < 2) {
+            return -1;
+        }
+        // sort
+        if (dir !== 90) {
+            if (Math.sign(rc.x - intersections[0].x) !==
+                Math.sign(intersections[0].x - intersections[1].x) ||
+                Math.sign(rc.y - intersections[0].y) !==
+                Math.sign(intersections[0].y - intersections[1].y)
+            ) {
+                temp = intersections[0];
+                intersections[0] = intersections[1];
+                intersections[1] = temp;
+            }
+        }
+    }
+
+    // for debugging:
+    /*
+    return new List(intersections)
+        .map(point => thisObj.snapPoint(point))
+        .map(point => new List([point.x, point.y]));
+    */
+
+    // convert intersections to local bitmap coordinates of the target
+    intersections = intersections.map(point =>
+        point.subtract(targetBounds.origin).floorDivideBy(stage.scale)
+    );
+
+    // get image data
+    width = Math.floor(targetBounds.width() / stage.scale);
+    imageData = thatObj.getImageData();
+
+    // scan the ray along the coordinates of a Bresenham line
+    // for the first opaque pixel
+    function alphaAt(imageData, width, x, y) {
+        var idx = y * width + x;
+        return imageData[idx] && 0x000000FF; // alpha
+    }
+
+    function isOpaque(x, y) {
+        return alphaAt(imageData, width, x, y) > 0;
+    }
+
+    function scan(testFunc, x0, y0, x1, y1) {
+        // Bresenham's algorithm
+        var dx = Math.abs(x1 - x0),
+            sx = x0 < x1 ? 1 : -1,
+            dy = -Math.abs(y1 - y0),
+            sy = y0 < y1 ? 1 : -1,
+            err = dx + dy,
+            e2;
+
+        while (true) {
+            if (testFunc(x0, y0)) {
+                return new Point(x0 * stage.scale, y0 * stage.scale);
+            }
+            if (x0 === x1 && y0 === y1) {
+                return -1; // not found
+            }
+            e2 = 2 * err;
+            if (e2 > dy) {
+                err += dy;
+                x0 += sx;
+            }
+            if (e2 < dx) {
+                err += dx;
+                y0 += sy;
+            }
+        }
+    }
+
+    hit = scan(
+        isOpaque,
+        intersections[0].x,
+        intersections[0].y,
+        intersections[1].x,
+        intersections[1].y
+    );
+    if (hit === -1) {return hit; }
+    return rc.distanceTo(hit.add(targetBounds.origin)) / stage.scale;
 };
 
 Process.prototype.reportDirectionTo = function (name) {
@@ -5490,7 +5902,9 @@ Process.prototype.reportNewCostumeStretched = function (name, xP, yP) {
     }
     cst = this.costumeNamed(name);
     if (!cst) {
-        return new Costume();
+        throw new Error(
+            'expecting a costume\nbut getting none'
+        );
     }
     if (!isFinite(+xP * +yP) || isNaN(+xP * +yP)) {
         throw new Error(
@@ -5730,15 +6144,15 @@ Process.prototype.capture = function (aContext) {
     // private - answer a new process on a full copy of the given context
     // while retaining the lexical variable scope
     var proc = new Process(this.topBlock, this.receiver);
-    var clos = new Context(
+    var closure = new Context(
         aContext.parentContext,
         aContext.expression,
         aContext.outerContext,
         aContext.receiver
     );
-    clos.variables = aContext.variables.fullCopy();
-    clos.variables.root().parentFrame = proc.variables;
-    proc.context = clos;
+    closure.variables = aContext.variables.fullCopy();
+    closure.variables.root().parentFrame = proc.variables;
+    proc.context = closure;
     return proc;
 };
 
