@@ -74,6 +74,7 @@
         <script type="text/javascript" src="src/messages.js"></script>
         <script type="text/javascript" src="src/room.js"></script>
         <script type="text/javascript" src="src/netsblox.js"></script>
+        <script type="text/javascript" src="src/wasm.js"></script>
 
         <!-- Snap overrides -->
         <script type="text/javascript" src="src/store-ext.js"></script>

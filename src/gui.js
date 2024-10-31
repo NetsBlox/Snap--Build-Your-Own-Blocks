@@ -2413,9 +2413,20 @@ IDE_Morph.prototype.droppedText = async function (aString, name, fileType) {
         return this.openDataString(aString, lbl, 'json');
     }
     if (ext === 'musicxml') {
-        const read = new MusicReader(aString, name.replace(/\.musicxml$/, ''));
-        const write = new MusicWriter(read);
-        return this.droppedText(write.getFile());
+        try {
+            const proj = window.amm_sdk_netsblox_wasm.translate_musicxml(aString);
+            return this.droppedText(proj);
+        } catch (e) {
+            return world.children[0].inform('Failed to Import Project', e.message);
+        }
+    }
+    if (ext === 'mid' || ext === 'smf') {
+        try {
+            const proj = window.amm_sdk_netsblox_wasm.translate_midi(aString);
+            return this.droppedText(proj);
+        } catch (e) {
+            return world.children[0].inform('Failed to Import Project', e.message);
+        }
     }
 
     // import as plain text data
