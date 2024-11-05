@@ -2412,52 +2412,54 @@ IDE_Morph.prototype.droppedText = async function (aString, name, fileType) {
     if (fileType.indexOf('json') !== -1 || ext === 'json') {
         return this.openDataString(aString, lbl, 'json');
     }
-    if (ext === 'musicxml') {
-        try {
-            const proj = window.amm_sdk_netsblox_wasm.translate_musicxml(aString);
-            return this.droppedText(proj);
-        } catch (e) {
-            return world.children[0].inform('Failed to Import Project', e.message);
-        }
-    }
-    if (ext === 'mid' || ext === 'smf') {
-        try {
-            const proj = window.amm_sdk_netsblox_wasm.translate_midi(aString);
-            return this.droppedText(proj);
-        } catch (e) {
-            return world.children[0].inform('Failed to Import Project', e.message);
-        }
-    }
 
     // import as plain text data
     return this.openDataString(aString, lbl, 'text');
 };
 
 IDE_Morph.prototype.droppedBinary = function (anArrayBuffer, name) {
-    // dynamically load ypr->Snap!
-    var ypr = document.getElementById('ypr'),
-        myself = this,
-        suffix = name.substring(name.length - 3);
+    const ext = name ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : '';
 
-    if (suffix.toLowerCase() !== 'ypr') {return; }
-
-    function loadYPR(buffer, lbl) {
-        var reader = new sb.Reader(),
-            pname = lbl.split('.')[0]; // up to period
-        reader.onload = function (info) {
-            myself.droppedText(new sb.XMLWriter().write(pname, info));
-        };
-        reader.readYPR(new Uint8Array(buffer));
-    }
-
-    if (!ypr) {
-        ypr = document.createElement('script');
-        ypr.id = 'ypr';
-        ypr.onload = function () {loadYPR(anArrayBuffer, name); };
-        document.head.appendChild(ypr);
-        ypr.src = this.resourceURL('src', 'ypr.js');
+    if (ext === 'musicxml') {
+        try {
+            const proj = window.amm_sdk_netsblox_wasm.translate_musicxml(new Uint8Array(anArrayBuffer));
+            return this.droppedText(proj);
+        } catch (e) {
+            return world.children[0].inform('Failed to Import Project', e.message);
+        }
+    } else if (ext === 'mid' || ext === 'smf') {
+        try {
+            const proj = window.amm_sdk_netsblox_wasm.translate_midi(new Uint8Array(anArrayBuffer));
+            return this.droppedText(proj);
+        } catch (e) {
+            return world.children[0].inform('Failed to Import Project', e.message);
+        }
     } else {
-        loadYPR(anArrayBuffer, name);
+        // dynamically load ypr->Snap!
+        var ypr = document.getElementById('ypr'),
+            myself = this,
+            suffix = name.substring(name.length - 3);
+
+        if (suffix.toLowerCase() !== 'ypr') {return; }
+
+        function loadYPR(buffer, lbl) {
+            var reader = new sb.Reader(),
+                pname = lbl.split('.')[0]; // up to period
+            reader.onload = function (info) {
+                myself.droppedText(new sb.XMLWriter().write(pname, info));
+            };
+            reader.readYPR(new Uint8Array(buffer));
+        }
+
+        if (!ypr) {
+            ypr = document.createElement('script');
+            ypr.id = 'ypr';
+            ypr.onload = function () {loadYPR(anArrayBuffer, name); };
+            document.head.appendChild(ypr);
+            ypr.src = this.resourceURL('src', 'ypr.js');
+        } else {
+            loadYPR(anArrayBuffer, name);
+        }
     }
 };
 
