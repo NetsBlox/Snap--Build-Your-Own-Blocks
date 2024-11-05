@@ -11824,11 +11824,13 @@ HandMorph.prototype.processDrop = function (event) {
             file.name.lastIndexOf('.') + 1
         ).toLowerCase();
 
-        if (file.type.indexOf("svg") !== -1 && !MorphicPreferences.rasterizeSVGs) {
+        if (contains(['musicxml', 'mid', 'smf'], suffix)) {
+            return readBinary(file);
+        } else if (file.type.indexOf("svg") !== -1 && !MorphicPreferences.rasterizeSVGs) {
             return readSVG(file);
         } else if (file.type.indexOf("image") === 0) {
             return readImage(file);
-        } else if (file.type.indexOf("text") === 0 || contains(['txt', 'csv', 'json', 'xml', 'musicxml', 'mid', 'smf'], suffix)) {
+        } else if (file.type.indexOf("text") === 0 || contains(['txt', 'csv', 'json', 'xml'], suffix)) {
             return readText(file);
         } else if (file.type.indexOf("audio") === 0 || contains(['ogg'], suffix)) { // must come after midi stuff
             return readAudio(file);
