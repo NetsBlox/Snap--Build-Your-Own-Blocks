@@ -272,12 +272,6 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly translate_musicxml: (a: number, b: number) => Array;
   readonly translate_midi: (a: number, b: number) => Array;
-  readonly __wbg_tempo_free: (a: number, b: number) => void;
-  readonly __wbg_get_tempo_base_note: (a: number) => number;
-  readonly __wbg_set_tempo_base_note: (a: number, b: number) => void;
-  readonly __wbg_get_tempo_beats_per_minute: (a: number) => number;
-  readonly __wbg_set_tempo_beats_per_minute: (a: number, b: number) => void;
-  readonly tempo_new: (a: number, b: number) => number;
   readonly __wbg_timesignature_free: (a: number, b: number) => void;
   readonly __wbg_get_timesignature_signature: (a: number) => number;
   readonly __wbg_set_timesignature_signature: (a: number, b: number) => void;
@@ -332,6 +326,12 @@ export interface InitOutput {
   readonly duration_value: (a: number) => number;
   readonly duration_beats: (a: number, b: number) => number;
   readonly duration_split: (a: number, b: number) => number;
+  readonly __wbg_tempo_free: (a: number, b: number) => void;
+  readonly __wbg_get_tempo_base_note: (a: number) => number;
+  readonly __wbg_set_tempo_base_note: (a: number, b: number) => void;
+  readonly __wbg_get_tempo_beats_per_minute: (a: number) => number;
+  readonly __wbg_set_tempo_beats_per_minute: (a: number, b: number) => void;
+  readonly tempo_new: (a: number, b: number) => number;
   readonly __wbindgen_export_0: WebAssembly.Table;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __externref_table_dealloc: (a: number) => void;

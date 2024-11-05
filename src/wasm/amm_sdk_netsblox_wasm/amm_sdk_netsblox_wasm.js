@@ -145,15 +145,15 @@ function getDataViewMemory0() {
     return cachedDataViewMemory0;
 }
 
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
 function _assertClass(instance, klass) {
     if (!(instance instanceof klass)) {
         throw new Error(`expected instance of ${klass.name}`);
     }
     return instance.ptr;
-}
-
-function isLikeNone(x) {
-    return x === undefined || x === null;
 }
 
 export const Accidental = Object.freeze({ None:0,"0":"None",Natural:1,"1":"Natural",Sharp:2,"2":"Sharp",Flat:3,"3":"Flat",DoubleSharp:4,"4":"DoubleSharp",DoubleFlat:5,"5":"DoubleFlat", });
