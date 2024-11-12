@@ -11824,7 +11824,7 @@ HandMorph.prototype.processDrop = function (event) {
             file.name.lastIndexOf('.') + 1
         ).toLowerCase();
 
-        if (contains(['musicxml', 'mid', 'smf'], suffix)) {
+        if (contains(['musicxml', 'mxl', 'mid', 'smf'], suffix)) {
             return readBinary(file);
         } else if (file.type.indexOf("svg") !== -1 && !MorphicPreferences.rasterizeSVGs) {
             return readSVG(file);

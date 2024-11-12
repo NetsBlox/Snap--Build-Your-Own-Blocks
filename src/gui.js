@@ -2420,7 +2420,7 @@ IDE_Morph.prototype.droppedText = async function (aString, name, fileType) {
 IDE_Morph.prototype.droppedBinary = function (anArrayBuffer, name) {
     const ext = name ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : '';
 
-    if (ext === 'musicxml') {
+    if (ext === 'musicxml' || ext == 'mxl') {
         try {
             const proj = window.amm_sdk_netsblox_wasm.translate_musicxml(new Uint8Array(anArrayBuffer));
             return this.droppedText(proj);
