@@ -2399,6 +2399,8 @@ SyntaxElementMorph.prototype.showBubble = function (value, exportPic, target) {
             txt,
             this.fontSize
         );
+    } else if (value instanceof Color) {
+        morphToShow = SpriteMorph.prototype.colorMorph(value);
     } else if (value === null) {
         morphToShow = new TextMorph(
             '',
@@ -11655,6 +11657,7 @@ function ColorSlotMorph(clr) {
 ColorSlotMorph.prototype.init = function (clr) {
     ColorSlotMorph.uber.init.call(this);
     this.alpha = 1;
+    this.isStatic = false;
     this.setColor(clr || new Color(145, 26, 68));
 };
 
@@ -11721,7 +11724,9 @@ ColorSlotMorph.prototype.getUserColor = function () {
 // ColorSlotMorph events:
 
 ColorSlotMorph.prototype.mouseClickLeft = function () {
-    this.selectForEdit().getUserColor();
+    if(!this.isStatic){
+        this.selectForEdit().getUserColor();
+    }
 };
 
 // ColorSlotMorph evaluating:

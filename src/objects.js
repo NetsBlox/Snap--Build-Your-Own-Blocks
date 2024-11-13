@@ -7482,6 +7482,15 @@ SpriteMorph.prototype.booleanMorph = function (bool) {
     return sym;
 };
 
+// SpriteMorph color visual representation
+
+SpriteMorph.prototype.colorMorph = function (color) {
+    var sym = new ColorSlotMorph(color);
+    sym.isStatic = true;
+    sym.fixLayout();
+    return sym;
+};
+
 // SpriteMorph nesting
 /*
     simulate Morphic trees
@@ -11861,6 +11870,9 @@ CellMorph.prototype.createContents = function () {
                 }
             }
             this.contentsMorph.isDraggable = false;
+        } else if (this.contents instanceof Color) {
+            this.contentsMorph = SpriteMorph.prototype.colorMorph(this.contents);
+        
         } else {
             this.contentsMorph = new TextMorph(
                 !isNil(this.contents) ? this.contents.toString() : '',
