@@ -1069,7 +1069,6 @@ SyntaxElementMorph.prototype.labelParts = {
     // other single types
     '%clr': {
         type: 'color',
-        tags: 'static'
     },
     '%br': {
         type: 'break'
@@ -11743,6 +11742,10 @@ ColorSlotMorph.prototype.fixLayout = function () {
     this.bounds.setWidth(side);
     this.bounds.setHeight(side);
 };
+
+ColorSlotMorph.prototype.fullImage = function () {
+    return BlockMorph.uber.fullImage.call(this);
+}
 
 ColorSlotMorph.prototype.render = function (ctx) {
     var borderColor;

@@ -393,7 +393,7 @@ TableCellMorph.prototype.dataRepresentation = function (dta) {
             dta
         ).fullImage();
     } else if (dta instanceof Color) {
-        return SpriteMorph.prototype.colorMorph(dta);
+        return SpriteMorph.prototype.colorMorph(dta).fullImage();
     } else if (dta instanceof Array) {
         return this.dataRepresentation(dta[0]);
     } else if (dta instanceof Variable) {
