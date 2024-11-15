@@ -3796,7 +3796,17 @@ Process.prototype.reportVariadicSum = function (numbers) {
 };
 
 Process.prototype.reportSum = function (a, b) {
+    if (a instanceof Color && b instanceof Color){
+        return this.hyperDyadic(this.reportColorSum, a, b);
+    }
     return this.hyperDyadic(this.reportBasicSum, a, b);
+};
+
+Process.prototype.reportColorSum = function (c1, c2) {
+    const t = Math.exp(c1.a) / (Math.exp(c1.a) + Math.exp(c2.a))
+    const rgb = mixbox.lerp(c1.toRGBstring(), c2.toRGBstring(), t);
+    return new Color(rgb[0], rgb[1], rgb[2]);
+    
 };
 
 Process.prototype.reportBasicSum = function (a, b) {

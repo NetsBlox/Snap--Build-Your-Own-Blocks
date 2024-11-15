@@ -1069,6 +1069,7 @@ SyntaxElementMorph.prototype.labelParts = {
     // other single types
     '%clr': {
         type: 'color',
+        tags: 'static'
     },
     '%br': {
         type: 'break'
@@ -11657,6 +11658,7 @@ ColorSlotMorph.prototype.init = function (clr) {
     ColorSlotMorph.uber.init.call(this);
     this.alpha = 1;
     this.isStatic = false;
+    this.allowSelector = true;
     this.setColor(clr || new Color(145, 26, 68));
 };
 
@@ -11723,7 +11725,7 @@ ColorSlotMorph.prototype.getUserColor = function () {
 // ColorSlotMorph events:
 
 ColorSlotMorph.prototype.mouseClickLeft = function () {
-    if(!this.isStatic){
+    if(this.allowSelector){
         this.selectForEdit().getUserColor();
     }
 };

@@ -7486,7 +7486,7 @@ SpriteMorph.prototype.booleanMorph = function (bool) {
 
 SpriteMorph.prototype.colorMorph = function (color) {
     var sym = new ColorSlotMorph(color);
-    sym.isStatic = true;
+    sym.allowSelector = false;
     sym.fixLayout();
     return sym;
 };
