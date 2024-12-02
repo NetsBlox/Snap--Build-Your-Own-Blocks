@@ -145,10 +145,6 @@ function getDataViewMemory0() {
     return cachedDataViewMemory0;
 }
 
-function isLikeNone(x) {
-    return x === undefined || x === null;
-}
-
 function _assertClass(instance, klass) {
     if (!(instance instanceof klass)) {
         throw new Error(`expected instance of ${klass.name}`);
@@ -156,28 +152,293 @@ function _assertClass(instance, klass) {
     return instance.ptr;
 }
 
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
 export const Accidental = Object.freeze({ None:0,"0":"None",Natural:1,"1":"Natural",Sharp:2,"2":"Sharp",Flat:3,"3":"Flat",DoubleSharp:4,"4":"DoubleSharp",DoubleFlat:5,"5":"DoubleFlat", });
-
-export const ClefSymbol = Object.freeze({ GClef:0,"0":"GClef",CClef:1,"1":"CClef",FClef:2,"2":"FClef", });
-
-export const ClefType = Object.freeze({ Treble:0,"0":"Treble",Bass:1,"1":"Bass",FrenchViolin:2,"2":"FrenchViolin",Subbass:3,"3":"Subbass",Tenor:4,"4":"Tenor",Alto:5,"5":"Alto",Soprano:6,"6":"Soprano",MezzoSoprano:7,"7":"MezzoSoprano",Baritone:8,"8":"Baritone", });
+/**
+ * Represents the symbol used to designate a clef.
+ *
+ * Note that the same symbol can be used for different clef types.
+ */
+export const ClefSymbol = Object.freeze({
+/**
+ * ![G Clef](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/g-clef.png)
+ */
+GClef:0,"0":"GClef",
+/**
+ * ![C Clef](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/c-clef.png)
+ */
+CClef:1,"1":"CClef",
+/**
+ * ![F Clef](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/f-clef.png)
+ */
+FClef:2,"2":"FClef", });
+/**
+ * Designates the meaning of a clef.
+ *
+ * A clef is used to determine the pitches for the notes on a staff.
+ */
+export const ClefType = Object.freeze({
+/**
+ * Designates that pitch G4 is located on the second line from the bottom of the staff.
+ */
+Treble:0,"0":"Treble",
+/**
+ * Designates that pitch F3 is located on the second line from the top of the staff.
+ */
+Bass:1,"1":"Bass",
+/**
+ * Designates that pitch G4 is located on the bottom line of the staff.
+ */
+FrenchViolin:2,"2":"FrenchViolin",
+/**
+ * Designates that pitch F3 is located on the top line of the staff.
+ */
+Subbass:3,"3":"Subbass",
+/**
+ * Designates that pitch C4 is located on the second line from the top of the staff.
+ */
+Tenor:4,"4":"Tenor",
+/**
+ * Designates that pitch C4 is located on the middle line of the staff.
+ */
+Alto:5,"5":"Alto",
+/**
+ * Designates that pitch C4 is located on the bottom line of the staff.
+ */
+Soprano:6,"6":"Soprano",
+/**
+ * Designates that pitch C4 is located on the second line from the bottom of the staff.
+ */
+MezzoSoprano:7,"7":"MezzoSoprano",
+/**
+ * Designates that pitch C4 is located on the top line of the staff.
+ */
+Baritone:8,"8":"Baritone", });
 
 export const DurationType = Object.freeze({ Maxima:0,"0":"Maxima",Long:1,"1":"Long",Breve:2,"2":"Breve",Whole:3,"3":"Whole",Half:4,"4":"Half",Quarter:5,"5":"Quarter",Eighth:6,"6":"Eighth",Sixteenth:7,"7":"Sixteenth",ThirtySecond:8,"8":"ThirtySecond",SixtyFourth:9,"9":"SixtyFourth",OneHundredTwentyEighth:10,"10":"OneHundredTwentyEighth",TwoHundredFiftySixth:11,"11":"TwoHundredFiftySixth",FiveHundredTwelfth:12,"12":"FiveHundredTwelfth",OneThousandTwentyFourth:13,"13":"OneThousandTwentyFourth",TwoThousandFortyEighth:14,"14":"TwoThousandFortyEighth", });
-
-export const KeyMode = Object.freeze({ Major:0,"0":"Major",Minor:1,"1":"Minor", });
-
-export const KeySignature = Object.freeze({ A:0,"0":"A",ASharp:1,"1":"ASharp",AFlat:2,"2":"AFlat",B:3,"3":"B",BFlat:4,"4":"BFlat",C:5,"5":"C",CSharp:6,"6":"CSharp",CFlat:7,"7":"CFlat",D:8,"8":"D",DSharp:9,"9":"DSharp",DFlat:10,"10":"DFlat",E:11,"11":"E",EFlat:12,"12":"EFlat",F:13,"13":"F",FSharp:14,"14":"FSharp",G:15,"15":"G",GSharp:16,"16":"GSharp",GFlat:17,"17":"GFlat", });
+/**
+ * Represents the relative interval between notes in musical scale.
+ */
+export const KeyMode = Object.freeze({
+/**
+ * Represents the following note intervals in semitones,
+ * starting from the root note of the corresponding key:
+ *
+ * `[2, 2, 1, 2, 2, 2, 1]`
+ */
+Major:0,"0":"Major",
+/**
+ * Represents the following note intervals in semitones,
+ * starting from the root note of the corresponding key:
+ *
+ * `[2, 1, 2, 2, 2, 1, 2]`
+ */
+Minor:1,"1":"Minor", });
+/**
+ * Represents the key signature of a musical piece, not taking
+ * into account its mode (i.e., major or minor).
+ */
+export const KeySignature = Object.freeze({
+/**
+ * ![Key of A](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-a.png)
+ */
+A:0,"0":"A",
+/**
+ * ![Key of A#](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-a-sharp.png)
+ */
+ASharp:1,"1":"ASharp",
+/**
+ * ![Key of A♭](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-a-flat.png)
+ */
+AFlat:2,"2":"AFlat",
+/**
+ * ![Key of B](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-b.png)
+ */
+B:3,"3":"B",
+/**
+ * ![Key of B♭](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-b-flat.png)
+ */
+BFlat:4,"4":"BFlat",
+/**
+ * ![Key of C](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-c.png)
+ */
+C:5,"5":"C",
+/**
+ * ![Key of C#](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-c-sharp.png)
+ */
+CSharp:6,"6":"CSharp",
+/**
+ * ![Key of C♭](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-c-flat.png)
+ */
+CFlat:7,"7":"CFlat",
+/**
+ * ![Key of D](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-d.png)
+ */
+D:8,"8":"D",
+/**
+ * ![Key of D#](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-d-sharp.png)
+ */
+DSharp:9,"9":"DSharp",
+/**
+ * ![Key of D♭](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-d-flat.png)
+ */
+DFlat:10,"10":"DFlat",
+/**
+ * ![Key of E](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-e.png)
+ */
+E:11,"11":"E",
+/**
+ * ![Key of E♭](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-e-flat.png)
+ */
+EFlat:12,"12":"EFlat",
+/**
+ * ![Key of F](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-f.png)
+ */
+F:13,"13":"F",
+/**
+ * ![Key of F#](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-f-sharp.png)
+ */
+FSharp:14,"14":"FSharp",
+/**
+ * ![Key of G](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-g.png)
+ */
+G:15,"15":"G",
+/**
+ * ![Key of G#](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-g-sharp.png)
+ */
+GSharp:16,"16":"GSharp",
+/**
+ * ![Key of G♭](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/key-g-flat.png)
+ */
+GFlat:17,"17":"GFlat", });
 
 export const PitchName = Object.freeze({ Rest:0,"0":"Rest",A:1,"1":"A",B:2,"2":"B",C:3,"3":"C",D:4,"4":"D",E:5,"5":"E",F:6,"6":"F",G:7,"7":"G", });
-
-export const TempoMarking = Object.freeze({ Larghissimo:0,"0":"Larghissimo",Grave:1,"1":"Grave",Largo:2,"2":"Largo",Lento:3,"3":"Lento",Larghetto:4,"4":"Larghetto",Adagio:5,"5":"Adagio",Adagietto:6,"6":"Adagietto",Andante:7,"7":"Andante",Andantino:8,"8":"Andantino",MarciaModerato:9,"9":"MarciaModerato",AndanteModerato:10,"10":"AndanteModerato",Moderato:11,"11":"Moderato",Allegretto:12,"12":"Allegretto",AllegroModerato:13,"13":"AllegroModerato",Allegro:14,"14":"Allegro",Vivace:15,"15":"Vivace",Vivacissimo:16,"16":"Vivacissimo",Allegrissimo:17,"17":"Allegrissimo",AllegroVivace:18,"18":"AllegroVivace",Presto:19,"19":"Presto",Prestissimo:20,"20":"Prestissimo", });
-
-export const TimeSignatureType = Object.freeze({ CommonTime:0,"0":"CommonTime",CutTime:1,"1":"CutTime",Explicit:2,"2":"Explicit",None:3,"3":"None", });
+/**
+ * Represents a text-based tempo marking in music notation.
+ */
+export const TempoMarking = Object.freeze({
+/**
+ * Very, very slowly.
+ */
+Larghissimo:0,"0":"Larghissimo",
+/**
+ * Very slowly.
+ */
+Grave:1,"1":"Grave",
+/**
+ * Broadly.
+ */
+Largo:2,"2":"Largo",
+/**
+ * Slowly.
+ */
+Lento:3,"3":"Lento",
+/**
+ * Rather broadly.
+ */
+Larghetto:4,"4":"Larghetto",
+/**
+ * Slowly and stately.
+ */
+Adagio:5,"5":"Adagio",
+/**
+ * More slowly than andante.
+ */
+Adagietto:6,"6":"Adagietto",
+/**
+ * At a walking pace.
+ */
+Andante:7,"7":"Andante",
+/**
+ * At a brisk walking pace.
+ */
+Andantino:8,"8":"Andantino",
+/**
+ * Moderately, in the manner of a march.
+ */
+MarciaModerato:9,"9":"MarciaModerato",
+/**
+ * Between andante and moderato.
+ */
+AndanteModerato:10,"10":"AndanteModerato",
+/**
+ * Moderately.
+ */
+Moderato:11,"11":"Moderato",
+/**
+ * Moderately quickly.
+ */
+Allegretto:12,"12":"Allegretto",
+/**
+ * Brightly and moderately quickly.
+ */
+AllegroModerato:13,"13":"AllegroModerato",
+/**
+ * Quickly and brightly.
+ */
+Allegro:14,"14":"Allegro",
+/**
+ * Lively and fast.
+ */
+Vivace:15,"15":"Vivace",
+/**
+ * Very fast and lively.
+ */
+Vivacissimo:16,"16":"Vivacissimo",
+/**
+ * Very fast.
+ */
+Allegrissimo:17,"17":"Allegrissimo",
+/**
+ * Very lively and fast.
+ */
+AllegroVivace:18,"18":"AllegroVivace",
+/**
+ * Very, very fast.
+ */
+Presto:19,"19":"Presto",
+/**
+ * Extremely fast.
+ */
+Prestissimo:20,"20":"Prestissimo", });
+/**
+ * Represents a type of time signature marking, whether explicit or implicit.
+ */
+export const TimeSignatureType = Object.freeze({
+/**
+ * ![Common Time](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/common-time.png)
+ *
+ * Represents an explicit time signature of 4/4.
+ */
+CommonTime:0,"0":"CommonTime",
+/**
+ * ![Cut Time](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/cut-time.png)
+ *
+ * Represents an explicit time signature of 2/2.
+ */
+CutTime:1,"1":"CutTime",
+/**
+ * ![Explicit Time](https://hedgetechllc.github.io/amm-sdk/amm_sdk/images/explicit-time.png)
+ *
+ * Represents the number of beats in each measure and the
+ * note value which represents a beat.
+ */
+Explicit:2,"2":"Explicit",
+/**
+ * Represents an explicit lack of time signature,
+ * also called "senza misura".
+ */
+None:3,"3":"None", });
 
 const ClefFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_clef_free(ptr >>> 0, 1));
-
+/**
+ * Represents a clef which is used to determine the pitches for the notes on a staff.
+ */
 export class Clef {
 
     static __wrap(ptr) {
@@ -200,6 +461,7 @@ export class Clef {
         wasm.__wbg_clef_free(ptr, 0);
     }
     /**
+     * The symbol used to designate the clef.
      * @returns {ClefSymbol}
      */
     get symbol() {
@@ -207,12 +469,14 @@ export class Clef {
         return ret;
     }
     /**
+     * The symbol used to designate the clef.
      * @param {ClefSymbol} arg0
      */
     set symbol(arg0) {
         wasm.__wbg_set_clef_symbol(this.__wbg_ptr, arg0);
     }
     /**
+     * The meaning of the clef.
      * @returns {ClefType}
      */
     get clef_type() {
@@ -220,12 +484,17 @@ export class Clef {
         return ret;
     }
     /**
+     * The meaning of the clef.
      * @param {ClefType} arg0
      */
     set clef_type(arg0) {
         wasm.__wbg_set_clef_clef_type(this.__wbg_ptr, arg0);
     }
     /**
+     * Creates a new clef with the given type and optional symbol.
+     *
+     * If the `symbol` parameter is `None`, the most common symbol for the
+     * given `clef_type` will be used instead.
      * @param {ClefType} clef_type
      * @param {ClefSymbol | undefined} [symbol]
      * @returns {Clef}
@@ -344,7 +613,10 @@ export class Duration {
 const KeyFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_key_free(ptr >>> 0, 1));
-
+/**
+ * Represents the key of a musical piece, including both its
+ * mode (i.e., major or minor) and its signature.
+ */
 export class Key {
 
     static __wrap(ptr) {
@@ -367,6 +639,7 @@ export class Key {
         wasm.__wbg_key_free(ptr, 0);
     }
     /**
+     * The mode of the key (i.e., major or minor).
      * @returns {KeyMode}
      */
     get mode() {
@@ -374,12 +647,14 @@ export class Key {
         return ret;
     }
     /**
+     * The mode of the key (i.e., major or minor).
      * @param {KeyMode} arg0
      */
     set mode(arg0) {
         wasm.__wbg_set_key_mode(this.__wbg_ptr, arg0);
     }
     /**
+     * The signature of the key (i.e., A, A♭, B, etc).
      * @returns {KeySignature}
      */
     get signature() {
@@ -387,12 +662,14 @@ export class Key {
         return ret;
     }
     /**
+     * The signature of the key (i.e., A, A♭, B, etc).
      * @param {KeySignature} arg0
      */
     set signature(arg0) {
         wasm.__wbg_set_key_signature(this.__wbg_ptr, arg0);
     }
     /**
+     * Creates a new key with the given signature and mode.
      * @param {KeySignature} signature
      * @param {KeyMode} mode
      * @returns {Key}
@@ -402,6 +679,16 @@ export class Key {
         return Key.__wrap(ret);
     }
     /**
+     * Creates a new key from the given circle of fifths value and
+     * optional mode.
+     *
+     * The circle of fifths represents the number of flats or sharps in
+     * a traditional key signature. Negative numbers are used for flats
+     * and positive numbers for sharps. For example, a key with two flats
+     * would be represented by a `fifths` value of `-2`.
+     *
+     * If the `mode` parameter is `None`, the key will default
+     * to [`KeyMode::Major`].
      * @param {number} fifths
      * @param {KeyMode | undefined} [mode]
      * @returns {Key}
@@ -411,6 +698,12 @@ export class Key {
         return Key.__wrap(ret);
     }
     /**
+     * Returns the circle of fifths value for the key.
+     *
+     * The circle of fifths represents the number of flats or sharps in
+     * a traditional key signature. Negative numbers are used for flats
+     * and positive numbers for sharps. For example, a key with two flats
+     * would be represented by a `fifths` value of `-2`.
      * @returns {number}
      */
     fifths() {
@@ -418,6 +711,9 @@ export class Key {
         return ret;
     }
     /**
+     * Returns a new key with the same tonic as the current key,
+     * but with the opposite mode (i.e., the parallel key of C-Major
+     * would be C-Minor and vice versa).
      * @returns {Key}
      */
     to_parallel() {
@@ -425,15 +721,32 @@ export class Key {
         return Key.__wrap(ret);
     }
     /**
+     * Returns a new key with the same accidentals as the current key,
+     * but with the opposite mode (i.e., the relative key of C-Major
+     * would be A-Minor and vice versa).
      * @returns {Key}
      */
     to_relative() {
         const ret = wasm.key_to_relative(this.__wbg_ptr);
         return Key.__wrap(ret);
     }
+    /**
+     * Converts the current key into its parallel key.
+     *
+     * A parallel key is a key with the same tonic as the current key,
+     * but with the opposite mode (i.e., the parallel key of C-Major
+     * would be C-Minor and vice versa).
+     */
     make_parallel() {
         wasm.key_make_parallel(this.__wbg_ptr);
     }
+    /**
+     * Converts the current key into its relative key.
+     *
+     * A relative key is a key with the same accidentals as the current
+     * key, but with the opposite mode (i.e., the relative key of C-Major
+     * would be A-Minor and vice versa).
+     */
     make_relative() {
         wasm.key_make_relative(this.__wbg_ptr);
     }
@@ -518,7 +831,9 @@ export class Pitch {
 const TempoFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_tempo_free(ptr >>> 0, 1));
-
+/**
+ * Represents an explicit tempo marking in music notation.
+ */
 export class Tempo {
 
     static __wrap(ptr) {
@@ -541,6 +856,7 @@ export class Tempo {
         wasm.__wbg_tempo_free(ptr, 0);
     }
     /**
+     * The base note which represents a "beat" in the tempo.
      * @returns {Duration}
      */
     get base_note() {
@@ -548,6 +864,7 @@ export class Tempo {
         return Duration.__wrap(ret);
     }
     /**
+     * The base note which represents a "beat" in the tempo.
      * @param {Duration} arg0
      */
     set base_note(arg0) {
@@ -556,6 +873,7 @@ export class Tempo {
         wasm.__wbg_set_tempo_base_note(this.__wbg_ptr, ptr0);
     }
     /**
+     * The number of beats per minute.
      * @returns {number}
      */
     get beats_per_minute() {
@@ -563,12 +881,14 @@ export class Tempo {
         return ret;
     }
     /**
+     * The number of beats per minute.
      * @param {number} arg0
      */
     set beats_per_minute(arg0) {
         wasm.__wbg_set_tempo_beats_per_minute(this.__wbg_ptr, arg0);
     }
     /**
+     * Creates a new tempo with the given base note and beats per minute.
      * @param {Duration} base_note
      * @param {number} beats_per_minute
      * @returns {Tempo}
@@ -584,7 +904,9 @@ export class Tempo {
 const TempoSuggestionFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_temposuggestion_free(ptr >>> 0, 1));
-
+/**
+ * Represents a text-based tempo suggestion in music notation.
+ */
 export class TempoSuggestion {
 
     static __wrap(ptr) {
@@ -620,6 +942,7 @@ export class TempoSuggestion {
         wasm.__wbg_set_temposuggestion_marking(this.__wbg_ptr, arg0);
     }
     /**
+     * Creates a new tempo suggestion with the given marking.
      * @param {TempoMarking} marking
      * @returns {TempoSuggestion}
      */
@@ -628,6 +951,7 @@ export class TempoSuggestion {
         return TempoSuggestion.__wrap(ret);
     }
     /**
+     * Returns a description of the tempo suggestion.
      * @returns {string}
      */
     description() {
@@ -643,6 +967,7 @@ export class TempoSuggestion {
         }
     }
     /**
+     * Returns the minimum beats per minute for the tempo suggestion.
      * @returns {number}
      */
     bpm_min() {
@@ -650,6 +975,7 @@ export class TempoSuggestion {
         return ret;
     }
     /**
+     * Returns the maximum beats per minute for the tempo suggestion.
      * @returns {number}
      */
     bpm_max() {
@@ -657,6 +983,7 @@ export class TempoSuggestion {
         return ret;
     }
     /**
+     * Returns the average beats per minute for the tempo suggestion.
      * @returns {number}
      */
     value() {
@@ -668,7 +995,12 @@ export class TempoSuggestion {
 const TimeSignatureFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_timesignature_free(ptr >>> 0, 1));
-
+/**
+ * Represents a time signature in music notation.
+ *
+ * Some `signature` types are implicit (e.g., `CommonTime` = `4/4`,
+ * `CutTime` = `2/2`), while others require an explicit `numerator` and `denominator`.
+ */
 export class TimeSignature {
 
     static __wrap(ptr) {
@@ -691,6 +1023,7 @@ export class TimeSignature {
         wasm.__wbg_timesignature_free(ptr, 0);
     }
     /**
+     * The type of time signature marking, whether explicit or implicit.
      * @returns {TimeSignatureType}
      */
     get signature() {
@@ -698,25 +1031,30 @@ export class TimeSignature {
         return ret;
     }
     /**
+     * The type of time signature marking, whether explicit or implicit.
      * @param {TimeSignatureType} arg0
      */
     set signature(arg0) {
         wasm.__wbg_set_timesignature_signature(this.__wbg_ptr, arg0);
     }
     /**
+     * The number of beats in each measure.
      * @returns {number}
      */
     get numerator() {
-        const ret = wasm.__wbg_get_timesignature_numerator(this.__wbg_ptr);
+        const ret = wasm.__wbg_get_pitch_octave(this.__wbg_ptr);
         return ret;
     }
     /**
+     * The number of beats in each measure.
      * @param {number} arg0
      */
     set numerator(arg0) {
-        wasm.__wbg_set_timesignature_numerator(this.__wbg_ptr, arg0);
+        wasm.__wbg_set_pitch_octave(this.__wbg_ptr, arg0);
     }
     /**
+     * The note value which represents a beat in the measure (e.g.,
+     * `4` = quarter note, `8` = eighth note, etc.).
      * @returns {number}
      */
     get denominator() {
@@ -724,12 +1062,20 @@ export class TimeSignature {
         return ret;
     }
     /**
+     * The note value which represents a beat in the measure (e.g.,
+     * `4` = quarter note, `8` = eighth note, etc.).
      * @param {number} arg0
      */
     set denominator(arg0) {
         wasm.__wbg_set_timesignature_denominator(this.__wbg_ptr, arg0);
     }
     /**
+     * Creates a new time signature with the given *implicit* type.
+     *
+     * **Note:** This method should only be used for implicit time
+     * signatures like [`TimeSignatureType::CommonTime`] and
+     * [`TimeSignatureType::CutTime`]. If you need to create an explicit
+     * time signature, use [`TimeSignature::new_explicit`] instead.
      * @param {TimeSignatureType} signature
      * @returns {TimeSignature}
      */
@@ -738,6 +1084,12 @@ export class TimeSignature {
         return TimeSignature.__wrap(ret);
     }
     /**
+     * Creates a new time signature with the given *explicit* type.
+     *
+     * The `numerator` indicates the number of beats in each measure,
+     * and the `denominator` designates the note value which represents
+     * a beat in the measure (e.g., `4` = quarter note, `8` = eighth note,
+     * etc.).
      * @param {number} numerator
      * @param {number} denominator
      * @returns {TimeSignature}
