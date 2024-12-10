@@ -103,19 +103,21 @@ class UrlParams {
     async apply(_ide) {}
 
     async applyInitialFlags(ide) {
-        const extensions = this.params.get('extensions');
-        if (extensions) {
-            try {
-                const extensionUrls = JSON.parse(decodeURIComponent(extensions));
-                await Promise.all(extensionUrls.map(url => ide.loadExtension(url)));
-            } catch (err) {
-                ide.inform(
-                    'Unable to load extensions',
-                    'The following error occurred while trying to load extensions:\n\n' +
-                    err.message + '\n\n' +
-                    'Perhaps the URL is malformed?'
-                );
-            }
+        const defaultExtensions = this.getParameterFlag('noDefaultExtensions') ? [] : [
+            'https://extensions.netsblox.org/extensions/BeatBlox/index.js',
+        ];
+
+        try {
+            const explicitExtensions = JSON.parse(decodeURIComponent(this.params.get('extensions') || '[]'));
+            const allExtensions = [...explicitExtensions, ...defaultExtensions]; // explicit must come before default for proper overriding
+            await Promise.all(allExtensions.map(url => ide.loadExtension(url)));
+        } catch (err) {
+            ide.inform(
+                'Unable to load extensions',
+                'The following error occurred while trying to load extensions:\n\n' +
+                err.message + '\n\n' +
+                'Perhaps the URL is malformed?'
+            );
         }
     }
 

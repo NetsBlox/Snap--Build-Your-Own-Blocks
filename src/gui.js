@@ -3871,7 +3871,17 @@ IDE_Morph.prototype.settingsMenu = function () {
     return menu;
 };
 
+const LOADED_EXTENSIONS = {};
 IDE_Morph.prototype.loadExtension = async function (url) {
+    const metaName = (url.match(/\/([^/]+)\/index.js/) || [])[1] || (url.match(/\/([^/]+).js/) || [])[1] || '';
+    if (metaName.length > 0) {
+        if (LOADED_EXTENSIONS[metaName] !== undefined) {
+            console.log(`skipping extension ${url} (already loaded from ${LOADED_EXTENSIONS[metaName]})`);
+            return;
+        }
+        LOADED_EXTENSIONS[metaName] = url;
+    }
+
     if (await this.isTrustedExtension(url)) {
         const node = document.createElement('script');
         node.setAttribute('src', url);
