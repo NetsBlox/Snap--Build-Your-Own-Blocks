@@ -501,6 +501,19 @@ WebSocketManager.prototype.deserializeMessage = function(message) {
     return message.content;
 };
 
+function snapify(x) {
+    if (Array.isArray(x)) {
+        return new List(x.map(y => snapify(y)));
+    } else if (typeof(x) === 'object') {
+        const res = [];
+        for (const k in x) {
+            res.push(new List([k, snapify(x[k])]));
+        }
+        return new List(res);
+    } else {
+        return value;
+    }
+}
 WebSocketManager.prototype.deserializeData = function(dataList) {
     var project,
         model;
@@ -511,7 +524,9 @@ WebSocketManager.prototype.deserializeData = function(dataList) {
     };
 
     return dataList.map(function(value) {
-        if (value[0] === '<') {
+        value = snapify(value);
+
+        if (typeof(value) === 'string' && value[0] === '<') {
             try {
                 console.log('Received serialized format:', value.length);
                 model = SnapActions.serializer.parse(value);
@@ -526,9 +541,9 @@ WebSocketManager.prototype.deserializeData = function(dataList) {
                 return SnapActions.serializer.loadValue(model);
             } catch(e) {  // must not have been XML
                 console.error('Could not deserialize!', e);
-                return value;
             }
         }
+
         return value;
     });
 };
