@@ -19,22 +19,23 @@
         }
 
         load(Extension) {
-            // First, check if the extension is supported
             const supported = Extension.prototype.isSupported();
             if (supported !== true) {
-                if(typeof supported === 'string'){
+                if (typeof supported === 'string'){
                     this.ide.showMessage(`Unable to load extension: ${supported}`);
                 } else {
                     this.ide.showMessage(`Unable to load extension.`);
                 }
-                
+                return;
+            }
+
+            // check if already loaded before instantiating to avoid multiple instances with possible background tasks
+            if (this.registry.find(ext => ext.constructor.name === Extension.name)) {
+                console.log(`skipping extension ${Extension.name} (already loaded)`);
                 return;
             }
 
             const extension = new Extension(this.ide);  // TODO: Replace the IDE with an official API?
-            if (this.isLoaded(extension.name)) {
-                return;
-            }
 
             try {
                 this.validate(extension);
@@ -139,10 +140,6 @@
                     }
                 });
             });
-        }
-
-        isLoaded(name) {
-            return this.registry.find(ext => ext.name === name);
         }
 
         getLabelPart(spec) {

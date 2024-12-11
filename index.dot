@@ -74,12 +74,13 @@
         <script type="text/javascript" src="src/messages.js"></script>
         <script type="text/javascript" src="src/room.js"></script>
         <script type="text/javascript" src="src/netsblox.js"></script>
+        <script type="text/javascript" src="src/wasm.js"></script>
 
         <!-- Snap overrides -->
         <script type="text/javascript" src="src/store-ext.js"></script>
         <script type="text/javascript" src="src/actions-ext.js"></script>
         {{ } else { }}
-        <script type="text/javascript" src="dist/app.min.js?v=2.4.10"></script>
+        <script type="text/javascript" src="dist/app.min.js?v=2.5.0"></script>
         {{ } }}
 
     </head>
