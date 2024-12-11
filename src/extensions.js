@@ -47,7 +47,6 @@
             this.registry.push(extension);
             // TODO: Request permissions? Wrap the IDE?
             // TODO: Add an about section? What if there is no menu?
-            this.ide.controlBar.extensionsButton.show();
 
             extension.getCategories()
                 .forEach(category => this.registerCategory(category));
