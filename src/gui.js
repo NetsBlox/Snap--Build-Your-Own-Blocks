@@ -1012,7 +1012,6 @@ IDE_Morph.prototype.createControlBar = function () {
     const extensionsButton = button;
     this.controlBar.add(extensionsButton);
     this.controlBar.extensionsButton = extensionsButton; // for menu positioning
-    this.controlBar.extensionsButton.hide();
 
     // cloudButton
     button = new ToggleButtonMorph(
@@ -2655,11 +2654,6 @@ IDE_Morph.prototype.refreshIDE = function () {
         SnapUndo.reset();
         this.openProjectString(projectData);
     }
-
-    // Show extensions button if extensions are loaded
-    if (NetsBloxExtensions && NetsBloxExtensions.registry.length > 0) {
-        this.controlBar.extensionsButton.show();
-    }
 };
 
 // IDE_Morph settings persistence
@@ -3379,26 +3373,8 @@ IDE_Morph.prototype.settingsMenu = function () {
         'microphoneMenu'
     );
 
-    /*
-    TODO: Discover extensions...
-    menu.addMenu('Load Extension...', submenu);
-    */
-
     menu.addLine();
-    /*
-    addPreference(
-        'JavaScript',
-        () => {
-            Process.prototype.enableJS = !Process.prototype.enableJS;
-            this.currentSprite.blocksCache.operators = null;
-            this.currentSprite.paletteCache.operators = null;
-            this.refreshPalette();
-        },
-        Process.prototype.enableJS,
-        'uncheck to disable support for\nnative JavaScript functions',
-        'check to support\nnative JavaScript functions'
-    );
-    */
+
     if (isRetinaSupported()) {
         addPreference(
             'Retina display support',

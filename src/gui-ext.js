@@ -781,82 +781,51 @@ IDE_Morph.prototype.initializeEmbeddedAPI = function () {
     window.addEventListener('message', receiveMessage, false);
 };
 
-IDE_Morph.prototype.extensionsMenu = function() {
-    const dict = {};
+let EXTENSIONS_META = [];
+(async () => {
+    EXTENSIONS_META = JSON.parse(await (await fetch('https://extensions.netsblox.org/index.json')).text());
+})();
 
-    this.extensions.registry
-        .filter(ext => ext.getMenu())
-        .forEach(ext => {
-            const name = ext.name || ext.constructor.name;
-            dict[name] = ext.getMenu();
-        });
+IDE_Morph.prototype.menuFromEntries = function (entries) {
+    if (entries instanceof MenuMorph) return entries;
 
-    const menuFromDict = dict => {
-        const menu = new MenuMorph(this);
-        Object.entries(dict).forEach(entry => {
-            const [label, contents] = entry;
-            if (typeof contents === 'object') {
-                const submenu = menuFromDict(contents);
-                menu.addMenu(label, submenu);
-            } else if (label === '~') {
-                menu.addLine();
-            } else {
-                menu.addItem(label, contents);
-            }
-        });
-        return menu;
+    const menu = new MenuMorph(this);
+    for (const [label, contents] of entries) {
+        if (typeof contents === 'object') {
+            menu.addMenu(label, this.menuFromEntries(contents));
+        } else if (label === '-') {
+            menu.addLine();
+        } else {
+            menu.addItem(label, contents);
+        }
     };
-
-    let menu = menuFromDict(dict);
-
-    const on = new SymbolMorph(
-        'checkedBox',
-        MorphicPreferences.menuFontSize * 0.75
-    ),
-    off = new SymbolMorph(
-        'rectangle',
-        MorphicPreferences.menuFontSize * 0.75
-    );
-                    
-    // Add preferences
-    this.extensions.registry
-        .filter(ext => ext.getSettings())
-        .forEach(ext => {
-            const name = ext.name || ext.constructor.name;
-            let thisExtMenu = menu.items.find(item => item[0] == name);
-
-            let prefs = ext.getSettings();
-
-            if(thisExtMenu){
-                thisExtMenu = thisExtMenu[1];
-
-                // Only show menu if there is a non-hidden option available
-                if(prefs.find(pref => !pref.hide || world.currentKey == 16) !== undefined){
-                    let newOptionsMenu = new MenuMorph(this);
-                    thisExtMenu.addMenu('Options', newOptionsMenu);
-                    
-                    // Add each setting as a toggle
-                    prefs.forEach(pref => {
-
-                        let test = pref.test;
-
-                        if (!pref.hide || world.currentKey == 16) {
-                            newOptionsMenu.addItem(
-                                [
-                                    (test() ? on : off),
-                                    pref.label
-                                ],
-                                pref.toggle,
-                                test() ? pref.onHint : pref.offHint,
-                                pref.hide ? new Color(100, 0, 0) : null
-                            );
-                        }
-                    });
-                }
-            }
-        });
-
     return menu;
+}
+
+IDE_Morph.prototype.extensionsMenu = function() {
+    const on = new SymbolMorph('checkedBox', MorphicPreferences.menuFontSize * 0.75);
+    const off = new SymbolMorph('rectangle', MorphicPreferences.menuFontSize * 0.75);
+
+    const entries = [];
+
+    for (const extension of this.extensions.registry) {
+        const n = extension.name || extension.constructor.name;
+        const m = Object.entries(extension.getMenu() || {});
+        const s = (extension.getSettings() || []).filter(setting => !setting.hide || world.currentKey === 16);
+
+        const sm = new MenuMorph(this);
+        for (const setting of s) {
+            const t = setting.test();
+            sm.addItem([t ? on : off, setting.label], setting.toggle, t ? setting.onHint : setting.offHint, setting.hide ? new Color(100, 0, 0) : null);
+        }
+
+        if (m.length || s.length) entries.push([n, [...m, ...(s.length ? [['Options', sm]] : [])]])
+    }
+
+    if (entries.length) entries.push(['-', '-']);
+    entries.push(['Import...', EXTENSIONS_META.map(entry => [entry.name, () => this.loadExtension(entry.url)])]);
+
+    return this.menuFromEntries(entries);
 };
 
 IDE_Morph.prototype.requestProjectReload = async function (reason) {
