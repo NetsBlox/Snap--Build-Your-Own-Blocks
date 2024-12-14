@@ -1051,6 +1051,24 @@ List.prototype.canBeJSON = function () {
     });
 };
 
+List.prototype.canBeMidi = function () {
+    const tracks = this.itemsArray();
+    for (let i = 0; i < tracks.length; i++) {
+        if (!(tracks[i] instanceof List)) return false;
+        const data = tracks[i].itemsArray();
+        if (data.length != 2) return false;
+        if (!(isString(data[0]) && data[1] instanceof List)) return false;
+        const notes = data[1].itemsArray();
+        for (let j = 0; j < notes.length; j++) {
+            if (!(notes[i] instanceof List)) return false;
+            const frame = notes[j].itemsArray();
+            if (frame.length != 2) return false;
+            if (!(isString(frame[0]) && isString(frame[1]))) return false;
+        }
+    }
+    return true;
+}
+
 List.prototype.hasOnlyAtomicData = function () {
     return this.itemsArray().every(value => {
         return (!isNaN(+value) && typeof value !== 'boolean') ||
