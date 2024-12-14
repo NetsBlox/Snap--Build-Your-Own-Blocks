@@ -12495,6 +12495,16 @@ WatcherMorph.prototype.userMenu = function () {
                     new Color(100, 0, 0)
                 );
             }
+            if (this.currentValue instanceof List && this.currentValue.canBeMidi()) {
+                menu.addItem(
+                    'blockify as MIDI',
+                    () => {
+                        // TODO
+                    },
+                    null,
+                    new Color(100, 0, 0)
+                );
+            }
         }
         if (isString(this.currentValue) || !isNaN(+this.currentValue)) {
             if (shiftClicked) {
