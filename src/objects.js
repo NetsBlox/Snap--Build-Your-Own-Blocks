@@ -12499,7 +12499,12 @@ WatcherMorph.prototype.userMenu = function () {
                 menu.addItem(
                     'blockify as MIDI',
                     () => {
-                        // TODO
+                        var world = ide.world();
+                        this.currentValue.blockifyAsMidi().pickUp(world);
+                        world.hand.grabOrigin = {
+                            origin: ide.palette,
+                            position: ide.palette.center()
+                        };
                     },
                     null,
                     new Color(100, 0, 0)

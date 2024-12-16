@@ -1063,7 +1063,7 @@ List.prototype.canBeMidi = function () {
             if (!(notes[i] instanceof List)) return false;
             const frame = notes[j].itemsArray();
             if (frame.length != 2) return false;
-            if (!(isString(frame[0]) && isString(frame[1]))) return false;
+            if (typeof frame[0] !== 'number' && typeof frame[1] !== 'number') return false;
         }
     }
     return true;
@@ -1113,6 +1113,35 @@ List.prototype.blockify = function (limit = 500, count = [0]) {
     slots.fixBlockColor(null, true);
     return block;
 };
+
+List.prototype.blockifyAsMidi = function() {
+    var block = SpriteMorph.prototype.blockForSelector('reportNewList'),
+        slots = block.inputs()[0],
+        len = this.length(),
+        i, value;
+
+    block.isDraggable = true;
+    slots.removeInput();
+
+    for (i = 1; i < len; i++) {
+        const trackData = this.at(i + 1).itemsArray();
+        const notes = trackData[1].itemsArray().map(list => list.itemsArray());
+        var container = SpriteMorph.prototype.blockForSelector('reifyScript'),
+            containerSlots = container.inputs()[0];
+        for (let j = notes.length - 1; j >= 0; j--) {
+            let playNoteBlock = SpriteMorph.prototype.blockForSelector('playNotes');
+            let duration = playNoteBlock.inputs()[0];
+            duration.setContents(notes[j][1])
+            let note = playNoteBlock.inputs()[1];
+            note.removeInput();
+            note.addInput(notes[j][0]);
+            containerSlots.nestedBlock(playNoteBlock);
+        }
+        slots.replaceInput(slots.addInput(), container);
+    }
+
+    return block;
+}
 
 // ListWatcherMorph ////////////////////////////////////////////////////
 
