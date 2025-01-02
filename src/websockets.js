@@ -511,7 +511,7 @@ function snapify(x) {
         }
         return new List(res);
     } else {
-        return value;
+        return x;
     }
 }
 WebSocketManager.prototype.deserializeData = function(dataList) {
