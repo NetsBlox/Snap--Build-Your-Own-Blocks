@@ -18,9 +18,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: 'recursive'
         
       - name: Get Release Tags
         id: get_release_tags
