@@ -2922,6 +2922,19 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(...extBlocks);
     }
 
+    if (cat === 'music') {
+        button = new PushButtonMorph(
+            null,
+            function () {
+                // TODO - create a dialoge to add a beat
+                console.log('not implemented');
+            },
+            'Make a beat'
+        );
+        blocks.push('=');
+        blocks.push(button);
+    }
+
     blocks.push('=');
     blocks.push(this.makeBlockButton(cat));
 
