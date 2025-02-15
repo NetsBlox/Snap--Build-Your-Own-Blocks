@@ -2926,8 +2926,19 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         button = new PushButtonMorph(
             null,
             function () {
-                // TODO - create a dialoge to add a beat
-                console.log('not implemented');
+                // the BeatBlox extension music be loaded in for this to work.
+                if (window.beatDialog === undefined) {
+                    dlg = new DialogBoxMorph();
+                    dlg.inform(
+                        'Not Suported', 
+                        'This feature is not currently supported', 
+                        this.world
+                    );
+                } else {
+                    // showDialog is a pseudoMorphic function that is imported through BeatBlox.
+                    // window.beatDialog is created in the BeatBlox extension.
+                    showDialog(window.beatDialog);
+                }
             },
             'Make a beat'
         );
