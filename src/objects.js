@@ -2937,6 +2937,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
                 } else {
                     // showDialog is a pseudoMorphic function that is imported through BeatBlox.
                     // window.beatDialog is created in the BeatBlox extension.
+                    window.beatView.reset();
                     showDialog(window.beatDialog);
                 }
             },
