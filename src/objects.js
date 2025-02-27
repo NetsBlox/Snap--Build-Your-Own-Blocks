@@ -2925,6 +2925,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     if (cat === 'music') {
         blocks.push('=');
         blocks.push(this.makeBeatButton());
+        blocks.push(this.editBeatButton());
     }
 
     blocks.push('=');
@@ -2946,7 +2947,7 @@ SpriteMorph.prototype.makeBeatButton = function () {
         return menu;
     }
 
-    button.selector = 'addCustomBlock';
+    button.selector = 'addCustomBeat';
     button.showHelp = BlockMorph.prototype.showHelp;
     return button;
 }
@@ -2972,6 +2973,28 @@ SpriteMorph.prototype.makeBeat = function () {
         null,
         this.world()
     );
+}
+
+SpriteMorph.prototype.editBeatButton = function () {
+    var button = new PushButtonMorph(
+        this,
+        'editBeat',
+        'Edit a beat'
+    );
+
+    button.userMenu = function () {
+        var menu = new MenuMorph(this);
+        menu.addItem('help...', 'showHelp');
+        return menu;
+    }
+
+    button.selector = 'editCustomBeat';
+    button.showHelp = BlockMorph.prototype.showHelp;
+    return button;
+}
+
+SpriteMorph.prototype.editBeat = function () {
+    console.log('Implement me');
 }
 
 SpriteMorph.prototype.makeBlockButton = function (category) {
