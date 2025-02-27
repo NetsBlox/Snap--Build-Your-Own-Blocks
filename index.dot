@@ -63,6 +63,7 @@
         <script type="text/javascript" src="src/FileSaver.min.js"></script>
         <script type="text/javascript" src="src/message-inputs.js"></script>
         <script type="text/javascript" src="src/message-listeners.js"></script>
+        <script type="text/javascript" src="src/music.js"></script>
 
         <script type="text/javascript" src="src/widgets-ext.js"></script>
         <script type="text/javascript" src="src/objects-ext.js"></script>

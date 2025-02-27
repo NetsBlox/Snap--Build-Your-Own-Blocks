@@ -2923,28 +2923,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     }
 
     if (cat === 'music') {
-        button = new PushButtonMorph(
-            null,
-            function () {
-                // the BeatBlox extension music be loaded in for this to work.
-                if (window.beatDialog === undefined) {
-                    dlg = new DialogBoxMorph();
-                    dlg.inform(
-                        'Not Suported', 
-                        'This feature is not currently supported', 
-                        this.world
-                    );
-                } else {
-                    // showDialog is a pseudoMorphic function that is imported through BeatBlox.
-                    // window.beatDialog is created in the BeatBlox extension.
-                    window.beatView.reset();
-                    showDialog(window.beatDialog);
-                }
-            },
-            'Make a beat'
-        );
         blocks.push('=');
-        blocks.push(button);
+        blocks.push(this.makeBeatButton());
     }
 
     blocks.push('=');
@@ -2952,6 +2932,47 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 
     return blocks;
 };
+
+SpriteMorph.prototype.makeBeatButton = function () {
+    var button = new PushButtonMorph(
+        this,
+        'makeBeat',
+        'Make a beat'
+    );
+
+    button.userMenu = function () {
+        var menu = new MenuMorph(this);
+        menu.addItem('help...', 'showHelp');
+        return menu;
+    }
+
+    button.selector = 'addCustomBlock';
+    button.showHelp = BlockMorph.prototype.showHelp;
+    return button;
+}
+
+SpriteMorph.prototype.makeBeat = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        dlg,
+        block;
+    
+    dlg = new BeatDialogMorph(
+        null,
+        beatData => {
+            block = ide.serializer.loadBlocks(beatData.block)
+            SnapActions.addCustomBlock(block, this).then(def => {
+                def.body = block[0].body;
+            });
+        },
+        this
+    );
+
+    dlg.prompt(
+        'Make a Beat',
+        null,
+        this.world()
+    );
+}
 
 SpriteMorph.prototype.makeBlockButton = function (category) {
 	// answer a button that prompts the user to make a new block
