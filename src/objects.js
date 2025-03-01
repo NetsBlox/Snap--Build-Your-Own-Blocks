@@ -2950,7 +2950,7 @@ SpriteMorph.prototype.makeBeatButton = function () {
     button.selector = 'addCustomBeat';
     button.showHelp = BlockMorph.prototype.showHelp;
     return button;
-}
+};
 
 SpriteMorph.prototype.makeBeat = function () {
     var ide = this.parentThatIsA(IDE_Morph),
@@ -2973,7 +2973,7 @@ SpriteMorph.prototype.makeBeat = function () {
         null,
         this.world()
     );
-}
+};
 
 SpriteMorph.prototype.editBeatButton = function () {
     var button = new PushButtonMorph(
@@ -2991,11 +2991,23 @@ SpriteMorph.prototype.editBeatButton = function () {
     button.selector = 'editCustomBeat';
     button.showHelp = BlockMorph.prototype.showHelp;
     return button;
-}
+};
 
 SpriteMorph.prototype.editBeat = function () {
-    console.log('Implement me');
-}
+    var ide = this.parentThatIsA(IDE_Morph),
+        menu,
+        vars = {};
+    
+    Object.keys(this.globalVariables().vars).forEach(key => {
+        vars[key] = this.globalVariables()[key];
+    });
+    Object.keys(this.variables.vars).forEach(key => vars[key] = this.variables[key]);
+
+    menu = new MenuMorph(this);
+    Object.keys(vars).forEach(name => menu.addItem(name, () => console.log('hello')));
+
+    menu.popUpAtHand(this.world());
+};
 
 SpriteMorph.prototype.makeBlockButton = function (category) {
 	// answer a button that prompts the user to make a new block
