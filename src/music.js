@@ -55,6 +55,18 @@ function createCustomBlock(list) {
     `;
 }
 
+function isBeat(variable) {
+    const value = variable.value;
+    if (!(value instanceof List)) return false;
+    for (let i = 0; i < value.contents.length; ++i) {
+        if (!(value.contents[i] instanceof List)) return false;
+        const slot = value.contents[i];
+        for (let j = 0; j < slot.contents.length; ++j)
+            if (DRUMS.indexOf(slot.contents[j]) === -1) return false;
+    }
+    return true;
+}
+
 var BeatDialogMorph;
 
 ////////// BeatDialogMorph //////////

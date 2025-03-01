@@ -2996,15 +2996,26 @@ SpriteMorph.prototype.editBeatButton = function () {
 SpriteMorph.prototype.editBeat = function () {
     var ide = this.parentThatIsA(IDE_Morph),
         menu,
-        vars = {};
+        vars = {},
+        beats = [];
     
     Object.keys(this.globalVariables().vars).forEach(key => {
-        vars[key] = this.globalVariables()[key];
+        vars[key] = this.globalVariables().vars[key];
     });
-    Object.keys(this.variables.vars).forEach(key => vars[key] = this.variables[key]);
+    Object.keys(this.variables.vars).forEach(key => vars[key] = this.variables.vars[key]);
+    Object.keys(vars).forEach(name => {
+        if (isBeat(vars[name])) {
+            beats.push(name);
+        } 
+    });
 
     menu = new MenuMorph(this);
-    Object.keys(vars).forEach(name => menu.addItem(name, () => console.log('hello')));
+
+    if (beats.length === 0) {
+        menu.addItem('no beats available', null);
+    } else {
+        beats.forEach(name => menu.addItem(name, () => console.log('hello')));
+    }
 
     menu.popUpAtHand(this.world());
 };
