@@ -2953,17 +2953,11 @@ SpriteMorph.prototype.makeBeatButton = function () {
 };
 
 SpriteMorph.prototype.makeBeat = function () {
-    var ide = this.parentThatIsA(IDE_Morph),
-        dlg,
-        block;
-    
-    dlg = new BeatDialogMorph(
+    var dlg = new BeatDialogMorph(
         null,
         beatData => {
-            block = ide.serializer.loadBlocks(beatData.block)
-            SnapActions.addCustomBlock(block, this).then(def => {
-                def.body = block[0].body;
-            });
+            this.addVariable(beatData.name, true);
+            this.globalVariables().vars[beatData.name].value = beatData.state;
         },
         this
     );
@@ -2994,8 +2988,7 @@ SpriteMorph.prototype.editBeatButton = function () {
 };
 
 SpriteMorph.prototype.editBeat = function () {
-    var ide = this.parentThatIsA(IDE_Morph),
-        menu,
+    var menu,
         vars = {},
         beats = [];
     
@@ -3014,7 +3007,27 @@ SpriteMorph.prototype.editBeat = function () {
     if (beats.length === 0) {
         menu.addItem('no beats available', null);
     } else {
-        beats.forEach(name => menu.addItem(name, () => console.log('hello')));
+        beats.forEach(name => {
+            menu.addItem(
+                name, 
+                () => {
+                    const state = createState(vars[name].value);
+
+                    const dlg = new BeatDialogMorph(
+                        null,
+                        beatData => vars[name].value = beatData.state,
+                        this,
+                        state
+                    );
+
+                    dlg.prompt(
+                        'Make a Beat',
+                        null,
+                        this.world()
+                    );      
+                }
+            )
+        });
     }
 
     menu.popUpAtHand(this.world());

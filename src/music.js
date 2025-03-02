@@ -16,44 +16,17 @@ const DRUMS = [
     'kick'
 ];
 
+const DEFAULT_STATE = {
+    'crash': createEmptyArray(8),
+    'closed hi-hat': createEmptyArray(8),
+    'snare': createEmptyArray(8),
+    'floor tom': createEmptyArray(8),
+    'kick': createEmptyArray(8),
+}
+
 const NOTE_OFF = new Color(220, 220, 220, 1);
 
 const NOTE_ON = new Color();
-
-function ltos(list) {
-    if (!Array.isArray(list)) {
-        return '<l>' + list + '</l>';
-    }
-
-    if (list.length === 1) {
-        return '<l>' + list[0] + '</l>';
-    }
-
-    var test = '<block s="reportNewList"><list>';
-    list.forEach(element => test += ltos(element));
-    test += '</list></block>';
-
-    return test;
-}
-
-function createListBlock(list) {
-    return '<block s="reportNewList">' + ltos(list) + '</block>'
-}
-
-function createCustomBlock(list) {
-    const listBlock = createListBlock(list);
-    return `
-      <blocks>
-        <block-definition collabId="item_-1_2" s="customBeat" type="reporter" category="music">
-          <script>
-            <block s="doReport">
-              ${listBlock}
-            </block>
-          </script>
-        </block-definition>
-      </blocks>
-    `;
-}
 
 function isBeat(variable) {
     const value = variable.value;
@@ -62,9 +35,33 @@ function isBeat(variable) {
         if (!(value.contents[i] instanceof List)) return false;
         const slot = value.contents[i];
         for (let j = 0; j < slot.contents.length; ++j)
-            if (DRUMS.indexOf(slot.contents[j]) === -1) return false;
+            if (DRUMS.indexOf(slot.contents[j]) === -1 && slot.contents[j] !== 'Rest') return false;
     }
     return true;
+}
+
+function createEmptyArray(size) {
+    return new Array(size).fill(0);
+}
+
+function createState(list) {
+    const beatLength = list.contents.length;
+    let state = {
+        'crash': createEmptyArray(beatLength),
+        'closed hi-hat': createEmptyArray(beatLength),
+        'snare': createEmptyArray(beatLength),
+        'floor tom': createEmptyArray(beatLength),
+        'kick': createEmptyArray(beatLength)
+    }
+
+    for (let i = 0; i < beatLength; ++i) {
+        const slot = list.contents[i];
+        if (slot.contents[0] === 'Rest')
+            continue;
+        slot.contents.forEach(drum => state[drum][i] = 1);
+    }
+
+    return state;
 }
 
 var BeatDialogMorph;
@@ -75,21 +72,20 @@ BeatDialogMorph.prototype = new DialogBoxMorph();
 BeatDialogMorph.prototype.constructor = BeatDialogMorph;
 BeatDialogMorph.uber = DialogBoxMorph.prototype;
 
-function BeatDialogMorph(target, action, enviornment) {
-    this.init(target, action, enviornment);
+function BeatDialogMorph(
+    target, 
+    action, 
+    enviornment, 
+    state = structuredClone(DEFAULT_STATE)
+) {
+    this.init(target, action, enviornment, state);
 }
 
-BeatDialogMorph.prototype.init = function (target, action, enviornment) {
+BeatDialogMorph.prototype.init = function (target, action, enviornment, state) {
     // additional properties:
     this.isGlobal = true;
     this.beatLength = 8;
-    this.state = {
-        'crash': [0, 0, 0, 0, 0, 0, 0, 0],
-        'closed hi-hat': [0, 0, 0, 0, 0, 0, 0, 0],
-        'snare': [0, 0, 0, 0, 0, 0, 0, 0],
-        'floor tom': [0, 0, 0, 0, 0, 0, 0, 0],
-        'kick': [0, 0, 0, 0, 0, 0, 0, 0]
-    }
+    this.state = state;
 
     // initialize inherited properties
     BeatDialogMorph.uber.init.call(
@@ -174,7 +170,8 @@ BeatDialogMorph.prototype.fixBeatGirdLayout = function () {
 
 BeatDialogMorph.prototype.getInput = function () {
     var processedBeat = [],
-        spec;
+        spec,
+        listState = new List();
 
     for (let i = 0; i < this.beatLength; ++i) {
         processedBeat.push([]);
@@ -192,13 +189,14 @@ BeatDialogMorph.prototype.getInput = function () {
         if (processedBeat[i].length === 0) {
             processedBeat[i].push('Rest');
         }
+        listState.add(new List(processedBeat[i]));
     }
 
     if (this.body instanceof InputFieldMorph) {
         spec = this.normalizeSpaces(this.body.getValue());
     }
 
-    return { 'name': spec, 'block': createCustomBlock(processedBeat), 'state': this.state };
+    return { 'name': spec, 'state': listState };
 }
 
 BeatDialogMorph.prototype.fixLayout = function () {
