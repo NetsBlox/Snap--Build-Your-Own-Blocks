@@ -1,12 +1,6 @@
-/**
- * @todo - create en edit beat button that pulls up all the variables can can be
- *         converted to a beat
- * @todo - create a function to detect if a variable can be a beat
- * @todo - create a separate object for editing beats so that editor state is not affected
- * @todo - style editor
- */
-
 modules.music = '2025-February-21';
+
+const DEFAULT_BEAT_LENGTH = 8;
 
 const DRUMS = [
     'crash', 
@@ -17,11 +11,11 @@ const DRUMS = [
 ];
 
 const DEFAULT_STATE = {
-    'crash': createEmptyArray(8),
-    'closed hi-hat': createEmptyArray(8),
-    'snare': createEmptyArray(8),
-    'floor tom': createEmptyArray(8),
-    'kick': createEmptyArray(8),
+    'crash': createEmptyArray(DEFAULT_BEAT_LENGTH),
+    'closed hi-hat': createEmptyArray(DEFAULT_BEAT_LENGTH),
+    'snare': createEmptyArray(DEFAULT_BEAT_LENGTH),
+    'floor tom': createEmptyArray(DEFAULT_BEAT_LENGTH),
+    'kick': createEmptyArray(DEFAULT_BEAT_LENGTH),
 }
 
 const NOTE_OFF = new Color(220, 220, 220, 1);
@@ -65,6 +59,8 @@ function createState(list) {
 }
 
 var BeatDialogMorph;
+var BeatGridMorph;
+var BeatLabelsMorph;
 
 ////////// BeatDialogMorph //////////
 
@@ -72,20 +68,17 @@ BeatDialogMorph.prototype = new DialogBoxMorph();
 BeatDialogMorph.prototype.constructor = BeatDialogMorph;
 BeatDialogMorph.uber = DialogBoxMorph.prototype;
 
-function BeatDialogMorph(
-    target, 
-    action, 
-    enviornment, 
-    state = structuredClone(DEFAULT_STATE)
-) {
-    this.init(target, action, enviornment, state);
+function BeatDialogMorph(target, action, enviornment, mode = 'new', name = '', state) {
+    this.init(target, action, enviornment, mode, name, state);
 }
 
-BeatDialogMorph.prototype.init = function (target, action, enviornment, state) {
+BeatDialogMorph.prototype.init = function (target, action, enviornment, mode, name, state) {
     // additional properties:
     this.isGlobal = true;
-    this.beatLength = 8;
-    this.state = state;
+    this.state = state ? structuredClone(state) : structuredClone(DEFAULT_STATE);
+    this.beatLength = this.state[Object.keys(this.state)[0]].length;
+    this.mode = mode;
+    this.name = name;
 
     // initialize inherited properties
     BeatDialogMorph.uber.init.call(
@@ -98,74 +91,13 @@ BeatDialogMorph.prototype.init = function (target, action, enviornment, state) {
     // override inherited properties
     this.key = 'makeABeat';
 
-    this.beatGrid = new BoxMorph();
-    this.loadBeatGrid();
-    this.fixBeatGirdLayout();
+    this.beatGrid = new BeatGridMorph(this.beatLength, this.state);
     this.add(this.beatGrid);
 
+    this.labels = new BeatLabelsMorph(this.beatGrid.height());
+    this.add(this.labels);
+
     this.fixLayout();
-};
-
-BeatDialogMorph.prototype.loadBeatGrid = function () {
-    DRUMS.forEach(drum => {
-        for (let i = 0; i < this.beatLength; ++i) {
-            let button = new PushButtonMorph(
-                null,
-                () => {
-                    if (this.state[button.drum][button.beat] === 0) {
-                        button.setColor(NOTE_ON);
-                        this.state[button.drum][button.beat] = 1
-                    } else {
-                        button.setColor(NOTE_OFF);
-                        this.state[button.drum][button.beat] = 0;
-                    }
-                },
-                '  ',
-            );
-
-            button.drum = drum;
-            button.beat = i;
-            button.state = this.state[drum][i];
-
-            if (button.state === 0) {
-                button.setColor(NOTE_OFF);
-            } else {
-                button.setColor(NOTE_ON);
-            }
-
-            this.beatGrid.add(button);
-        }
-    });
-};
-
-BeatDialogMorph.prototype.fixBeatGirdLayout = function () {
-    var buttonWidth = this.beatGrid.children[0].width(),
-        buttonHeight = this.beatGrid.children[0].height(),
-        xPadding = 10,
-        yPadding = 2,
-        border = 10,
-        rows = DRUMS.length,
-        i = 0,
-        l = this.beatGrid.left() + xPadding,
-        t = this.beatGrid.top(),
-        row,
-        col;
-    
-    this.beatGrid.children.forEach(button => {
-        i += 1;
-        row = Math.ceil(i / this.beatLength);
-        col = (i - 1) % this.beatLength;
-
-        button.setPosition(new Point(
-            l + (col * xPadding + ((col) * buttonWidth)),
-            t + (row * yPadding + ((row - 1) * buttonHeight) + border)
-        ));
-    });
-
-    this.beatGrid.setExtent(new Point(
-        (this.beatLength + 1) * xPadding + (this.beatLength) * buttonWidth,
-        (this.beatLength + 1) * yPadding + rows * buttonHeight + 2 * border
-    ));
 };
 
 BeatDialogMorph.prototype.getInput = function () {
@@ -179,7 +111,7 @@ BeatDialogMorph.prototype.getInput = function () {
 
     DRUMS.forEach(drum => {
         for (let i = 0; i < this.beatLength; ++i) {
-            if (this.state[drum][i] === 1) {
+            if (this.beatGrid.state[drum][i] === 1) {
                 processedBeat[i].push(drum);
             }
         } 
@@ -207,92 +139,41 @@ BeatDialogMorph.prototype.fixLayout = function () {
             this.padding,
             th + this.padding
         )));
+        this.body.setWidth(this.beatGrid.width() + this.labels.width());
+
         this.bounds.setWidth(this.body.width() + this.padding * 2);
         this.bounds.setHeight(
             this.body.height()
                 + this.padding * 2
                 + th
         );
-        if (this.beatGrid) {
-            this.beatGrid.setCenter(this.body.center());
-            this.beatGrid.setTop(this.body.top());
-            this.body.setTop(this.beatGrid.bottom() + this.padding);
-            this.bounds.setHeight(
-                this.height()
-                    + this.beatGrid.height()
-                    + this.padding
-            );
-        }
-    } else if (this.head) { // when changing an existing prototype
-        if (this.types) {
-            this.types.fixLayout();
-            this.bounds.setWidth(
-                Math.max(this.types.width(), this.head.width())
-                    + this.padding * 2
-            );
-        } else {
-            this.bounds.setWidth(
-                Math.max(this.beatGrid.width(), this.head.width())
-                    + this.padding * 2
-            );
-        }
-        this.head.setCenter(this.center());
-        this.head.setTop(th + this.padding);
+
+        this.beatGrid.setCenter(new Point(
+            this.body.width() - this.beatGrid.width() / 2 + this.padding,
+            this.body.center().y
+        ));
+
+        this.labels.setCenter(new Point(
+            this.labels.width() / 2 + this.padding,
+            this.body.center().y
+        ));
+
+        this.beatGrid.setTop(this.body.top());
+        this.labels.setTop(this.body.top());
+        this.body.setTop(this.beatGrid.bottom() + this.padding);
         this.bounds.setHeight(
-            this.head.height()
-                + this.padding * 2
-                + th
+            this.height()
+                + this.beatGrid.height()
+                + this.padding
         );
-        if (this.beatGrid) {
-            this.beatGrid.setCenter(this.center());
-            this.beatGrid.setTop(this.head.bottom() + this.padding);
-            this.bounds.setHeight(
-                this.height()
-                    + this.beatGrid.height()
-                    + this.padding
-            );
-        }
+
+        this.body.children[0].defaultContents = this.name;
+        this.body.children[0].children[0].text = this.name;
     }
 
     if (this.label) {
         this.label.setCenter(this.center());
         this.label.setTop(this.top() + (th - this.label.height()) / 2);
-    }
-
-    if (this.types) {
-        this.types.fixLayout();
-        this.bounds.setHeight(
-            this.height()
-                    + this.types.height()
-                    + this.padding
-        );
-        this.bounds.setWidth(Math.max(
-            this.width(),
-            this.types.width() + this.padding * 2
-        ));
-        this.types.setCenter(this.center());
-        if (this.body) {
-            this.types.setTop(this.body.bottom() + this.padding);
-        } else if (this.categories) {
-            this.types.setTop(this.categories.bottom() + this.padding);
-        }
-    }
-
-    if (this.scopes) {
-        this.scopes.fixLayout();
-        this.bounds.setHeight(
-            this.height()
-                    + this.scopes.height()
-                    + (this.padding / 3)
-        );
-        this.bounds.setWidth(Math.max(
-            this.width(),
-            this.scopes.width() + this.padding * 2
-        ));
-        this.scopes.setCenter(this.center());
-        if (this.types) {
-            this.scopes.setTop(this.types.bottom() + (this.padding / 3));
-        }
     }
 
     if (this.buttons && (this.buttons.children.length > 0)) {
@@ -310,3 +191,131 @@ BeatDialogMorph.prototype.fixLayout = function () {
     this.removeShadow();
     this.addShadow();
 };
+
+////////// BeatGridMorph //////////
+
+BeatGridMorph.prototype = new BoxMorph();
+BeatGridMorph.prototype.constructor = BeatGridMorph;
+BeatGridMorph.uber = BoxMorph.uber;
+
+function BeatGridMorph (beatLength, state) {
+    this.init(beatLength, state);
+}
+
+BeatGridMorph.prototype.init = function (beatLength, state) {
+    this.beatLength = beatLength;
+    this.state = structuredClone(state);
+
+    BeatGridMorph.uber.init.call(this);
+
+    DRUMS.forEach(drum => {
+        for (let i = 0; i < this.beatLength; ++i) {
+            let button = new PushButtonMorph(
+                null,
+                () => {
+                    if (this.state[button.drum][button.beat] === 0) {
+                        button.setColor(NOTE_ON);
+                        this.state[button.drum][button.beat] = 1
+                    } else {
+                        button.setColor(NOTE_OFF);
+                        this.state[button.drum][button.beat] = 0;
+                    }
+                },
+                '  ',
+            );
+
+            button.drum = drum;
+            button.beat = i;
+            button.state = this.state[drum][i];
+
+            if (button.state === 0) {
+                button.setColor(NOTE_OFF);
+            } else {
+                button.setColor(NOTE_ON);
+            }
+
+            this.add(button);
+        }
+    });
+
+    this.fixLayout();
+}
+
+BeatGridMorph.prototype.fixLayout = function () {
+    var buttonWidth = this.children[0].width(),
+        buttonHeight = this.children[0].height(),
+        xPadding = 10,
+        yPadding = 2,
+        border = 10,
+        rows = DRUMS.length,
+        i = 0,
+        l = this.left() + xPadding,
+        t = this.top(),
+        row,
+        col;
+    
+    this.children.forEach(button => {
+        i += 1;
+        row = Math.ceil(i / this.beatLength);
+        col = (i - 1) % this.beatLength;
+
+        button.setPosition(new Point(
+            l + (col * xPadding + ((col) * buttonWidth)),
+            t + (row * yPadding + ((row - 1) * buttonHeight) + border)
+        ));
+    });
+
+    this.setExtent(new Point(
+        (this.beatLength + 1) * xPadding + (this.beatLength) * buttonWidth,
+        (this.beatLength + 1) * yPadding + rows * buttonHeight + 2 * border
+    ));
+}
+
+////////// BeatLabelsMorph //////////
+
+BeatLabelsMorph.prototype = new BoxMorph();
+BeatLabelsMorph.prototype.constructor = BeatLabelsMorph;
+BeatLabelsMorph.uber = BoxMorph.prototype;
+
+BeatLabelsMorph.prototype.fontSize = 12;
+BeatLabelsMorph.prototype.color = PushButtonMorph.prototype.color;
+
+function BeatLabelsMorph (height) {
+    this.init(height);
+}
+
+BeatLabelsMorph.prototype.init = function (height) {
+    BeatLabelsMorph.uber.init.call(this);
+    
+    this.border = 0;
+    this.setHeight(height);
+    this.setColor(BeatLabelsMorph.prototype.color);
+
+    DRUMS.forEach(name => {
+        this.add(new StringMorph(name.toUpperCase()));
+    });
+
+    this.fixLayout();
+}
+
+BeatLabelsMorph.prototype.fixLayout = function () {
+    var rowHeight = this.height() / DRUMS.length,
+        l = this.left() + 2;
+        t = this.top() + 10,
+        i = 0
+        maxLabelWidth = 0;
+
+    this.children.forEach(label => {
+        i += 1;
+        label.setPosition(new Point(
+            l,
+            t + ((i - 1) * (rowHeight - 2))
+        ));
+
+        if (label.width() > maxLabelWidth) {
+            maxLabelWidth = label.width();
+        }
+    });
+
+    this.setWidth(maxLabelWidth + 10);
+}

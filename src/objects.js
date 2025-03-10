@@ -2953,13 +2953,24 @@ SpriteMorph.prototype.makeBeatButton = function () {
 };
 
 SpriteMorph.prototype.makeBeat = function () {
-    var dlg = new BeatDialogMorph(
+    var myself = this,
+        dlg;
+
+    dlg = new BeatDialogMorph(
         null,
         beatData => {
-            this.addVariable(beatData.name, true);
-            this.globalVariables().vars[beatData.name].value = beatData.state;
+            if (beatData.name !== '') {
+                if (myself.isVariableNameInUse(beatData.name, true)) {
+                    myself.inform('that name is already in use');
+                } else {
+                    myself.addVariable(beatData.name, true);
+                    myself.globalVariables().vars[beatData.name].value = beatData.state;
+                }
+            } else {
+                myself.inform('you must enter a name');
+            }
         },
-        this
+        this,
     );
 
     dlg.prompt(
@@ -2990,7 +3001,8 @@ SpriteMorph.prototype.editBeatButton = function () {
 SpriteMorph.prototype.editBeat = function () {
     var menu,
         vars = {},
-        beats = [];
+        beats = [],
+        myself = this;
     
     Object.keys(this.globalVariables().vars).forEach(key => {
         vars[key] = this.globalVariables().vars[key];
@@ -3015,16 +3027,23 @@ SpriteMorph.prototype.editBeat = function () {
 
                     const dlg = new BeatDialogMorph(
                         null,
-                        beatData => vars[name].value = beatData.state,
+                        beatData => {
+                            vars[name].value = beatData.state
+                            if (name !== beatData.name) {
+                                myself.inform('name cannot be changed - variable has been updated');
+                            }
+                        },
                         this,
+                        'edit',
+                        name,
                         state
                     );
 
                     dlg.prompt(
-                        'Make a Beat',
+                        'Edit a Beat',
                         null,
                         this.world()
-                    );      
+                    )
                 }
             )
         });
