@@ -61,6 +61,7 @@ function createState(list) {
 var BeatDialogMorph;
 var BeatGridMorph;
 var BeatLabelsMorph;
+var BeatLengthToggleMorph;
 
 ////////// BeatDialogMorph //////////
 
@@ -96,6 +97,9 @@ BeatDialogMorph.prototype.init = function (target, action, enviornment, mode, na
 
     this.labels = new BeatLabelsMorph(this.beatGrid.height());
     this.add(this.labels);
+
+    this.beatLengthToggle = new BeatLengthToggleMorph();
+    this.add(this.beatLengthToggle);
 
     this.fixLayout();
 };
@@ -158,12 +162,16 @@ BeatDialogMorph.prototype.fixLayout = function () {
             this.body.center().y
         ));
 
+        this.beatLengthToggle.setCenter(this.body.center());
+
         this.beatGrid.setTop(this.body.top());
         this.labels.setTop(this.body.top());
-        this.body.setTop(this.beatGrid.bottom() + this.padding);
+        this.beatLengthToggle.setTop(this.beatGrid.bottom() + this.padding);
+        this.body.setTop(this.beatLengthToggle.bottom() + this.padding);
         this.bounds.setHeight(
             this.height()
                 + this.beatGrid.height()
+                + this.beatLengthToggle.height()
                 + this.padding
         );
 
@@ -318,4 +326,64 @@ BeatLabelsMorph.prototype.fixLayout = function () {
     });
 
     this.setWidth(maxLabelWidth + 10);
+}
+
+////////// BeatLengthToggleMorph //////////
+
+BeatLengthToggleMorph.prototype = new BoxMorph();
+BeatLengthToggleMorph.prototype.constructor = BeatLengthToggleMorph;
+BeatLengthToggleMorph.uber = BoxMorph.prototype;
+
+BeatLengthToggleMorph.prototype.fontSize = 12;
+BeatLengthToggleMorph.prototype.color = PushButtonMorph.prototype.color;
+
+function BeatLengthToggleMorph () {
+    this.init();
+}
+
+BeatLengthToggleMorph.prototype.init = function () {
+    BeatLengthToggleMorph.uber.init.call(this);
+    
+    this.border = 0;
+    this.setColor(BeatLengthToggleMorph.prototype.color);
+
+    this.label = new StringMorph('NUMBER OF BEATS:');
+    this.add(this.label);
+
+    this.increment = new PushButtonMorph(
+        null,
+        () => null,
+        ' + '
+    );
+    this.add(this.increment);
+    
+    this.decrement = new PushButtonMorph(
+        null,
+        () => null,
+        ' - '
+    )
+    this.add(this.decrement);
+
+    this.fixLayout();
+}
+
+BeatLengthToggleMorph.prototype.fixLayout = function () {
+    var l = this.left(),
+        t = this.top();
+
+    this.increment.setHeight(this.label.height());
+    this.decrement.setHeight(this.label.height());
+    
+    this.label.setPosition(new Point(l, t));
+    this.increment.setPosition(new Point(
+        l + this.label.width() + 10,
+        t - 2
+    ));
+    this.decrement.setPosition(new Point(
+        l + this.increment.left() + this.increment.width() + 2,
+        t - 2
+    ));
+
+    this.setWidth(this.decrement.left() + this.decrement.width() - l);
+    this.setHeight(this.label.height());
 }
