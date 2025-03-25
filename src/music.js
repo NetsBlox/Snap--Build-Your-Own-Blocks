@@ -98,7 +98,7 @@ BeatDialogMorph.prototype.init = function (target, action, enviornment, mode, na
     this.labels = new BeatLabelsMorph(this.beatGrid.height());
     this.add(this.labels);
 
-    this.beatLengthToggle = new BeatLengthToggleMorph();
+    this.beatLengthToggle = new BeatLengthToggleMorph(this);
     this.add(this.beatLengthToggle);
 
     this.fixLayout();
@@ -135,6 +135,13 @@ BeatDialogMorph.prototype.getInput = function () {
     return { 'name': spec, 'state': listState };
 }
 
+BeatDialogMorph.prototype.updateState = function (state) {
+    this.state = state
+    this.beatLength = this.state[Object.keys(this.state)[0]].length;
+    this.beatGrid.updateState(state);
+    this.fixLayout();
+}
+
 BeatDialogMorph.prototype.fixLayout = function () {
     var th = fontHeight(this.titleFontSize) + this.titlePadding * 2;
 
@@ -152,20 +159,12 @@ BeatDialogMorph.prototype.fixLayout = function () {
                 + th
         );
 
-        this.beatGrid.setCenter(new Point(
-            this.body.width() - this.beatGrid.width() / 2 + this.padding,
-            this.body.center().y
-        ));
-
-        this.labels.setCenter(new Point(
-            this.labels.width() / 2 + this.padding,
-            this.body.center().y
-        ));
-
         this.beatLengthToggle.setCenter(this.body.center());
 
         this.beatGrid.setTop(this.body.top());
+        this.beatGrid.setLeft(this.body.left() + this.body.width() - this.beatGrid.width())
         this.labels.setTop(this.body.top());
+        this.labels.setLeft(this.body.left());
         this.beatLengthToggle.setTop(this.beatGrid.bottom() + this.padding);
         this.body.setTop(this.beatLengthToggle.bottom() + this.padding);
         this.bounds.setHeight(
@@ -285,7 +284,7 @@ BeatGridMorph.prototype.fixLayout = function () {
 
     this.setExtent(new Point(
         (this.beatLength + 1) * xPadding + (this.beatLength) * buttonWidth,
-        (this.beatLength + 1) * yPadding + rows * buttonHeight + 2 * border
+        rows * buttonHeight + 2 * border + xPadding
     ));
 }
 
@@ -347,11 +346,13 @@ BeatLengthToggleMorph.uber = BoxMorph.prototype;
 BeatLengthToggleMorph.prototype.fontSize = 12;
 BeatLengthToggleMorph.prototype.color = PushButtonMorph.prototype.color;
 
-function BeatLengthToggleMorph () {
-    this.init();
+function BeatLengthToggleMorph (parent) {
+    this.init(parent);
 }
 
-BeatLengthToggleMorph.prototype.init = function () {
+BeatLengthToggleMorph.prototype.init = function (parent) {
+    this.parent = parent;
+    
     BeatLengthToggleMorph.uber.init.call(this);
     
     this.border = 0;
@@ -360,19 +361,32 @@ BeatLengthToggleMorph.prototype.init = function () {
     this.label = new StringMorph('NUMBER OF BEATS:');
     this.add(this.label);
 
+    this.decrement = new PushButtonMorph(
+        null,
+        () => {
+            const temp = structuredClone(this.parent.state);
+            Object.keys(temp).forEach(key => {
+                temp[key].length -= 1;
+            });
+            this.parent.updateState(temp);
+        },
+        ' - '
+    );
+    this.add(this.decrement);
+
     this.increment = new PushButtonMorph(
         null,
-        () => null,
+        () => {
+            const temp = structuredClone(this.parent.state);
+            Object.keys(temp).forEach(key => {
+                temp[key].length += 1;
+                temp[key][temp[key].length - 1] = 0;
+            });
+            this.parent.updateState(temp);
+        },
         ' + '
     );
     this.add(this.increment);
-    
-    this.decrement = new PushButtonMorph(
-        null,
-        () => null,
-        ' - '
-    )
-    this.add(this.decrement);
 
     this.fixLayout();
 }
@@ -385,12 +399,12 @@ BeatLengthToggleMorph.prototype.fixLayout = function () {
     this.decrement.setHeight(this.label.height());
     
     this.label.setPosition(new Point(l, t));
-    this.increment.setPosition(new Point(
+    this.decrement.setPosition(new Point(
         l + this.label.width() + 10,
         t - 2
     ));
-    this.decrement.setPosition(new Point(
-        l + this.increment.left() + this.increment.width() + 2,
+    this.increment.setPosition(new Point(
+        l + this.decrement.left() + this.increment.width() + 2,
         t - 2
     ));
 
