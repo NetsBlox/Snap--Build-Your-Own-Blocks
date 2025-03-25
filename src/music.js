@@ -92,7 +92,7 @@ BeatDialogMorph.prototype.init = function (target, action, enviornment, mode, na
     // override inherited properties
     this.key = 'makeABeat';
 
-    this.beatGrid = new BeatGridMorph(this.beatLength, this.state);
+    this.beatGrid = new BeatGridMorph(this);
     this.add(this.beatGrid);
 
     this.labels = new BeatLabelsMorph(this.beatGrid.height());
@@ -115,7 +115,7 @@ BeatDialogMorph.prototype.getInput = function () {
 
     DRUMS.forEach(drum => {
         for (let i = 0; i < this.beatLength; ++i) {
-            if (this.beatGrid.state[drum][i] === 1) {
+            if (this.state[drum][i] === 1) {
                 processedBeat[i].push(drum);
             }
         } 
@@ -206,28 +206,38 @@ BeatGridMorph.prototype = new BoxMorph();
 BeatGridMorph.prototype.constructor = BeatGridMorph;
 BeatGridMorph.uber = BoxMorph.uber;
 
-function BeatGridMorph (beatLength, state) {
-    this.init(beatLength, state);
+function BeatGridMorph (parent) {
+    this.init(parent);
 }
 
-BeatGridMorph.prototype.init = function (beatLength, state) {
-    this.beatLength = beatLength;
-    this.state = structuredClone(state);
-
+BeatGridMorph.prototype.init = function (parent) {
+    this.parent = parent;
     BeatGridMorph.uber.init.call(this);
+    this.updateState(parent.state);
+}
 
+BeatGridMorph.prototype.updateState = function (state) {
+    this.state = state;
+    this.beatLength = this.state['kick'].length;
+    this.renderState();
+}
+
+BeatGridMorph.prototype.renderState = function () {
+    this.children = [];
+
+    const tempState = structuredClone(this.state);
+    
     DRUMS.forEach(drum => {
         for (let i = 0; i < this.beatLength; ++i) {
             let button = new PushButtonMorph(
                 null,
                 () => {
-                    if (this.state[button.drum][button.beat] === 0) {
-                        button.setColor(NOTE_ON);
+                    if (tempState[button.drum][button.beat] === 0) {
                         this.state[button.drum][button.beat] = 1
                     } else {
-                        button.setColor(NOTE_OFF);
                         this.state[button.drum][button.beat] = 0;
                     }
+                    this.renderState();
                 },
                 '  ',
             );
