@@ -4,12 +4,26 @@ const NOTE_OFF = new Color(220, 220, 220, 1);
 
 const NOTE_ON = new Color();
 
+const DRUMS_MAX = 8;
+
+const DRUMS_MIX = 1;
+
 const DRUMS = [
     'kick',  'kick #2',  'snare',  'side stick snare',
     'open snare',  'closed hi-hat', 'clap', 'tom',
     'rack tom',  'floor tom',  'crash', 'crash #2',
     'ride', 'ride #2',  'tamborine',
 ];
+
+const DRUM_MAP = takenDrums => {
+    let temp = {};
+    DRUMS.forEach(drum => {
+        if (takenDrums.indexOf(drum) === -1) {
+            temp[drum] = drum;
+        }
+    })
+    return temp;
+}
 
 function DrumState(state) {
     this.state = state ? state.state : [
@@ -35,9 +49,13 @@ DrumState.prototype.getDrumIndex = function (drum) {
     return this.drums.indexOf(drum);
 }
 
-DrumState.prototype.getProcessedBeat = function () {
+DrumState.prototype.getProcessedBeat = function (labels) {
     var processedBeat = [],
         listState = new List();
+
+    for (let i = 0; i < labels.children.length; i++) {
+        this.drums[i] = labels.children[i].getValue();
+    }
 
     for (let i = 0; i < this.length; ++i) {
         processedBeat.push([]);
@@ -76,7 +94,8 @@ DrumState.prototype.addBeat = function () {
 }
 
 DrumState.prototype.addDrum = function () {
-    this.drums.push('[new drum]');
+    const newDrum = Object.keys(DRUM_MAP(this.drums))[0];
+    this.drums.push(newDrum);
     this.state.push(createEmptyArray(this.length));
 }
 
@@ -91,6 +110,7 @@ function isBeat(variable) {
     for (let i = 0; i < value.contents.length; ++i) {
         if (!(value.contents[i] instanceof List)) return false;
         const slot = value.contents[i];
+        if (slot.contents.length > DRUMS_MAX) return false;
         for (let j = 0; j < slot.contents.length; ++j)
             if (DRUMS.indexOf(slot.contents[j]) === -1 && slot.contents[j] !== 'Rest') return false;
     }
@@ -102,9 +122,10 @@ function createEmptyArray(size) {
 }
 
 function createState(list) {
-    const length = list.contents.length;
-    const drums = []
-    const state = [];
+    let length = list.contents.length;
+    let drums = [];
+    let state = [];
+
     for (let i = 0; i < length; ++i) {
         const slot = list.contents[i];
         if (slot.contents[0] === 'Rest') {
@@ -131,10 +152,17 @@ function createState(list) {
         });
     }
 
+    if (state.length === 0) {
+        state = [[0, 0, 0, 0, 0, 0, 0, 0]];
+        length = 8;
+        drums = ['kick'];
+    }
+
     const temp = new DrumState();
     temp.state = state;
     temp.length = length;
     temp.drums = drums;
+
     return temp;
 }
 
@@ -188,7 +216,7 @@ BeatDialogMorph.prototype.init = function (target, action, enviornment, mode, na
 };
 
 BeatDialogMorph.prototype.getInput = function () {
-    var listState = this.state.getProcessedBeat(0),
+    var listState = this.state.getProcessedBeat(this.labels),
         spec;
     if (this.body instanceof InputFieldMorph) {
         spec = this.normalizeSpaces(this.body.getValue());
@@ -379,7 +407,18 @@ BeatLabelsMorph.prototype.renderState = function () {
     this.setColor(BeatLabelsMorph.prototype.color);
     this.border = 0;
     this.children = [];
-    this.state.drums.forEach(drum => this.add(new StringMorph(drum.toUpperCase())));
+    for (let i = 0; i < this.state.drums.length; ++i) {
+        let label = new InputFieldMorph(
+            this.state.drums[i], 
+            false, 
+            () => {
+                this.state.drums[i] = label.getValue();
+                return DRUM_MAP(this.state.drums);
+            }, 
+            true
+        );
+        this.add(label);
+    }
     this.fixLayout();
 }
 
@@ -500,7 +539,9 @@ DrumCountToggleMorph.prototype.init = function (parent) {
         null,
         () => {
             const temp = new DrumState(this.parent.state);
-            temp.removeDrum();
+            if (temp.drums.length > DRUMS_MIX) {
+                temp.removeDrum();
+            }
             this.parent.updateState(temp);
         },
         'remove drum'
@@ -511,7 +552,9 @@ DrumCountToggleMorph.prototype.init = function (parent) {
         null,
         () => {
             const temp = new DrumState(this.parent.state);
-            temp.addDrum();
+            if (temp.drums.length < DRUMS_MAX) {
+                temp.addDrum();
+            }
             this.parent.updateState(temp);
         },
         'add drum'
