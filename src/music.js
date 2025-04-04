@@ -107,6 +107,7 @@ DrumState.prototype.removeDrum = function () {
 function isBeat(variable) {
     const value = variable.value;
     if (!(value instanceof List)) return false;
+    if (value.length() < 2) return false;
     for (let i = 0; i < value.contents.length; ++i) {
         if (!(value.contents[i] instanceof List)) return false;
         const slot = value.contents[i];
@@ -465,14 +466,16 @@ BeatLengthToggleMorph.prototype.init = function (parent) {
     this.border = 0;
     this.setColor(BeatLengthToggleMorph.prototype.color);
 
-    this.label = new StringMorph('NUMBER OF BEATS:');
+    this.label = new StringMorph('Number of Beats:');
     this.add(this.label);
 
     this.decrement = new PushButtonMorph(
         null,
         () => {
             const temp = new DrumState(this.parent.state);
-            temp.removeBeat();
+            if (temp.length > 2) {
+                temp.removeBeat();
+            }
             this.parent.updateState(temp);
         },
         ' - '
