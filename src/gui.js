@@ -3945,6 +3945,9 @@ IDE_Morph.prototype.projectMenu = function () {
         );
     }
     menu.addLine();
+    menu.addItem('Share', 'share');
+    menu.addItem('Unshare', 'unshare');
+    menu.addLine();
     menu.addItem(
         'Import...',
         'importLocalFile',
@@ -4676,6 +4679,33 @@ IDE_Morph.prototype.isPreviousVersion = function () {
         }).length - newHistoryLen;
 
     return lostEventCount > 0;
+};
+
+IDE_Morph.prototype.share = async function () {
+    const res = await this.cloud.publishProject(this.cloud?.projectId);
+
+    // TODO: this feels wrong in terms of the cloud response - if ever fixed in cloud, update here
+    if (res === 'Public') {
+        this.showMessage('Project must first be saved to the cloud!');
+        return;
+    }
+
+    const username = this.cloud?.username;
+    const projName = this.room?.name;
+    const roleName = this.projectName;
+
+    if (!username || !projName || !roleName) {
+        this.showMessage('Failed to get shared project info');
+        return;
+    }
+
+    const shareLink = `${location.origin}/?action=present&editMode&noRun&Username=${encodeURIComponent(username)}&ProjectName=${encodeURIComponent(projName)}&Role=${encodeURIComponent(roleName)}`;
+    new ShareMorph(shareLink).popUp(world);
+};
+
+IDE_Morph.prototype.unshare = async function () {
+    await this.cloud.unpublishProject(this.cloud?.projectId);
+    this.showMessage('Successfully unpublished your current project');
 };
 
 IDE_Morph.prototype.saveAs = function () {
