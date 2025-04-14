@@ -378,9 +378,18 @@
         }
     }
 
+    class PaletteButton {
+        constructor(label, action) {
+            this.label = label;
+            this.action = action;
+            this.type = 'button';
+        }
+    }
+
     Extension.PaletteCategory = PaletteCategory;
     Extension.Palette = {};
     Extension.Palette.Block = PaletteBlock;
+    Extension.Palette.Button = PaletteButton;
     Extension.Palette.Space = {name: '-', type: 'space'};
     Extension.Palette.BigSpace = {name: '=', type: 'space'};
     Extension.Block = CustomBlock;
