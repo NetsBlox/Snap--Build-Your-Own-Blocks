@@ -107,6 +107,18 @@ function isSnapObject(thing) {
     return thing instanceof SpriteMorph || (thing instanceof StageMorph);
 }
 
+function buildMenu(entries) {
+    const res = new MenuMorph();
+    for (const entry in entries) {
+        if (typeof(entries[entry]) === 'object') {
+            res.addMenu(entry, buildMenu(entries[entry]));
+        } else {
+            res.addItem(entry, entries[entry]);
+        }
+    }
+    return res;
+}
+
 // SpriteMorph /////////////////////////////////////////////////////////
 
 // I am a scriptable object
@@ -2909,6 +2921,15 @@ SpriteMorph.prototype.blockTemplates = function (category) {
                 switch (item.type) {
                 case 'block':
                     return block(item.name);
+                case 'button':
+                    return new PushButtonMorph(
+                        null,
+                        async function() {
+                            const res = await item.action();
+                            if (res) buildMenu(res).popUpAtHand(myself.world());
+                        },
+                        item.label,
+                    );
                 case 'watcher':
                     return [
                         watcherToggle(item.name),
@@ -9352,6 +9373,15 @@ StageMorph.prototype.blockTemplates = function (category) {
                 switch (item.type) {
                 case 'block':
                     return block(item.name);
+                case 'button':
+                    return new PushButtonMorph(
+                        null,
+                        async function() {
+                            const res = await item.action();
+                            if (res) buildMenu(res).popUpAtHand(myself.world());
+                        },
+                        item.label,
+                    );
                 case 'watcher':
                     return [
                         watcherToggle(item.name),
