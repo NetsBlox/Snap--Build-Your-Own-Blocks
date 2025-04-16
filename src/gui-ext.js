@@ -105,6 +105,7 @@ class UrlParams {
     async applyInitialFlags(ide) {
         const defaultExtensions = this.getParameterFlag('noDefaultExtensions') ? [] : [
             'https://extensions.netsblox.org/extensions/BeatBlox/index.js',
+            'https://extensions.netsblox.org/extensions/TimeSync/index.js',
         ];
 
         try {
