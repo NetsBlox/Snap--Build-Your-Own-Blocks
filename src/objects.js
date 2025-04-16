@@ -3016,7 +3016,7 @@ SpriteMorph.prototype.freshPalette = function (category) {
         y = 5,
         ry = 0,
         blocks,
-        hideNextSpace = false,
+        hideNextSpace = true,
         stage = this.parentThatIsA(StageMorph),
         shade = new Color(140, 140, 140),
         searchButton,
@@ -9396,7 +9396,6 @@ StageMorph.prototype.blockTemplates = function (category) {
     }
     blocks.push('=');
     blocks.push(this.makeBlockButton(cat));
-
 
     return blocks;
 };
