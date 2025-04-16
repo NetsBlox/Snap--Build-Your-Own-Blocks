@@ -160,11 +160,11 @@
         }
 
         getPaletteContents(targetObject, categoryName) {
-            const paletteContents = this.registry.flatMap(ext => ext.getPalette())
-                .filter(paletteCat => paletteCat.isVisible(targetObject, categoryName))
-                .flatMap(paletteCat => paletteCat.contents);
-
-            return paletteContents;
+            return this.registry.flatMap(ext => {
+                const blocks = ext.getPalette().filter(x => x.isVisible(targetObject, categoryName)).flatMap(x => x.contents);
+                if (blocks.length > 0) blocks.unshift('=');
+                return blocks;
+            });
         }
 
         findWatcherReceivers(palettes, spec) {
