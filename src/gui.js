@@ -96,6 +96,7 @@ modules.gui = '2021-November-27';
 var IDE_Morph;
 var ProjectDialogMorph;
 var LibraryDialogMorph;
+var AssignmentDialogMorph;
 var SpriteIconMorph;
 var CostumeIconMorph;
 var TurtleIconMorph;
@@ -4060,6 +4061,13 @@ IDE_Morph.prototype.projectMenu = function () {
     }
 
     menu.addLine();
+    if (this.cloud.groupId) {
+        menu.addItem(
+        'Assignments...',
+        () => { new AssignmentDialogMorph(this).popUp(this.world()); },
+        'View, load, and submit to group assignments'
+        );
+    }
     menu.addItem(
         'Libraries...',
         () => {

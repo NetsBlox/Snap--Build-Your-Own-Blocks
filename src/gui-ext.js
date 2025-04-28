@@ -1537,3 +1537,13 @@ ShareMorph.prototype.fixLayout = function() {
         this.closeButton.setBottom(this.bottom() - 20);
     }
 };
+
+// AssignmentMorph ///////////////////////////////////////////
+
+function AssignmentDialogMorph() {
+    this.init()
+}
+
+AssignmentDialogMorph.prototype = new DialogBoxMorph();
+AssignmentDialogMorph.prototype.constructor = AssignmentDialogMorph;
+AssignmentDialogMorph.uber = DialogBoxMorph.prototype;
