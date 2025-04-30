@@ -334,6 +334,37 @@ class OpenPrivateProject extends UrlParams {
 }
 IDE_Morph.prototype.UrlActionRegistry.private = OpenPrivateProject;
 
+/**
+ * open an assignment submission. Requirements: (groupId, assignmentId, submissionId) 
+ */
+class OpenSubmission extends UrlParams {
+    async apply(ide) {
+
+        const isLoggedIn = ide.cloud.username !== null;
+        if (!isLoggedIn) {
+            ide.showMessage('You are not logged in. Cannot open ' + name);
+            return;
+        }
+
+        const groupId = this.getRequiredParam('groupId');
+        const assignmentId = this.getRequiredParam('assignmentId');
+        const submissionId = this.getRequiredParam('submissionId');
+
+        const msg = ide.showMessage('Opening Submission...');
+
+        try {
+            const str = await ide.cloud.viewSubmissionXml(groupId, assignmentId, submissionId);
+            ide.droppedText(str);
+
+        } catch (err) {
+            ide.cloudError()(err.message);
+        }
+        msg.destroy();
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.review = OpenSubmission;
+
+
 IDE_Morph.prototype._getURL = IDE_Morph.prototype.getURL;
 IDE_Morph.prototype.getURL = function (url, callback, responseType) {
     url = ensureFullUrl(url);
@@ -1236,6 +1267,11 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
     // importing.
     this.libraryCache = {}; // {fileName: [blocks-array] }
 
+    if (task === 'open') {
+        this.labelString = 'Import Library';
+        this.createLabel();
+    }
+
     LibraryDialogMorph.uber.init.call(
         this,
         task,
@@ -1244,11 +1280,6 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
         null,
         {name, notes}
     );
-
-    if (task === 'open') {
-        this.labelString = 'Import Library';
-        this.createLabel();
-    }
 };
 
 LibraryDialogMorph.prototype.getNewItemID = function() {
@@ -1540,10 +1571,122 @@ ShareMorph.prototype.fixLayout = function() {
 
 // AssignmentMorph ///////////////////////////////////////////
 
-function AssignmentDialogMorph() {
-    this.init()
+function AssignmentDialogMorph(ide) {
+  this.init(ide);
 }
 
 AssignmentDialogMorph.prototype = new DialogBoxMorph();
 AssignmentDialogMorph.prototype.constructor = AssignmentDialogMorph;
 AssignmentDialogMorph.uber = DialogBoxMorph.prototype;
+
+AssignmentDialogMorph.prototype.init = function (ide) {
+  this.ide = ide;
+  this.listTitle = null;
+  this.listField = null;
+  this.submissionDateTitle = null;
+  this.submissionDateField = null;
+
+  AssignmentDialogMorph.uber.init.call(this);
+
+  this.labelString = "Submit to Assignments";
+  this.createLabel();
+  this.key = "submitAssignment";
+
+  this.buildContents();
+
+  this.fixLayout();
+  this.rerender();
+  this.onNextStep = async () => {
+    await this.asyncLoadAssignments();
+  };
+};
+
+AssignmentDialogMorph.prototype.buildContents = function () {
+  const baseSize = new Point(150, 150);
+
+  this.addBody(new Morph());
+  this.body.color = this.color;
+  this.body.setExtent(baseSize);
+
+  this.listField = new ListMorph([]);
+
+  this.body.add(this.listField);
+
+  // this.metadataFields = new AlignmentMorph('column', this.padding / 2)
+  // this.nameField = new StringMorph('name')
+  // this.assignedDateField = new StringMorph('01/01/2000')
+  // this.dueDateField = new StringMorph('01/02/2000')
+  // this.lastSubmissionDate = new StringMorph('01/03/2000')
+  // this.metadataFields.add(this.nameField)
+  // this.metadataFields.add(this.assignedDateField)
+  // this.metadataFields.add(this.dueDateField)
+  // this.metadataFields.add(this.lastSubmissionDate)
+  // this.body.add(this.metadataFields)
+
+  this.submitButton = this.addButton("submit", "Submit");
+  this.cancelButton = this.addButton("cancel", "Cancel");
+};
+
+AssignmentDialogMorph.prototype.fixLayout = function () {
+  if (this.listField) {
+    this.fixListFieldLayout(this);
+  }
+  // if(this.metadataFields){
+  //     this.metadataFields.fixLayout()
+  // }
+
+  AssignmentDialogMorph.uber.fixLayout.call(this);
+};
+
+AssignmentDialogMorph.prototype.fixListFieldLayout = function () {
+  if (this.listField) {
+    this.listField.setWidth(this.body.width());
+    this.listField.setHeight(this.body.height());
+    this.listField.contents.children[0].alpha = 0;
+    this.listField.contents.children[0].children.forEach((item) => {
+      item.pressColor = this.titleBarColor.darker(10);
+      item.color = new Color(0, 0, 0, 0);
+    });
+    this.listField.edge = InputFieldMorph.prototype.edge;
+    this.listField.fontSize = InputFieldMorph.prototype.fontSize;
+    this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    this.listField.contrast = InputFieldMorph.prototype.contrast;
+    this.listField.render = InputFieldMorph.prototype.render;
+    this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+    this.listField.fixLayout();
+  }
+};
+
+AssignmentDialogMorph.prototype.submit = function () {
+  if (!this.listField.selected) {
+    this.ide.showMessage("An assignment\nmust be selected")
+    return
+  }
+  const xml = this.ide.serializer.serialize(this.ide.stage)
+  const id = this.listField.selected.id
+
+  this.onNextStep = () => {
+    this.asyncSaveSubmission(xml, id)
+    this.destroy()
+  }
+};
+
+AssignmentDialogMorph.prototype.asyncLoadAssignments = async function () {
+  const msg = this.ide.showMessage("Fetching assignments\nfrom the cloud...");
+  const assignments = await this.ide.cloud.listGroupAssignments();
+
+  this.listField.elements = assignments
+  this.listField.labelGetter = assignments.length > 0? (element) => element.name: null
+  this.listField.buildListContents()
+  
+  msg.destroy();
+  this.fixLayout()
+  this.rerender()
+};
+
+AssignmentDialogMorph.prototype.asyncSaveSubmission = async function (xml, id) {
+  const msg = this.ide.showMessage("Uploading open project as submission");
+  const _submission = await this.ide.cloud.saveSubmission(id, xml);
+  msg.destroy();
+  this.ide.showMessage("Submission upload successful!");
+};
