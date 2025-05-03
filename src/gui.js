@@ -6985,6 +6985,7 @@ IDE_Morph.prototype.getURL = function (url, callback, responseType) {
         : 'response';
     try {
         request.open('GET', url, async);
+        request.withCredentials = true;
         if (async) {
             request.onreadystatechange = () => {
                 if (request.readyState === 4) {
