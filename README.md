@@ -62,7 +62,6 @@ Afterwards, simply pull and restart browser in the NetsBlox server.
 
 For questions about netsblox, feel free to make an issue or reach out to:
 - Akos Ledeczi at akos.ledeczi@vanderbilt.edu
-- Hamid Zare at hamid.zare@vanderbilt.edu
 - Brian Broll at brian.broll@vanderbilt.edu
 
 You should have received a copy of the GNU Affero General Public License
@@ -71,5 +70,5 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 Want to use NetsBlox but scared by the open-source license? Get in touch with us,
 we'll make it work.
 
-Snap! is Copyright (C) 2008-2020 by Jens Mönig and Brian Harvey
-NetsBlox is Copyright (C) 2020 Vanderbilt University
+Snap! is Copyright (C) 2008-2025 by Jens Mönig and Brian Harvey
+NetsBlox is Copyright (C) 2025 Vanderbilt University
