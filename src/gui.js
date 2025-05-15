@@ -297,7 +297,7 @@ IDE_Morph.prototype.init = function (isAutoFill, config) {
     this.applySavedSettings();
 
     // additional properties:
-    this.cloud = new Cloud(config.cloudUrl, config.clientId, config.username, localize);
+    this.cloud = new Cloud(config.cloudUrl, config.clientId, config.username, config.groupId, localize);
     this.cloud.onerror = async error => {
         if (error.status === 401 && this.cloud.username) {
             // User is no longer logged in (perhaps logged out in another tab)
