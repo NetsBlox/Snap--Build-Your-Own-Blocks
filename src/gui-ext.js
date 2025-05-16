@@ -1608,7 +1608,7 @@ AssignmentDialogMorph.prototype.buildContents = function () {
   this.body.color = this.color;
   this.body.setExtent(baseSize);
 
-  this.listField = new ListMorph([]);
+  this.listField = new ListMorph(["(empty)"]);
   this.listField.action = this.updateMetadataCallback();
   this.body.add(this.listField);
 
@@ -1708,15 +1708,12 @@ AssignmentDialogMorph.prototype.updateMetadataCallback = function () {
     minute: "2-digit",
   };
   return (item) => {
+    if(!item.name) return // NOTE: Assumed that if it has a name, it has the date properties
     dialog.nameField.setChoice(item.name);
     const start = new Date(item.originTime.secs_since_epoch * 1000);
-    dialog.assignedDateField.setChoice(
-      `${start.toLocaleString(undefined, timeOptions)}`,
-    );
+    dialog.assignedDateField.setChoice(`${start.toLocaleString(undefined, timeOptions)}`);
     const due = new Date(item.dueDate.secs_since_epoch * 1000);
-    dialog.dueDateField.setChoice(
-      `${due.toLocaleString(undefined, timeOptions)}`,
-    );
+    dialog.dueDateField.setChoice(`${due.toLocaleString(undefined, timeOptions)}`);
   };
 };
 
@@ -1739,8 +1736,10 @@ AssignmentDialogMorph.prototype.asyncLoadAssignments = async function () {
   const assignments = await this.ide.cloud.listGroupAssignments();
 
   this.listField.elements = assignments;
-  this.listField.labelGetter =
-    assignments.length > 0 ? (element) => element.name : null;
+  console.log(this.listField.labelGetter)
+  if(assignments.length > 0) {
+      this.listField.labelGetter = (element) => element.name;
+  }
   this.listField.buildListContents();
 
   msg.destroy();
