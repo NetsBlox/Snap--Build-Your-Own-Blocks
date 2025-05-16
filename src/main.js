@@ -8,8 +8,13 @@ async function getConfiguration(serverUrl) {
         credentials: 'include',
         headers: {'Content-Type': 'application/json'},
     };
-    const config = await (await fetch(serverUrl + '/configuration', opts)).json();
+    const config = await (await fetch(serverUrl + '/configuration', opts)).json(); // TODO: Ideally, configuration and whomai endpoints returned
+                                                                                       // the authenticated user object instead of just the username.
+                                                                                       // It would add a small payload size increase and avoid two network calls. 
     config.cloudUrl = serverUrl;  // TODO: Update the server?
+    if(config.username) {        
+        config.groupId = (await (await fetch(serverUrl + `/users/${config.username}`)).json()).groupId
+    }
     return config;
 }
 

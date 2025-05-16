@@ -96,6 +96,7 @@ modules.gui = '2021-November-27';
 var IDE_Morph;
 var ProjectDialogMorph;
 var LibraryDialogMorph;
+var AssignmentDialogMorph;
 var SpriteIconMorph;
 var CostumeIconMorph;
 var TurtleIconMorph;
@@ -296,7 +297,7 @@ IDE_Morph.prototype.init = function (isAutoFill, config) {
     this.applySavedSettings();
 
     // additional properties:
-    this.cloud = new Cloud(config.cloudUrl, config.clientId, config.username, localize);
+    this.cloud = new Cloud(config.cloudUrl, config.clientId, config.username, localize, config.groupId);
     this.cloud.onerror = async error => {
         if (error.status === 401 && this.cloud.username) {
             // User is no longer logged in (perhaps logged out in another tab)
@@ -4060,6 +4061,13 @@ IDE_Morph.prototype.projectMenu = function () {
     }
 
     menu.addLine();
+    if (this.cloud.groupId) {
+        menu.addItem(
+        'Assignments...',
+        () => { new AssignmentDialogMorph(this).popUp(this.world()); },
+        'View, load, and submit to group assignments'
+        );
+    }
     menu.addItem(
         'Libraries...',
         () => {

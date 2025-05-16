@@ -334,6 +334,37 @@ class OpenPrivateProject extends UrlParams {
 }
 IDE_Morph.prototype.UrlActionRegistry.private = OpenPrivateProject;
 
+/**
+ * open an assignment submission. Requirements: (groupId, assignmentId, submissionId) 
+ */
+class OpenSubmission extends UrlParams {
+    async apply(ide) {
+
+        const isLoggedIn = ide.cloud.username !== null;
+        if (!isLoggedIn) {
+            ide.showMessage('You are not logged in. Cannot open ' + name);
+            return;
+        }
+
+        const groupId = this.getRequiredParam('groupId');
+        const assignmentId = this.getRequiredParam('assignmentId');
+        const submissionId = this.getRequiredParam('submissionId');
+
+        const msg = ide.showMessage('Opening Submission...');
+
+        try {
+            const str = await ide.cloud.viewSubmissionXml(groupId, assignmentId, submissionId);
+            ide.droppedText(str);
+
+        } catch (err) {
+            ide.cloudError()(err.message);
+        }
+        msg.destroy();
+    }
+}
+IDE_Morph.prototype.UrlActionRegistry.review = OpenSubmission;
+
+
 IDE_Morph.prototype._getURL = IDE_Morph.prototype.getURL;
 IDE_Morph.prototype.getURL = function (url, callback, responseType) {
     url = ensureFullUrl(url);
@@ -1236,6 +1267,11 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
     // importing.
     this.libraryCache = {}; // {fileName: [blocks-array] }
 
+    if (task === 'open') {
+        this.labelString = 'Import Library';
+        this.createLabel();
+    }
+
     LibraryDialogMorph.uber.init.call(
         this,
         task,
@@ -1244,11 +1280,6 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
         null,
         {name, notes}
     );
-
-    if (task === 'open') {
-        this.labelString = 'Import Library';
-        this.createLabel();
-    }
 };
 
 LibraryDialogMorph.prototype.getNewItemID = function() {
@@ -1536,4 +1567,190 @@ ShareMorph.prototype.fixLayout = function() {
         this.closeButton.setCenter(this.center());
         this.closeButton.setBottom(this.bottom() - 20);
     }
+};
+
+// AssignmentMorph ///////////////////////////////////////////
+
+function AssignmentDialogMorph(ide) {
+  this.init(ide);
+}
+
+AssignmentDialogMorph.prototype = new DialogBoxMorph();
+AssignmentDialogMorph.prototype.constructor = AssignmentDialogMorph;
+AssignmentDialogMorph.uber = DialogBoxMorph.prototype;
+
+AssignmentDialogMorph.prototype.init = function (ide) {
+  this.ide = ide;
+  this.listTitle = null;
+  this.listField = null;
+  this.submissionDateTitle = null;
+  this.submissionDateField = null;
+
+  AssignmentDialogMorph.uber.init.call(this);
+
+  this.labelString = "Submit to Assignments";
+  this.createLabel();
+  this.key = "submitAssignment";
+
+  this.buildContents();
+
+  this.fixLayout();
+  this.rerender();
+  this.onNextStep = async () => {
+    await this.asyncLoadAssignments();
+  };
+};
+
+AssignmentDialogMorph.prototype.buildContents = function () {
+  const baseSize = new Point(300, 150);
+
+  this.addBody(new Morph());
+  this.body.color = this.color;
+  this.body.setExtent(baseSize);
+
+  this.listField = new ListMorph([]);
+  this.listField.action = this.updateMetadataCallback();
+  this.body.add(this.listField);
+
+  this.metadataFields = new AlignmentMorph("column", this.padding / 4);
+
+  this.nameTitle = new StringMorph("Name:");
+  this.nameTitle.isBold = true;
+  this.nameField = new InputFieldMorph("", undefined, undefined, true);
+  this.nameField.contents().text.isEditable = false;
+
+  this.metadataFields.add(this.nameTitle);
+  this.metadataFields.add(this.nameField);
+
+  this.assignedDateTitle = new StringMorph("Assigned Date:");
+  this.assignedDateTitle.isBold = true;
+  this.assignedDateField = new InputFieldMorph("", undefined, undefined, true);
+  this.assignedDateField.contents().isEditable = false;
+  this.assignedDateField.contents().text.isEditable = false;
+  this.metadataFields.add(this.assignedDateTitle);
+  this.metadataFields.add(this.assignedDateField);
+
+  this.dueDateTitle = new StringMorph("Due Date:");
+  this.dueDateTitle.isBold = true;
+  this.dueDateField = new InputFieldMorph("", undefined, undefined, true);
+  this.dueDateField.contents().text.isEditable = false;
+  this.metadataFields.add(this.dueDateTitle);
+  this.metadataFields.add(this.dueDateField);
+
+  this.body.add(this.metadataFields);
+
+  this.submitButton = this.addButton("submit", "Submit");
+  this.cancelButton = this.addButton("cancel", "Cancel");
+};
+
+AssignmentDialogMorph.prototype.fixLayout = function () {
+  if (this.listField) {
+    this.fixListFieldLayout(this);
+  }
+  if (this.metadataFields) {
+    this.fixMetadataFieldsLayout();
+  }
+
+  AssignmentDialogMorph.uber.fixLayout.call(this);
+};
+
+AssignmentDialogMorph.prototype.fixListFieldLayout = function () {
+  this.listField.setWidth(this.body.width() / 2);
+  this.listField.setHeight(this.body.height());
+  this.listField.contents.children[0].alpha = 0;
+  this.listField.contents.children[0].children.forEach((item) => {
+    item.pressColor = this.titleBarColor.darker(10);
+    item.color = new Color(0, 0, 0, 0);
+  });
+  this.listField.edge = InputFieldMorph.prototype.edge;
+  this.listField.fontSize = InputFieldMorph.prototype.fontSize;
+  this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+  this.listField.contrast = InputFieldMorph.prototype.contrast;
+  this.listField.render = InputFieldMorph.prototype.render;
+  this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+  this.listField.fixLayout();
+}
+
+AssignmentDialogMorph.prototype.fixMetadataFieldsLayout = function () {
+  const width = this.body.width() / 2 - 10;
+  if (this.nameTitle && this.assignedDateTitle && this.dueDateTitle) {
+    for (title of [this.nameTitle, this.assignedDateTitle, this.dueDateTitle]) {
+        title.setWidth(width);
+        title.fixLayout();
+    }
+  }
+
+  if (this.nameField && this.assignedDateField && this.dueDateField) {
+      for (field of [this.nameField, this.assignedDateField, this.dueDateField]) {
+        field.setWidth(width);
+        field.contrast = 100;
+        field.alpha = 0.8;
+        field.fixLayout();
+      }
+  }
+
+  if (this.metadataFields) {
+    const rowGap = 10;
+    this.metadataFields.alignment = "left";
+    if (this.listField)
+      this.metadataFields.setLeft(this.listField?.right() + rowGap);
+  }
+  this.metadataFields.fixLayout();
+};
+
+AssignmentDialogMorph.prototype.updateMetadataCallback = function () {
+  const dialog = this;
+  const timeOptions = {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+  return (item) => {
+    dialog.nameField.setChoice(item.name);
+    const start = new Date(item.originTime.secs_since_epoch * 1000);
+    dialog.assignedDateField.setChoice(
+      `${start.toLocaleString(undefined, timeOptions)}`,
+    );
+    const due = new Date(item.dueDate.secs_since_epoch * 1000);
+    dialog.dueDateField.setChoice(
+      `${due.toLocaleString(undefined, timeOptions)}`,
+    );
+  };
+};
+
+AssignmentDialogMorph.prototype.submit = function () {
+  if (!this.listField.selected) {
+    this.ide.showMessage("An assignment\nmust be selected");
+    return;
+  }
+  const xml = this.ide.serializer.serialize(this.ide.stage);
+  const id = this.listField.selected.id;
+
+  this.onNextStep = () => {
+    this.asyncSaveSubmission(xml, id);
+    this.destroy();
+  };
+};
+
+AssignmentDialogMorph.prototype.asyncLoadAssignments = async function () {
+  const msg = this.ide.showMessage("Fetching assignments\nfrom the cloud...");
+  const assignments = await this.ide.cloud.listGroupAssignments();
+
+  this.listField.elements = assignments;
+  this.listField.labelGetter =
+    assignments.length > 0 ? (element) => element.name : null;
+  this.listField.buildListContents();
+
+  msg.destroy();
+  this.fixLayout();
+  this.rerender();
+};
+
+AssignmentDialogMorph.prototype.asyncSaveSubmission = async function (xml, id) {
+  const msg = this.ide.showMessage("Uploading open project as submission");
+  const _submission = await this.ide.cloud.saveSubmission(id, xml);
+  msg.destroy();
+  this.ide.showMessage("Submission upload successful!");
 };
