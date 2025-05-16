@@ -1673,34 +1673,20 @@ AssignmentDialogMorph.prototype.fixListFieldLayout = function () {
 
 AssignmentDialogMorph.prototype.fixMetadataFieldsLayout = function () {
   const width = this.body.width() / 2 - 10;
-  if (this.nameTitle) {
-    this.nameTitle.fixLayout();
+  if (this.nameTitle && this.assignedDateTitle && this.dueDateTitle) {
+    for (title of [this.nameTitle, this.assignedDateTitle, this.dueDateTitle]) {
+        title.setWidth(width);
+        title.fixLayout();
+    }
   }
 
-  if (this.nameField) {
-    this.nameField.setWidth(width);
-    this.nameField.contrast = 100;
-    this.nameField.alpha = 0.8;
-    this.nameField.fixLayout();
-  }
-
-  if (this.assignedDateTitle) {
-    this.assignedDateTitle.setWidth(width);
-    this.assignedDateTitle.fixLayout();
-  }
-
-  if (this.assignedDateField) {
-    this.assignedDateField.setWidth(width);
-    this.assignedDateField.contrast = 100;
-    this.assignedDateField.alpha = 0.8;
-    this.assignedDateField.fixLayout();
-  }
-
-  if (this.dueDateField) {
-    this.dueDateField.setWidth(width);
-    this.dueDateField.contrast = 100;
-    this.dueDateField.alpha = 0.8;
-    this.dueDateField.fixLayout();
+  if (this.nameField && this.assignedDateField && this.dueDateField) {
+      for (field of [this.nameField, this.assignedDateField, this.dueDateField]) {
+        field.setWidth(width);
+        field.contrast = 100;
+        field.alpha = 0.8;
+        field.fixLayout();
+      }
   }
 
   if (this.metadataFields) {
@@ -1708,7 +1694,6 @@ AssignmentDialogMorph.prototype.fixMetadataFieldsLayout = function () {
     this.metadataFields.alignment = "left";
     if (this.listField)
       this.metadataFields.setLeft(this.listField?.right() + rowGap);
-    console.log(this.metadataFields);
   }
   this.metadataFields.fixLayout();
 };
