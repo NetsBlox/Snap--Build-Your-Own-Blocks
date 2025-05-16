@@ -1602,26 +1602,42 @@ AssignmentDialogMorph.prototype.init = function (ide) {
 };
 
 AssignmentDialogMorph.prototype.buildContents = function () {
-  const baseSize = new Point(150, 150);
+  const baseSize = new Point(300, 150);
 
   this.addBody(new Morph());
   this.body.color = this.color;
   this.body.setExtent(baseSize);
 
   this.listField = new ListMorph([]);
-
+  this.listField.action = this.updateMetadataCallback();
   this.body.add(this.listField);
 
-  // this.metadataFields = new AlignmentMorph('column', this.padding / 2)
-  // this.nameField = new StringMorph('name')
-  // this.assignedDateField = new StringMorph('01/01/2000')
-  // this.dueDateField = new StringMorph('01/02/2000')
-  // this.lastSubmissionDate = new StringMorph('01/03/2000')
-  // this.metadataFields.add(this.nameField)
-  // this.metadataFields.add(this.assignedDateField)
-  // this.metadataFields.add(this.dueDateField)
-  // this.metadataFields.add(this.lastSubmissionDate)
-  // this.body.add(this.metadataFields)
+  this.metadataFields = new AlignmentMorph("column", this.padding / 4);
+
+  this.nameTitle = new StringMorph("Name:");
+  this.nameTitle.isBold = true;
+  this.nameField = new InputFieldMorph("", undefined, undefined, true);
+  this.nameField.contents().text.isEditable = false;
+
+  this.metadataFields.add(this.nameTitle);
+  this.metadataFields.add(this.nameField);
+
+  this.assignedDateTitle = new StringMorph("Assigned Date:");
+  this.assignedDateTitle.isBold = true;
+  this.assignedDateField = new InputFieldMorph("", undefined, undefined, true);
+  this.assignedDateField.contents().isEditable = false;
+  this.assignedDateField.contents().text.isEditable = false;
+  this.metadataFields.add(this.assignedDateTitle);
+  this.metadataFields.add(this.assignedDateField);
+
+  this.dueDateTitle = new StringMorph("Due Date:");
+  this.dueDateTitle.isBold = true;
+  this.dueDateField = new InputFieldMorph("", undefined, undefined, true);
+  this.dueDateField.contents().text.isEditable = false;
+  this.metadataFields.add(this.dueDateTitle);
+  this.metadataFields.add(this.dueDateField);
+
+  this.body.add(this.metadataFields);
 
   this.submitButton = this.addButton("submit", "Submit");
   this.cancelButton = this.addButton("cancel", "Cancel");
@@ -1631,57 +1647,120 @@ AssignmentDialogMorph.prototype.fixLayout = function () {
   if (this.listField) {
     this.fixListFieldLayout(this);
   }
-  // if(this.metadataFields){
-  //     this.metadataFields.fixLayout()
-  // }
+  if (this.metadataFields) {
+    this.fixMetadataFieldsLayout();
+  }
 
   AssignmentDialogMorph.uber.fixLayout.call(this);
 };
 
 AssignmentDialogMorph.prototype.fixListFieldLayout = function () {
-  if (this.listField) {
-    this.listField.setWidth(this.body.width());
-    this.listField.setHeight(this.body.height());
-    this.listField.contents.children[0].alpha = 0;
-    this.listField.contents.children[0].children.forEach((item) => {
-      item.pressColor = this.titleBarColor.darker(10);
-      item.color = new Color(0, 0, 0, 0);
-    });
-    this.listField.edge = InputFieldMorph.prototype.edge;
-    this.listField.fontSize = InputFieldMorph.prototype.fontSize;
-    this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
-    this.listField.contrast = InputFieldMorph.prototype.contrast;
-    this.listField.render = InputFieldMorph.prototype.render;
-    this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
-    this.listField.fixLayout();
+  this.listField.setWidth(this.body.width() / 2);
+  this.listField.setHeight(this.body.height());
+  this.listField.contents.children[0].alpha = 0;
+  this.listField.contents.children[0].children.forEach((item) => {
+    item.pressColor = this.titleBarColor.darker(10);
+    item.color = new Color(0, 0, 0, 0);
+  });
+  this.listField.edge = InputFieldMorph.prototype.edge;
+  this.listField.fontSize = InputFieldMorph.prototype.fontSize;
+  this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+  this.listField.contrast = InputFieldMorph.prototype.contrast;
+  this.listField.render = InputFieldMorph.prototype.render;
+  this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+  this.listField.fixLayout();
+}
+
+AssignmentDialogMorph.prototype.fixMetadataFieldsLayout = function () {
+  const width = this.body.width() / 2 - 10;
+  if (this.nameTitle) {
+    this.nameTitle.fixLayout();
   }
+
+  if (this.nameField) {
+    this.nameField.setWidth(width);
+    this.nameField.contrast = 100;
+    this.nameField.alpha = 0.8;
+    this.nameField.fixLayout();
+  }
+
+  if (this.assignedDateTitle) {
+    this.assignedDateTitle.setWidth(width);
+    this.assignedDateTitle.fixLayout();
+  }
+
+  if (this.assignedDateField) {
+    this.assignedDateField.setWidth(width);
+    this.assignedDateField.contrast = 100;
+    this.assignedDateField.alpha = 0.8;
+    this.assignedDateField.fixLayout();
+  }
+
+  if (this.dueDateField) {
+    this.dueDateField.setWidth(width);
+    this.dueDateField.contrast = 100;
+    this.dueDateField.alpha = 0.8;
+    this.dueDateField.fixLayout();
+  }
+
+  if (this.metadataFields) {
+    const rowGap = 10;
+    this.metadataFields.alignment = "left";
+    if (this.listField)
+      this.metadataFields.setLeft(this.listField?.right() + rowGap);
+    console.log(this.metadataFields);
+  }
+  this.metadataFields.fixLayout();
+};
+
+AssignmentDialogMorph.prototype.updateMetadataCallback = function () {
+  const dialog = this;
+  const timeOptions = {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+  return (item) => {
+    dialog.nameField.setChoice(item.name);
+    const start = new Date(item.originTime.secs_since_epoch * 1000);
+    dialog.assignedDateField.setChoice(
+      `${start.toLocaleString(undefined, timeOptions)}`,
+    );
+    const due = new Date(item.dueDate.secs_since_epoch * 1000);
+    dialog.dueDateField.setChoice(
+      `${due.toLocaleString(undefined, timeOptions)}`,
+    );
+  };
 };
 
 AssignmentDialogMorph.prototype.submit = function () {
   if (!this.listField.selected) {
-    this.ide.showMessage("An assignment\nmust be selected")
-    return
+    this.ide.showMessage("An assignment\nmust be selected");
+    return;
   }
-  const xml = this.ide.serializer.serialize(this.ide.stage)
-  const id = this.listField.selected.id
+  const xml = this.ide.serializer.serialize(this.ide.stage);
+  const id = this.listField.selected.id;
 
   this.onNextStep = () => {
-    this.asyncSaveSubmission(xml, id)
-    this.destroy()
-  }
+    this.asyncSaveSubmission(xml, id);
+    this.destroy();
+  };
 };
 
 AssignmentDialogMorph.prototype.asyncLoadAssignments = async function () {
   const msg = this.ide.showMessage("Fetching assignments\nfrom the cloud...");
   const assignments = await this.ide.cloud.listGroupAssignments();
 
-  this.listField.elements = assignments
-  this.listField.labelGetter = assignments.length > 0? (element) => element.name: null
-  this.listField.buildListContents()
-  
+  this.listField.elements = assignments;
+  this.listField.labelGetter =
+    assignments.length > 0 ? (element) => element.name : null;
+  this.listField.buildListContents();
+
   msg.destroy();
-  this.fixLayout()
-  this.rerender()
+  this.fixLayout();
+  this.rerender();
 };
 
 AssignmentDialogMorph.prototype.asyncSaveSubmission = async function (xml, id) {
