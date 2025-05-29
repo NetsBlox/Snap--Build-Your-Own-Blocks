@@ -2544,6 +2544,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('getProjectIds'));
         blocks.push(block('getProjectId'));
+        blocks.push('-');
+        blocks.push(block('getProjectAddress'));
+        blocks.push(block('getRoleAddress'));
 
         // Add custom message types
         button = new PushButtonMorph(
@@ -9020,6 +9023,9 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('getProjectIds'));
         blocks.push(block('getProjectId'));
+        blocks.push('-');
+        blocks.push(block('getProjectAddress'));
+        blocks.push(block('getRoleAddress'));
 
         // Add custom message types
         button = new PushButtonMorph(

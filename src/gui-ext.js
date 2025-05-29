@@ -1736,7 +1736,6 @@ AssignmentDialogMorph.prototype.asyncLoadAssignments = async function () {
   const assignments = await this.ide.cloud.listGroupAssignments();
 
   this.listField.elements = assignments;
-  console.log(this.listField.labelGetter)
   if(assignments.length > 0) {
       this.listField.labelGetter = (element) => element.name;
   }

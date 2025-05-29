@@ -104,6 +104,18 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'all role names'
     };
 
+    SpriteMorph.prototype.blocks.getProjectAddress = {
+        type: 'reporter',
+        category: 'network',
+        spec: 'project address'
+    };
+
+    SpriteMorph.prototype.blocks.getRoleAddress = {
+        type: 'reporter',
+        category: 'network',
+        spec: 'role address'
+    };
+
     // Geo
     SpriteMorph.prototype.blocks.reportLatitude = {
         type: 'reporter',
@@ -179,11 +191,38 @@ SpriteMorph.prototype.getProjectIds = function () {
     return new List(roles);
 };
 
+SpriteMorph.prototype.getProjectAddress = function () {
+    const ide = this.parentThatIsA(IDE_Morph);
+    const username = ide.cloud?.username;
+    if (!username) throw new Error("You are not logged in.");
+    const projName = ide.room?.name;
+    if (!projName) throw new Error("Project name not found.");
+    const address = projName + '@' + username;
+    return address;
+};
+
+SpriteMorph.prototype.getRoleAddress = function () {
+    const ide = this.parentThatIsA(IDE_Morph);
+    const username = ide.cloud?.username;
+    if (!username) throw new Error("You are not logged in.");
+    const projName = ide.room?.name;
+    if (!projName) throw new Error("Project name not found.");
+    const roleName = ide.projectName;
+    const address = roleName + '@' + projName + '@' + username;
+    return address;
+};
+
 StageMorph.prototype.getProjectId =
     SpriteMorph.prototype.getProjectId;
 
 StageMorph.prototype.getProjectIds =
     SpriteMorph.prototype.getProjectIds;
+
+StageMorph.prototype.getProjectAddress =
+    SpriteMorph.prototype.getProjectAddress;
+
+StageMorph.prototype.getRoleAddress =
+    SpriteMorph.prototype.getRoleAddress;
 
 // SpriteMorph non-variable watchers
 
