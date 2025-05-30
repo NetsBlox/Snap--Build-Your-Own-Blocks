@@ -2542,11 +2542,12 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(watcherToggle('reportRPCError'));
         blocks.push(block('reportRPCError'));
         blocks.push('-');
-        blocks.push(block('getProjectIds'));
-        blocks.push(block('getProjectId'));
-        blocks.push('-');
         blocks.push(block('getProjectAddress'));
+        blocks.push(block('getProjectName'));
+        blocks.push('-');
         blocks.push(block('getRoleAddress'));
+        blocks.push(block('getProjectId'));
+        blocks.push(block('getProjectIds'));
 
         // Add custom message types
         button = new PushButtonMorph(

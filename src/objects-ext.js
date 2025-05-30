@@ -91,7 +91,26 @@ SpriteMorph.prototype.initBlocks = function () {
         help: 'This hat block allows you to run code when you receive a NetsBlox message over the internet.\nIn the dropdown, you can set what message type you want to receive.\nTo make a new message type, use the "Make a message type" button at the bottom of the Network tab of blocks.'
     };
 
+    // Project Reporters
+    SpriteMorph.prototype.blocks.getProjectAddress = {
+        type: 'reporter',
+        category: 'network',
+        spec: 'project address'
+    };
+
+    SpriteMorph.prototype.blocks.getProjectName = {
+        type: 'reporter',
+        category: 'network',
+        spec: 'project name'
+    };
+
     // Role Reporters
+    SpriteMorph.prototype.blocks.getRoleAddress = {
+        type: 'reporter',
+        category: 'network',
+        spec: 'role address'
+    };
+
     SpriteMorph.prototype.blocks.getProjectId = {
         type: 'reporter',
         category: 'network',
@@ -102,18 +121,6 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'reporter',
         category: 'network',
         spec: 'all role names'
-    };
-
-    SpriteMorph.prototype.blocks.getProjectAddress = {
-        type: 'reporter',
-        category: 'network',
-        spec: 'project address'
-    };
-
-    SpriteMorph.prototype.blocks.getRoleAddress = {
-        type: 'reporter',
-        category: 'network',
-        spec: 'role address'
     };
 
     // Geo
@@ -180,15 +187,11 @@ SpriteMorph.prototype.initBlocks();
 
 // SpriteMorph project/sead id(s)
 
-SpriteMorph.prototype.getProjectId = function () {
-    var ide = this.parentThatIsA(IDE_Morph);
-    return ide.projectName;
-};
-
-SpriteMorph.prototype.getProjectIds = function () {
-    var ide = this.parentThatIsA(IDE_Morph),
-        roles = ide.room.getRoleNames();
-    return new List(roles);
+SpriteMorph.prototype.getProjectName = function () {
+    const ide = this.parentThatIsA(IDE_Morph);
+    const projName = ide.room?.name;
+    if (!projName) throw new Error("Project name not found.");
+    return projName;
 };
 
 SpriteMorph.prototype.getProjectAddress = function () {
@@ -212,17 +215,31 @@ SpriteMorph.prototype.getRoleAddress = function () {
     return address;
 };
 
-StageMorph.prototype.getProjectId =
-    SpriteMorph.prototype.getProjectId;
+SpriteMorph.prototype.getProjectId = function () {
+    var ide = this.parentThatIsA(IDE_Morph);
+    return ide.projectName;
+};
 
-StageMorph.prototype.getProjectIds =
-    SpriteMorph.prototype.getProjectIds;
+SpriteMorph.prototype.getProjectIds = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        roles = ide.room.getRoleNames();
+    return new List(roles);
+};
+
+StageMorph.prototype.getProjectName =
+    SpriteMorph.prototype.getProjectName;
 
 StageMorph.prototype.getProjectAddress =
     SpriteMorph.prototype.getProjectAddress;
 
 StageMorph.prototype.getRoleAddress =
     SpriteMorph.prototype.getRoleAddress;
+
+StageMorph.prototype.getProjectId =
+    SpriteMorph.prototype.getProjectId;
+
+StageMorph.prototype.getProjectIds =
+    SpriteMorph.prototype.getProjectIds;
 
 // SpriteMorph non-variable watchers
 
