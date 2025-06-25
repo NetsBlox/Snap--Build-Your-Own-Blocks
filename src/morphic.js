@@ -11790,6 +11790,7 @@ HandMorph.prototype.processDrop = function (event) {
     function readURL(url, callback) {
         var request = new XMLHttpRequest();
         request.open('GET', url);
+        request.withCredentials = true;
         request.onreadystatechange = () => {
             if (request.readyState === 4) {
                 if (request.responseText) {

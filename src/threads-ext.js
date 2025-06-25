@@ -254,8 +254,9 @@ Process.prototype.callRPC = function (baseUrl, params, noCache) {
 
     if (!this.rpcRequest) {
         this.rpcRequest = new XMLHttpRequest();
-        this.rpcRequest.responseType = 'arraybuffer';
         this.rpcRequest.open('POST', url, true);
+        this.rpcRequest.withCredentials = true;
+        this.rpcRequest.responseType = 'arraybuffer';
         this.rpcRequest.setRequestHeader('Content-Type', 'application/json');
         this.rpcRequest.send(JSON.stringify(params));
     } else if (this.rpcRequest.readyState === 4) {
@@ -514,6 +515,7 @@ Process.prototype.reportHTTPRequest = function (method, url, data, headers) {
     if (!this.httpRequest) {
         this.httpRequest = new XMLHttpRequest();
         this.httpRequest.open(method, url, true);
+        this.httpRequest.withCredentials = true;
 
         this.assertType(headers, 'list');
         for (let i = 1; i <= headers.length(); i += 1) {
