@@ -3722,15 +3722,13 @@ BlockMorph.prototype.restoreInputs = function (oldInputs, offset = 0) {
             } else {
                 element.replaceInput(inp, old.fullCopy());
             }
-        } else if (old && inp instanceof InputSlotMorph) {
+        } else if (old instanceof InputSlotMorph && inp instanceof InputSlotMorph) {
             // original - turns empty numberslots to 0:
             // inp.setContents(old.evaluate());
             // "fix" may be wrong b/c constants
-            if (old.contents) {
-                inp.setContents(old.contents().text);
-                if (old.constant) {
-                    inp.constant = old.constant;
-                }
+            inp.setContents(old.contents().text);
+            if (old.constant) {
+                inp.constant = old.constant;
             }
         } else if (old instanceof CSlotMorph && inp instanceof CSlotMorph) {
             nb = old.nestedBlock();
