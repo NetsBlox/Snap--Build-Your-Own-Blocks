@@ -3707,6 +3707,7 @@ BlockMorph.prototype.restoreInputs = function (oldInputs, offset = 0) {
     // restore matching inputs in their original order
     inputs.forEach(inp => {
         old = oldInputs[offset];
+        let advance = true;
         if (old instanceof ArgLabelMorph) {
             old = old.argMorph();
         }
@@ -3741,8 +3742,14 @@ BlockMorph.prototype.restoreInputs = function (oldInputs, offset = 0) {
                 (old.slotSpec === inp.slotSpec) &&
                 old.infix === inp.infix) {
             element.replaceInput(inp, old.fullCopy());
+        } else if(old instanceof CSlotMorph) {
+          // Dont throw away old C block. Instead, keep it until an appropriate
+          // inp is found or let it be included in the overflow after this loop.
+          advance = false;
         }
-        offset += 1;
+        if(advance){
+          offset += 1;
+        }
     });
 
     // gather trailing surplus blocks
@@ -4852,9 +4859,9 @@ BlockMorph.prototype.mouseClickLeft = function () {
     if (receiver) {
         stage = receiver.parentThatIsA(StageMorph);
         if (stage) {
-            var active = stage.threads.findProcess(top);
+            var active = stage.threads.findProcess(top, receiver);
             // msg handlers can only be stopped - not started
-            if (!(top.selector === 'receiveSocketMessage' && !active)) {
+            if (top.selector !== 'receiveSocketMessage' || active) {
                 stage.threads.toggleProcess(top, receiver);
                 if (top.id) {  // record that the block has been executed
                     SnapActions.startScript(top, active);
