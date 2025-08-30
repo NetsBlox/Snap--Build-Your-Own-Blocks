@@ -8354,38 +8354,6 @@ StageMorph.prototype.projectionSnap = function() {
     return new Costume(snap, this.newCostumeName(localize('snap')));
 };
 
-// StageMorph pixel access:
-
-StageMorph.prototype.getPixelColor = function (aPoint) {
-    var point, context, data;
-	if (this.trailsCanvas) {
-        point = aPoint.subtract(this.bounds.origin);
-        context = this.penTrailsMorph().image.getContext('2d');
-        data = context.getImageData(point.x, point.y, 1, 1);
-        if (data.data[3] === 0) {
-            if (this.projectionCanvas) {
-                point = point.divideBy(this.scale);
-                context = this.projectionCanvas.getContext('2d');
-                data = context.getImageData(point.x, point.y, 1, 1);
-                return new Color(
-                    data.data[0],
-                    data.data[1],
-                    data.data[2],
-                    data.data[3] / 255
-                );
-            }
-        	return StageMorph.uber.getPixelColor.call(this, aPoint);
-        }
-        return new Color(
-            data.data[0],
-            data.data[1],
-            data.data[2],
-            data.data[3] / 255
-        );
- 	}
-};
-
-
 // StageMorph accessing
 
 StageMorph.prototype.watchers = function (leftPos) {
