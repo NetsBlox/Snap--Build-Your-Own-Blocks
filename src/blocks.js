@@ -4696,10 +4696,9 @@ BlockMorph.prototype.fixBlockColor = function (nearestBlock, isForced) {
         if (!this.color.eq(clr)) {
             this.alternateBlockColor();
         }
-    } else if (nearest.category === this.category) {
-        if (nearest.color.eq(this.color)) {
+    } else if (nearest.color.eq(this.color)) {
             this.alternateBlockColor();
-        }
+        
     } else if (this.category && !this.color.eq(
             this.getCategoryColor(this.category)
         )) {

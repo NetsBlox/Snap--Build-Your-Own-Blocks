@@ -82,11 +82,21 @@ BlockMorph.prototype.showHelp = async function() {
             }
             // add a direct link to the official docs page
             const cat = metadata.categories && metadata.categories.length ? metadata.categories[0] : 'index';
-            help += `\n\nDocumentation can be found at:\n${SERVER_URL}/docs/services/${serviceName}/${cat}.html#${serviceName}.${methodName}`;
+            if(serviceName instanceof Array && serviceName[0] instanceof String && serviceName[0]?.startsWith('https://')){
+                help += `\n\nDocumentation can be found at:\n${serviceName[0].replace('.org/', '.org/docs/services/')}/index.html`;
+            }
+            else {
+                help += `\n\nDocumentation can be found at:\n${SERVER_URL}/docs/services/${serviceName}/${cat}.html#${serviceName}.${methodName}`;
+            }
         } else {  // get service description
             help = metadata.description;
             // add a direct link to the official docs page
-            help += `\n\nDocumentation can be found at:\n${SERVER_URL}/docs/services/${serviceName}/index.html`;
+            if(serviceName instanceof Array && typeof serviceName[0] === 'string' && serviceName[0]?.startsWith('https://')){
+                help += `\n\nDocumentation can be found at:\n${serviceName[0].replace('.org/', '.org/docs/services/')}/index.html`;
+            }
+            else {
+                help += `\n\nDocumentation can be found at:\n${SERVER_URL}/docs/services/${serviceName}/index.html`;
+            }
         }
         if (!help) help = 'Description not available';
     } else {
