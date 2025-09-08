@@ -2372,6 +2372,8 @@ SyntaxElementMorph.prototype.showBubble = function (value, exportPic, target) {
         morphToShow.cachedImage = img;
     } else if (value instanceof Sound) {
         morphToShow = new SymbolMorph('notes', 30);
+    } else if (value instanceof Instrument) {
+        morphToShow = new SymbolMorph('piano', 30);
     } else if (value instanceof Context) {
         img = value.image();
         morphToShow = new Morph();

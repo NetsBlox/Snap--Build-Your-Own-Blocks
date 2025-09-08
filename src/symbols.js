@@ -153,6 +153,7 @@ SymbolMorph.prototype.names = [
     'jumpBackward',
     'stepBackward',
     'puzzlePiece',
+    'piano',
 ];
 
 // SymbolMorph instance creation:
@@ -504,6 +505,9 @@ SymbolMorph.prototype.renderShape = function (ctx, aColor) {
         break;
     case 'puzzlePiece':
         this.renderSymbolPuzzlePiece(ctx, aColor);
+        break;
+    case 'piano':
+        this.renderSymbolPiano(ctx, aColor);
         break;
 
     default:
@@ -2512,6 +2516,25 @@ SymbolMorph.prototype.renderSymbolPuzzlePiece = function (ctx, color) {
     ctx.closePath();
     ctx.fill();
 };
+
+SymbolMorph.prototype.renderSymbolPiano = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+    const u = width / 6;
+    const k = height * 0.6;
+   
+    ctx.fillStyle = color.toString();
+    for (let i = 0; i < 6; ++i) {
+        ctx.beginPath();
+        ctx.rect(u * i, 0, u, height);
+        ctx.stroke();
+        if (i % 2 == 0) {
+            ctx.beginPath();
+            ctx.rect(u * i + u * 0.5, 0, u, k);
+            ctx.fill();
+        }
+    }
+}
 
 /*
 // register examples with the World demo menu
