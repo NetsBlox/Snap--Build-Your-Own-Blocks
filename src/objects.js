@@ -10907,6 +10907,16 @@ CostumeEditorMorph.prototype.mouseDownLeft = function (pos) {
 CostumeEditorMorph.prototype.mouseMove
     = CostumeEditorMorph.prototype.mouseDownLeft;
 
+// Instrument ////////////////////////////////////////////////////////
+
+// This is a BeatBlox instrument 
+
+function Instrument(name, src = null) {
+    this.name = name;
+    this.isNative = src === null;
+    this.src = src;
+}
+
 // Sound /////////////////////////////////////////////////////////////
 
 // Sound instance creation
