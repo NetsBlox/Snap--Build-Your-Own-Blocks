@@ -10886,6 +10886,14 @@ function Instrument(name, src = null) {
     this.src = src;
 }
 
+// Oscillator ////////////////////////////////////////////////////////
+
+// This is a BeatBlox oscillator
+
+function Oscillator(osc) {
+    this.osc = osc
+}
+
 // Sound /////////////////////////////////////////////////////////////
 
 // Sound instance creation
