@@ -154,7 +154,10 @@ SymbolMorph.prototype.names = [
     'stepBackward',
     'puzzlePiece',
     'graph',
+
+    // BeatBlox additions
     'piano',
+    'waveform'
 ];
 
 // SymbolMorph instance creation:
@@ -511,6 +514,9 @@ SymbolMorph.prototype.renderShape = function (ctx, aColor) {
         this.renderSymbolGraph(ctx, aColor);
     case 'piano':
         this.renderSymbolPiano(ctx, aColor);
+        break;
+    case 'waveform':
+        this.renderSymbolWaveform(ctx, aColor);
         break;
 
     default:
@@ -2583,6 +2589,19 @@ SymbolMorph.prototype.renderSymbolPiano = function (ctx, color) {
             ctx.fill();
         }
     }
+}
+
+SymbolMorph.prototype.renderSymbolWaveform = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+
+    ctx.fillStyle = color.toString();
+    ctx.beginPath();
+    for (let i = 0; i < width; ++i){
+        ctx.lineTo(i, (height * 0.5) * Math.sin(-2 * Math.PI * i / width)  + (height * 0.5));
+    }
+    ctx.stroke();
+    ctx.closePath();
 }
 
 /*
