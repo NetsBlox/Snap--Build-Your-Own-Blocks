@@ -10146,6 +10146,10 @@ SpriteBubbleMorph.prototype.dataAsMorph = function (data) {
         contents.cachedImage = img;
     } else if (data instanceof Sound) {
         contents = new SymbolMorph('notes', 30);
+    } else if (data instanceof Instrument) {
+        contents = new SymbolMorph('piano', 30);
+    } else if (data instanceof Oscillator) {
+        contents = new SymbolMorph('waveform', 30);
     } else if (data instanceof HTMLCanvasElement) {
         img = data;
         contents = new Morph();
@@ -11855,6 +11859,10 @@ CellMorph.prototype.createContents = function () {
             this.contentsMorph.cachedImage = img;
         } else if (this.contents instanceof Sound) {
             this.contentsMorph = new SymbolMorph('notes', 30);
+        } else if (this.contents instanceof Instrument) {
+            this.contentsMorph = new SymbolMorph('piano', 30);
+        } else if (this.contents instanceof Oscillator) {
+            this.contentsMorph = new SymbolMorph('waveform', 30);
         } else if (this.contents instanceof List) {
             if (this.contents.isTable()) {
                 this.contentsMorph = new TableFrameMorph(new TableMorph(
