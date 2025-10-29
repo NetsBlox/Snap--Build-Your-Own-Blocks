@@ -10880,9 +10880,7 @@ CostumeEditorMorph.prototype.mouseMove
 
 // This is a BeatBlox instrument 
 
-function Instrument(name, src = null) {
-    this.name = name;
-    this.isNative = src === null;
+function Instrument(src) {
     this.src = src;
 }
 
@@ -10890,8 +10888,8 @@ function Instrument(name, src = null) {
 
 // This is a BeatBlox oscillator
 
-function Oscillator(osc) {
-    this.osc = osc
+function Oscillator(type) {
+    this.type = type;
 }
 
 // Sound /////////////////////////////////////////////////////////////
