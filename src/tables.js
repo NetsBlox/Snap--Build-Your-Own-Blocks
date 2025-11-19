@@ -414,6 +414,10 @@ TableCellMorph.prototype.dataRepresentation = function (dta) {
         return new SymbolMorph(
             'waveform', SyntaxElementMorph.prototype.fontSize
         ).getImage();
+    } else if (dta instanceof Filter) {
+        return new SymbolMorph(
+            'filter', SyntaxElementMorph.prototype.fontSize
+        ).getImage();
     } else if (dta instanceof List) {
         return this.listSymbol();
     } else {
