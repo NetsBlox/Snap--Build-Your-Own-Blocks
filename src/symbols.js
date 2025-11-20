@@ -2565,8 +2565,8 @@ SymbolMorph.prototype.renderSymbolFilter = function (ctx, color) {
     ctx.fillStyle = color.toString();
     ctx.beginPath();
     for (let i = 0; i < width; ++i) {
-        let x = i + width / 2;
-        ctx.lineTo(i, (height * 0.5) * (Math.sin(2 * Math.PI * x / width) / x)  + (height * 0.5));
+        let x = i - width / 2;
+        ctx.lineTo(i, (height * 0.5) * (Math.sin(-2 * Math.PI * x * 4 / width) / x)  + (height * 0.6));
     }
     ctx.stroke();
     ctx.closePath();
