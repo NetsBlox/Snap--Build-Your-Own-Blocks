@@ -10925,8 +10925,9 @@ function Instrument(src) {
 
 // This is a BeatBlox oscillator
 
-function Oscillator(type) {
+function Oscillator(type, parameters) {
     this.type = type;
+    this.parameters = parameters;
 }
 
 // Filter ////////////////////////////////////////////////////////////
