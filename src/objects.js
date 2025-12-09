@@ -10899,6 +10899,28 @@ function Oscillator(type, parameters) {
     this.parameters = parameters;
 }
 
+Oscillator.prototype.getFrequency = function () {
+    if (!this.parameters.frequency) {
+        return 440;
+    }
+    return this.parameters.frequency;
+}
+
+Oscillator.prototype.getValue = function () {
+    if (!this.parameters.value) {
+        return 1;
+    }
+    return this.parameters.value;
+}
+
+// Gain //////////////////////////////////////////////////////////////
+
+function Gain(value) {
+    this.parameters = {
+        gain: value
+    };
+}
+
 // Filter ////////////////////////////////////////////////////////////
 
 // This is a BeatBlox filter
