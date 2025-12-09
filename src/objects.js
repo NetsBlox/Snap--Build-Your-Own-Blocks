@@ -10886,7 +10886,8 @@ CostumeEditorMorph.prototype.mouseMove
 
 // This is a BeatBlox instrument 
 
-function Instrument(src) {
+function Instrument(id, src) {
+    this.id = id;
     this.src = src;
 }
 
