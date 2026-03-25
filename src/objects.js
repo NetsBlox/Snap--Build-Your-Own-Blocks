@@ -10931,6 +10931,15 @@ function Filter(type, parameters) {
     this.parameters = parameters
 }
 
+// Effect ////////////////////////////////////////////////////////////
+
+// This is a BeatBlox effect
+
+function AudioEffect(type) {
+    // TODO update this
+    this.type = type;
+}
+
 // Sound /////////////////////////////////////////////////////////////
 
 // Sound instance creation

@@ -157,7 +157,8 @@ SymbolMorph.prototype.names = [
     // BeatBlox additions
     'piano',
     'waveform',
-    'filter'
+    'filter',
+    'effect'
 ];
 
 // SymbolMorph instance creation:
@@ -518,6 +519,9 @@ SymbolMorph.prototype.renderShape = function (ctx, aColor) {
         break;
     case 'filter':
         this.renderSymbolFilter(ctx, aColor);
+        break;
+    case 'effect':
+        this.renderSymbolEffect(ctx, aColor);
         break;
     default:
         throw new Error('unknown symbol name: "' + this.name + '"');
@@ -2567,6 +2571,19 @@ SymbolMorph.prototype.renderSymbolFilter = function (ctx, color) {
     for (let i = 0; i < width; ++i) {
         let x = i - width / 2;
         ctx.lineTo(i, (height * 0.5) * (Math.sin(-2 * Math.PI * x * 4 / width) / x)  + (height * 0.6));
+    }
+    ctx.stroke();
+    ctx.closePath();
+}
+
+SymbolMorph.prototype.renderSymbolEffect = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+
+    ctx.fillStyle = color.toString();
+    ctx.beginPath();
+    for (let i = 0; i < width; ++i){
+        ctx.lineTo(i, (height * 0.25) * Math.atan(Math.tan(-2 * Math.PI * i / width))  + (height * 0.5));
     }
     ctx.stroke();
     ctx.closePath();
