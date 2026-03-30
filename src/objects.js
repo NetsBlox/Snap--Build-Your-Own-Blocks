@@ -171,6 +171,7 @@ SpriteMorph.prototype.blockColor = {
     operators : new Color(98, 194, 19),
     variables : new Color(243, 118, 29),
     lists : new Color(217, 77, 17),
+    graphs : new Color(223, 10, 14),
     other: new Color(150, 150, 150)
 };
 
@@ -1441,6 +1442,26 @@ SpriteMorph.prototype.initBlocks = function () {
             defaults: [null, [2, -1]]
         },
     */
+
+        // Graphs
+        createFlow: {
+            type: 'reporter',
+            category: 'graphs',
+            spec: 'flow %exp',
+            defaults: [null]
+        },
+        createFork: {
+            type: 'reporter',
+            category: 'graphs',
+            spec: 'fork %exp',
+            defaults: [null]
+        },
+        getEdges: {
+            type: 'reporter',
+            category: 'graphs',
+            spec: 'edges of graph %s',
+            defaults: [null]
+        },
 
         // HOFs
         reportMap: {
@@ -2891,6 +2912,10 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportConcatenatedLists'));
         blocks.push(block('reportReshape'));
         blocks.push(block('reportCrossproduct'));
+        blocks.push('-');
+        blocks.push(block('createFlow'));
+        blocks.push(block('createFork'));
+        blocks.push(block('getEdges'));
 
     // for debugging: ///////////////
 
@@ -9313,6 +9338,10 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportConcatenatedLists'));
         blocks.push(block('reportReshape'));
         blocks.push(block('reportCrossproduct'));
+        blocks.push('-');
+        blocks.push(block('createFlow'));
+        blocks.push(block('createFork'));
+        blocks.push(block('getEdges'));
 
     // for debugging: ///////////////
 
