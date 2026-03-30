@@ -1,0 +1,138 @@
+/*
+
+    graphs.js
+
+    graph data structure for SNAP!
+
+    written by Gabriel Barnard
+    gabriel.h.barnard@vanderbilt.edu
+
+    TODO:
+        * finish edge calculations
+        * use a Snap! list for the adjacency matrix
+        * find way to toggle between undirected graphs and directed graphs
+        * find way to incorporate weight functions
+        * graphic for graph data type
+
+*/
+
+function createFlowMatrix (size, directed = false) {
+    var adjacencyMatrix;
+    
+    // allocate the array
+    adjacencyMatrix = [];
+    for (var i = 0; i < size; ++i) {
+        adjacencyMatrix[i] = []
+        for (var j = 0; j < size; ++j)
+            adjacencyMatrix[i][j] = 0;
+    }
+
+    // populate the fields
+    for (var i = 0; i < size; ++i) {
+        for (var j = 0; j < size; ++j) {
+            if (i === j || i+1 === j) {
+                adjacencyMatrix[i][j] = 1;
+                if (!directed) 
+                    adjacencyMatrix[j][i] = 1;
+            }
+        }
+    }
+
+    return adjacencyMatrix
+}
+
+function createForkMatrix (size, directed = false) {
+    var adjacencyMatrix;
+    
+    // allocate the array
+    adjacencyMatrix = [];
+    for (var i = 0; i < size; ++i) {
+        console.log(i)
+        adjacencyMatrix[i] = []
+        for (var j = 0; j < size; ++j)
+            adjacencyMatrix[i][j] = 0;
+    }
+    console.log(adjacencyMatrix)
+
+    // source node
+    for (var i = 0; i < size - 1; ++i)
+        adjacencyMatrix[0][i] = 1;
+
+    // other nodes
+    if (!directed)
+        for (var i = 1; i < size - 1; ++i)
+            adjacencyMatrix[i][0] = 1;
+    for (var i = 1; i < size - 1; ++i)
+        adjacencyMatrix[i][size - 1] = 1;
+
+    // destination node
+    for (var i = 1; i < size; ++i)
+        if (!directed || i === size - 1)
+            adjacencyMatrix[size - 1][i] = 1;
+
+    return adjacencyMatrix
+}
+
+var Graph;
+
+function Graph(list, type) {
+    var contents;
+    var size;
+    var adjacencyMatrix;
+
+    // create the adjacency matrix
+    contents = list.contents;
+    size = contents.length + 2;
+    if (type === 'directed flow') 
+        adjacencyMatrix = createFlowMatrix(size, true);
+    else if (type === 'directed fork')
+        adjacencyMatrix = createForkMatrix(size, true);
+
+    this.src = contents;
+    this.size = size;
+    this.adjacencyMatrix = adjacencyMatrix;
+}
+
+Graph.prototype.toString = function () {
+    var returnString;
+    var src, dst;
+
+    returnString = '';
+    for (var i = 0; i < this.size; ++i) {
+        for (var j = 0; j < this.size; ++j) {
+            if (i !== j && this.adjacencyMatrix[i][j] === 1) {
+                if (i === 0) 
+                    src = 'src';
+                else if (i === this.size - 1) 
+                    src = 'dst';
+                else src = 
+                    this.src[i-1].toString();
+
+                if (j === 0) 
+                    dst = 'src';
+                else if (j === this.size - 1) 
+                    dst = 'dst';
+                else 
+                    dst = this.src[j-1].toString();
+
+                returnString += `${src} --> ${dst}\n`;
+            }
+        }
+    }
+
+    return returnString;
+}
+
+Graph.prototype.getEdges = function () {
+    var edges;
+
+    // TODO figure out the recursive structure. 
+
+    edges = []
+    for (var i = 1; i < this.size - 1; ++i)
+        for (var j = 1; j < this.size - 1; ++j)
+            if (i !== j && this.adjacencyMatrix[i][j] === 1)
+                edges.push(new List([this.src[i-1], this.src[j-1]]))
+
+    return new List(edges)
+}

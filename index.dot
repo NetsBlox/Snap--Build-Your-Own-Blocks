@@ -45,6 +45,7 @@
         <script type="text/javascript" src="src/locale.js"></script>
         <script type="text/javascript" src="src/blocks.js"></script>
         <script type="text/javascript" src="src/blocks-ext.js"></script>
+        <script type="text/javascript" src="src/graphs.js"></script>
         <script type="text/javascript" src="src/threads.js"></script>
         <script type="text/javascript" src="src/objects.js"></script>
         <script type="text/javascript" src="src/paint.js"></script>
