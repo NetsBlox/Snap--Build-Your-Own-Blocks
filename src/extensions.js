@@ -208,6 +208,12 @@
                 }
                 receivers.forEach(Rcvr => Rcvr.prototype[block.name] = block.impl);
             });
+             
+            if(this.ide){
+                this.ide.flushBlocksCache();
+                this.ide.refreshPalette();
+            }
+
         }
 
         getUserMenu(target, menu) {
