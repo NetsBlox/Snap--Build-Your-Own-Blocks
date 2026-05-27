@@ -1277,7 +1277,7 @@ LibraryDialogMorph.prototype.init = function (ide, name, xml, notes) {
         task,
         'Library',
         sources,
-        null,
+        sources[0],
         {name, notes}
     );
 };
