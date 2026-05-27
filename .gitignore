@@ -3,4 +3,5 @@
 .tern-port
 dist/app.js
 .server
+.ignore
 cloud.txt
