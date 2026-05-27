@@ -153,6 +153,14 @@ SymbolMorph.prototype.names = [
     'jumpBackward',
     'stepBackward',
     'puzzlePiece',
+    'graph',
+
+    // BeatBlox additions
+    'piano',
+    'waveform',
+    'filter',
+    'effect',
+    'gain'
 ];
 
 // SymbolMorph instance creation:
@@ -505,7 +513,23 @@ SymbolMorph.prototype.renderShape = function (ctx, aColor) {
     case 'puzzlePiece':
         this.renderSymbolPuzzlePiece(ctx, aColor);
         break;
-
+    case 'graph':
+        this.renderSymbolGraph(ctx, aColor);
+    case 'piano':
+        this.renderSymbolPiano(ctx, aColor);
+        break;
+    case 'waveform':
+        this.renderSymbolWaveform(ctx, aColor);
+        break;
+    case 'filter':
+        this.renderSymbolFilter(ctx, aColor);
+        break;
+    case 'effect':
+        this.renderSymbolEffect(ctx, aColor);
+        break;
+    case 'gain':
+        this.renderSymbolGain(ctx, aColor);
+        break;
     default:
         throw new Error('unknown symbol name: "' + this.name + '"');
     }
@@ -2513,6 +2537,156 @@ SymbolMorph.prototype.renderSymbolPuzzlePiece = function (ctx, color) {
     ctx.fill();
 };
 
+SymbolMorph.prototype.renderSymbolGraph = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+
+    const nodeRadius = Math.max(2, Math.min(width, height) / 10);
+    const leftX = width * 0.24;
+    const rightX = width * 0.76;
+    const topY = height * 0.28;
+    const bottomY = height * 0.72;
+    const midX = width * 0.50;
+    const midY = height * 0.50;
+
+    ctx.strokeStyle = color.toString();
+    ctx.fillStyle = color.toString();
+    ctx.lineWidth = Math.max(1, Math.min(width, height) / 14);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // edges
+    ctx.beginPath();
+    ctx.moveTo(leftX, topY);
+    ctx.lineTo(midX, midY);
+    ctx.lineTo(rightX, topY);
+    ctx.moveTo(leftX, topY);
+    ctx.lineTo(leftX, bottomY);
+    ctx.lineTo(rightX, bottomY);
+    ctx.moveTo(midX, midY);
+    ctx.lineTo(rightX, bottomY);
+    ctx.stroke();
+
+    // nodes
+    const nodes = [
+        [leftX, topY],
+        [midX, midY],
+        [rightX, topY],
+        [leftX, bottomY],
+        [rightX, bottomY]
+    ];
+
+    for (const [x, y] of nodes) {
+        ctx.beginPath();
+        ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+};
+
+SymbolMorph.prototype.renderSymbolPiano = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+    const u = width / 6;
+    const k = height * 0.6;
+   
+    ctx.fillStyle = color.toString();
+    for (let i = 0; i < 6; ++i) {
+        ctx.beginPath();
+        ctx.rect(u * i, 0, u, height);
+        ctx.stroke();
+        if (i % 2 == 0) {
+            ctx.beginPath();
+            ctx.rect(u * i + u * 0.5, 0, u, k);
+            ctx.fill();
+        }
+    }
+}
+
+SymbolMorph.prototype.renderSymbolWaveform = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+
+    ctx.fillStyle = color.toString();
+    ctx.beginPath();
+    for (let i = 0; i < width; ++i){
+        ctx.lineTo(i, (height * 0.5) * Math.sin(-2 * Math.PI * i / width)  + (height * 0.5));
+    }
+    ctx.stroke();
+    ctx.closePath();
+}
+
+SymbolMorph.prototype.renderSymbolFilter = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+
+    ctx.fillStyle = color.toString();
+    ctx.beginPath();
+    for (let i = 0; i < width; ++i) {
+        let x = i - width / 2;
+        ctx.lineTo(i, (height * 0.5) * (Math.sin(-2 * Math.PI * x * 4 / width) / x)  + (height * 0.6));
+    }
+    ctx.stroke();
+    ctx.closePath();
+}
+
+SymbolMorph.prototype.renderSymbolEffect = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+
+    ctx.fillStyle = color.toString();
+    ctx.beginPath();
+    for (let i = 0; i < width; ++i) {
+        ctx.lineTo(i, (height * 0.25) * Math.atan(Math.tan(-2 * Math.PI * i / width))  + (height * 0.5));
+    }
+    ctx.stroke();
+    ctx.closePath();
+}
+
+SymbolMorph.prototype.renderSymbolGain = function (ctx, color) {
+    const width = this.symbolWidth();
+    const height = this.size;
+    const r = Math.min(width / 3, height / 3);
+    const h = width / 2;
+    const k = height / 2;
+
+    // draw outer circle
+    ctx.fillStyle = color.toString();
+    ctx.beginPath();
+    for (let x = h - r; x <= h + r; ++x) {
+        const y = Math.sqrt(r * r - (x - h) * (x - h)) + k;
+        ctx.lineTo(x, y);
+    }
+    for (let x = h + r; x >= h - r; --x) {
+        const y = -1 * Math.sqrt(r * r - (x - h) * (x - h)) + k;
+        ctx.lineTo(x, y);
+    }    
+    ctx.stroke();
+    ctx.closePath();
+
+    // draw inner circle
+    const rp = 0.2 * r
+    ctx.beginPath();
+    for (let x = h - rp; x <= h + rp; ++x) {
+        const y = Math.sqrt(rp * rp - (x - h) * (x - h)) + k;
+        ctx.lineTo(x, y);
+    }
+    for (let x = h + rp; x >= h - rp; --x) {
+        const y = -1 * Math.sqrt(rp * rp - (x - h) * (x - h)) + k;
+        ctx.lineTo(x, y);
+    }    
+    ctx.stroke();
+    ctx.closePath();
+    ctx.fill();
+
+    //draw dial
+    ctx.beginPath();
+    ctx.moveTo(rp * Math.sqrt(2) / 2 + h, rp * Math.sqrt(2) / 2 + k);
+    ctx.lineTo(h - 3 * rp, k - 3 * rp);
+    ctx.lineTo(-1 * rp * Math.sqrt(2) / 2 + h, -1 * rp * Math.sqrt(2) / 2 + k);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.fill();
+}
 /*
 // register examples with the World demo menu
 // comment out to shave off a millisecond loading speed ;-)

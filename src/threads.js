@@ -1978,6 +1978,29 @@ Process.prototype.doShowTable = function (list) {
     new TableDialogMorph(list).popUp(this.blockReceiver().world());
 };
 
+// Process graph data structures
+
+Process.prototype.createFlow = function (items) {
+    return new Graph(items, 'directed flow');
+}
+
+Process.prototype.createFork = function (items) {
+    return new Graph(items, 'directed fork');
+}
+
+Process.prototype.getEdges = function (graph) {
+    if (!(graph instanceof Graph))
+        throw new Error('invalid type');
+    return graph.getEdges();
+}
+
+Process.prototype.getVertices = function (graph) {
+    if (!(graph instanceof Graph))
+        throw new Error('invalid type');
+    return graph.getVertices();
+}
+
+
 // Process non-HOF list primitives
 
 Process.prototype.reportNumbers = function (start, end) {

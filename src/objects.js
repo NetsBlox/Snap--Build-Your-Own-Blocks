@@ -171,6 +171,7 @@ SpriteMorph.prototype.blockColor = {
     operators : new Color(98, 194, 19),
     variables : new Color(243, 118, 29),
     lists : new Color(217, 77, 17),
+    graphs : new Color(223, 10, 14),
     other: new Color(150, 150, 150)
 };
 
@@ -1441,6 +1442,32 @@ SpriteMorph.prototype.initBlocks = function () {
             defaults: [null, [2, -1]]
         },
     */
+
+        // Graphs
+        createFlow: {
+            type: 'reporter',
+            category: 'graphs',
+            spec: 'flow %exp',
+            defaults: [null]
+        },
+        createFork: {
+            type: 'reporter',
+            category: 'graphs',
+            spec: 'fork %exp',
+            defaults: [null]
+        },
+        getEdges: {
+            type: 'reporter',
+            category: 'graphs',
+            spec: 'edges of graph %s',
+            defaults: [null]
+        },
+        getVertices: {
+            type: 'reporter',
+            category: 'graphs',
+            spec: 'vertices of graph %s',
+            default: [null]  
+        },
 
         // HOFs
         reportMap: {
@@ -2891,6 +2918,11 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportConcatenatedLists'));
         blocks.push(block('reportReshape'));
         blocks.push(block('reportCrossproduct'));
+        blocks.push('-');
+        blocks.push(block('createFlow'));
+        blocks.push(block('createFork'));
+        blocks.push(block('getEdges'));
+        blocks.push(block('getVertices'));
 
     // for debugging: ///////////////
 
@@ -9313,6 +9345,11 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportConcatenatedLists'));
         blocks.push(block('reportReshape'));
         blocks.push(block('reportCrossproduct'));
+        blocks.push('-');
+        blocks.push(block('createFlow'));
+        blocks.push(block('createFork'));
+        blocks.push(block('getEdges'));
+        blocks.push(block('getVertices'));
 
     // for debugging: ///////////////
 
@@ -10146,6 +10183,16 @@ SpriteBubbleMorph.prototype.dataAsMorph = function (data) {
         contents.cachedImage = img;
     } else if (data instanceof Sound) {
         contents = new SymbolMorph('notes', 30);
+    } else if (data instanceof Instrument) {
+        contents = new SymbolMorph('piano', 30);
+    } else if (data instanceof Oscillator) {
+        contents = new SymbolMorph('waveform', 30);
+    } else if (data instanceof Gain) {
+        contents = new SymbolMorph('gain', 30);
+    } else if (data instanceof Filter) {
+        contents = new SymbolMorph('filter', 30);
+    } else if (data instanceof AudioEffect) {
+        contents = new SymbolMorph('effect', 30); 
     } else if (data instanceof HTMLCanvasElement) {
         img = data;
         contents = new Morph();
@@ -10172,6 +10219,8 @@ SpriteBubbleMorph.prototype.dataAsMorph = function (data) {
             }
         }
         contents.isDraggable = false;
+    } else if (data instanceof Graph) {
+        contents = new SymbolMorph('graph', 30);
     } else if (data instanceof Context) {
         img = data.image();
         contents = new Morph();
@@ -10875,6 +10924,64 @@ CostumeEditorMorph.prototype.mouseDownLeft = function (pos) {
 
 CostumeEditorMorph.prototype.mouseMove
     = CostumeEditorMorph.prototype.mouseDownLeft;
+
+// Instrument ////////////////////////////////////////////////////////
+
+// This is a BeatBlox instrument 
+
+function Instrument(id, src) {
+    this.id = id;
+    this.src = src;
+}
+
+// Oscillator ////////////////////////////////////////////////////////
+
+// This is a BeatBlox oscillator
+
+function Oscillator(type, parameters) {
+    this.type = type;
+    this.parameters = parameters;
+}
+
+Oscillator.prototype.getFrequency = function () {
+    if (!this.parameters.frequency) {
+        return 440;
+    }
+    return this.parameters.frequency;
+}
+
+Oscillator.prototype.getValue = function () {
+    if (!this.parameters.value) {
+        return 1;
+    }
+    return this.parameters.value;
+}
+
+// Gain //////////////////////////////////////////////////////////////
+
+function Gain(value) {
+    this.parameters = {
+        gain: value
+    };
+}
+
+// Filter ////////////////////////////////////////////////////////////
+
+// This is a BeatBlox filter
+
+function Filter(type, parameters) {
+    this.type = type;
+    this.parameters = parameters;
+}
+
+// Effect ////////////////////////////////////////////////////////////
+
+// This is a BeatBlox effect
+
+function AudioEffect(type, parameters) {
+    this.type = type;
+    this.parameters = parameters;
+}
 
 // Sound /////////////////////////////////////////////////////////////
 
@@ -11839,6 +11946,16 @@ CellMorph.prototype.createContents = function () {
             this.contentsMorph.cachedImage = img;
         } else if (this.contents instanceof Sound) {
             this.contentsMorph = new SymbolMorph('notes', 30);
+        } else if (this.contents instanceof Instrument) {
+            this.contentsMorph = new SymbolMorph('piano', 30);
+        } else if (this.contents instanceof Oscillator) {
+            this.contentsMorph = new SymbolMorph('waveform', 30);
+        } else if (this.contents instanceof Gain) {
+            this.contentsMorph = new SymbolMorph('gain', 30);
+        } else if (this.contents instanceof Filter) {
+            this.contentsMorph = new SymbolMorph('filter', 30);
+        } else if (this.contents instanceof AudioEffect) {
+            this.contentsMorph = new SymbolMorph('effect', 30);    
         } else if (this.contents instanceof List) {
             if (this.contents.isTable()) {
                 this.contentsMorph = new TableFrameMorph(new TableMorph(
@@ -11865,6 +11982,8 @@ CellMorph.prototype.createContents = function () {
                 }
             }
             this.contentsMorph.isDraggable = false;
+        } else if (this.contents instanceof Graph) {
+            this.contentsMorph = new SymbolMorph('graph', 30);
         } else {
             this.contentsMorph = new TextMorph(
                 !isNil(this.contents) ? this.contents.toString() : '',
