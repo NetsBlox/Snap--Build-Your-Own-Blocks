@@ -515,6 +515,7 @@ SymbolMorph.prototype.renderShape = function (ctx, aColor) {
         break;
     case 'graph':
         this.renderSymbolGraph(ctx, aColor);
+        break;
     case 'piano':
         this.renderSymbolPiano(ctx, aColor);
         break;
