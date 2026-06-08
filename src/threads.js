@@ -392,6 +392,12 @@ ThreadManager.prototype.removeTerminatedProcesses = function () {
                             proc.exportResult,
                             proc.receiver
                         );
+                    } else if (result instanceof Graph) {
+                        proc.topBlock.showBubble(
+                            new GraphWatcherMorph(result),
+                            proc.exportResult,
+                            proc.receiver
+                        );
                     } else {
                         proc.topBlock.showBubble(
                             result,

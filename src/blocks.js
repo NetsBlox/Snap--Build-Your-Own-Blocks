@@ -2332,6 +2332,13 @@ SyntaxElementMorph.prototype.showBubble = function (value, exportPic, target) {
         morphToShow.isDraggable = false;
         morphToShow.expand(this.parentThatIsA(ScrollFrameMorph).extent());
         isClickable = true;
+    } else if (value instanceof GraphWatcherMorph) {
+        morphToShow = value;
+        morphToShow.update();
+        morphToShow.step = value.update;
+        morphToShow.isDraggable = false;
+        // morphToShow.expand(this.parentThatIsA(ScrollFrameMorph).extent());
+        isClickable = true;
     } else if (value instanceof TableFrameMorph) {
         morphToShow = value;
         morphToShow.isDraggable = false;
