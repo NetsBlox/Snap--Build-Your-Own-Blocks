@@ -137,6 +137,9 @@ Instrument.prototype.init = function (graph) {
 };
 
 Instrument.prototype.validateSource = function (graph) {
+    if (!(graph instanceof Graph)) {
+        throw Error('error: instrument must be created from audio graph');
+    }
     if (graph.type !== 'directed flow') {
         throw new Error('instrument must only have one source');
     }
