@@ -4679,14 +4679,14 @@ BlockMorph.prototype.getCategoryColor = function (category) {
 
 BlockMorph.prototype.fixBlockColor = function (nearestBlock, isForced) {
     var nearest = nearestBlock,
-        clr,
+        clr = this.getCategoryColor(this.category),
         cslot;
 
     if (!this.zebraContrast && !isForced) {
         return;
     }
     if (!this.zebraContrast && isForced) {
-        return this.forceNormalColoring(true);
+        return this.forceNormalColoring();
     }
 
     if (!nearest) {
@@ -4703,17 +4703,15 @@ BlockMorph.prototype.fixBlockColor = function (nearestBlock, isForced) {
             }
         }
     }
+
     if (!nearest) { // top block
-        clr = this.getCategoryColor(this.category);
         if (!this.color.eq(clr)) {
             this.alternateBlockColor();
         }
     } else if (nearest.color.eq(this.color)) {
             this.alternateBlockColor();
         
-    } else if (this.category && !this.color.eq(
-            this.getCategoryColor(this.category)
-        )) {
+    } else if (this.category && !this.color.eq(clr) && !nearest.color.eq(clr)) {
         this.alternateBlockColor();
     }
     if (isForced) {

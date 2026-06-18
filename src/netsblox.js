@@ -3,7 +3,7 @@
    StringMorph, Color, TabMorph, InputFieldMorph, MorphicPreferences, MenuMorph,
    TextMorph, NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512,
    SnapUndo, ScrollFrameMorph, SnapUndo, CollaboratorDialogMorph,
-   SnapSerializer, newCanvas, detect, WatcherMorph, utils */
+   SnapSerializer, newCanvas, detect, WatcherMorph, NNMorph, utils */
 // Netsblox IDE (subclass of IDE_Morph)
 
 NetsBloxMorph.prototype = Object.create(IDE_Morph.prototype);
@@ -24,6 +24,8 @@ NetsBloxMorph.prototype.init = function (isAutoFill, config) {
     if (this.cloud.username) {
         this.services.fetchHosts(this.cloud.username);
     }
+
+    this.nn = null;
 
     // initialize inherited properties:
     this.serializer = new NetsBloxSerializer();
@@ -243,7 +245,16 @@ NetsBloxMorph.prototype.createSpriteEditor = function() {
         this.spriteEditor = new RoomEditorMorph(this.room, this.sliderColor);
         this.spriteEditor.color = this.groupColor;
         this.add(this.spriteEditor);
-    } else {
+    }
+    else if (this.currentTab === 'nn'){
+        if (this.spriteEditor) {
+            this.spriteEditor.destroy();
+        }
+        this.spriteEditor = new NNEditorMorph(this.sliderColor);
+        this.spriteEditor.color = this.groupColor;
+        this.add(this.spriteEditor)
+    }
+    else {
         NetsBloxMorph.uber.createSpriteEditor.call(this);
     }
 };
@@ -376,6 +387,28 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     tab.rerender();
     tab.fixLayout();
     tabBar.add(tab);
+
+    var nntab = new TabMorph(
+        tabColors,
+        null, // target
+        function () {
+            SnapActions.selectTab('nn');
+            tabBar.tabTo('nn');
+        },
+        localize('Neural Network'), // label
+        function () {  // query
+            return myself.currentTab === 'nn';
+        }
+    );
+    nntab.padding = 3;
+    nntab.corner = tabCorner;
+    nntab.edge = 1;
+    nntab.labelShadowOffset = new Point(-1, -1);
+    nntab.labelShadowColor = tabColors[1];
+    nntab.labelColor = this.buttonLabelColor;
+    nntab.rerender();
+    nntab.fixLayout();
+    tabBar.add(nntab);
 
     tabBar.fixLayout();
     tabBar.children.forEach(function (each) {
