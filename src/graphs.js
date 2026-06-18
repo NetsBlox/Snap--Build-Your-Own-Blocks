@@ -212,12 +212,40 @@ function GraphWatcherMorph(graph, parentCell) {
     this.init(graph, parentCell);
 }
 
+// GraphWatcherMorph.prototype.init = function (graph, parentCell) {
+//     var myself = this;
+
+//     this.graph = graph || new Graph();
+//     this.start = 1;
+//     this.range = 100;
+//     this.lastCell = null;
+//     this.parentCell = parentCell || null;
+
+//     this.frame = new ScrollFrameMorph(null, 10);
+//     this.frame.alpha = 0;
+//     this.frame.acceptsDrops = false;
+//     this.frame.contents.acceptsDrops = false;
+
+//     GraphWatcherMorph.uber.init.call(
+//         this,
+//         SyntaxElementMorph.prototype.rounding,
+//         1,
+//         new Color(120, 120, 120)
+//     );
+
+//     this.color = new Color(220, 220, 220);
+//     this.isDraggable = false;
+//     this.setExtent(new Point(80, 70));
+//     this.add(this.frame);
+//     this.update();
+//     this.fixLayout();
+// }
 GraphWatcherMorph.prototype.init = function (graph, parentCell) {
     var myself = this;
 
     this.graph = graph || new Graph();
-    this.start = 1;
-    this.range = 100;
+    this.renderedVertices = [];
+    this.renderedEdges = [];
     this.lastCell = null;
     this.parentCell = parentCell || null;
 
@@ -241,87 +269,172 @@ GraphWatcherMorph.prototype.init = function (graph, parentCell) {
     this.fixLayout();
 }
 
-GraphWatcherMorph.prototype.update = function () {
-    var i, cell, cnts, max, ceil, vertices, morphs;
+// GraphWatcherMorph.prototype.update = function () {
+//     var i, cell, cnts, max, ceil, vertices, morphs;
 
-    this.frame.contents.children.forEach(m => {
-        if (m instanceof CellMorph) {
-            if (m.contentsMorph instanceof ListWatcherMorph) {
-                m.contentsMorph.update();
-            } else if (isSnapObject(m.contents) ||
-                    (m.contents instanceof Costume)) {
-                m.update();
-            }
-        } 
-    });
+//     this.frame.contents.children.forEach(m => {
+//         if (m instanceof CellMorph) {
+//             if (m.contentsMorph instanceof ListWatcherMorph) {
+//                 m.contentsMorph.update();
+//             } else if (isSnapObject(m.contents) ||
+//                     (m.contents instanceof Costume)) {
+//                 m.update();
+//             }
+//         } 
+//     });
+
+//     vertices = this.graph.getVertices();
+
+//     // adjust start index to current graph size
+//     this.start = Math.max(
+//         Math.min(
+//             this.start,
+//             Math.floor((vertices.length() - 1) / this.range)
+//                 * this.range + 1
+//         ),
+//         1
+//     );
+    
+//     // refresh existing cells
+//     // highest index
+//     max = Math.min(
+//         this.start + this.range - 1,
+//         vertices.length()
+//     );
+
+//     // number of morphs available for refreshing
+//     ceil = Math.min(
+//         (max - this.start + 1),
+//         this.frame.contents.children.length
+//     );
+
+//     for (i = 0; i < this.frame.contents.children.length; ++i) {
+//         cell = this.frame.contents.children[i];
+//         cnts = vertices.at(i + 1);
+
+//         if (cell.contents !== cnts) {
+//             cell.contents = cnts;
+//             cell.fixLayout();
+//             if (this.lastCell) {
+//                 cell.setLeft(this.lastCell.left());
+//             }
+//         }
+//         this.lastCell = cell;
+//     }
+
+//     // remove excess cells
+//     // number of morphs to be shown
+//     morphs = max - this.start + 1;
+
+//     while (this.frame.contents.children.length > morphs) {
+//         this.frame.contents.children[morphs].destroy();
+//     }
+
+//     // add additional cells
+//     ceil = morphs;
+//     i = this.frame.contents.children.length;
+
+//     if (ceil > i + 1) {
+//         for (i; i < ceil; ++i) {
+//             cell = new CellMorph(
+//                 vertices.at(i),
+//                 this.cellColor,
+//                 i,
+//                 this.parentCell
+//             );
+//             this.frame.contents.add(cell);
+//         }
+//     }
+
+//     this.fixLayout();
+//     this.frame.contents.adjustBounds();
+//     this.frame.contents.setLeft(this.frame.left(0));
+// }
+//     for (i = 0; i < this.frame.contents.children.length; ++i) {
+//         cell = this.frame.contents.children[i];
+//         cnts = vertices.at(i + 1);
+
+//         if (cell.contents !== cnts) {
+//             cell.contents = cnts;
+//             cell.fixLayout();
+//             if (this.lastCell) {
+//                 cell.setLeft(this.lastCell.left());
+//             }
+//         }
+//         this.lastCell = cell;
+//     }
+
+//     // remove excess cells
+//     // number of morphs to be shown
+//     morphs = max - this.start + 1;
+
+//     while (this.frame.contents.children.length > morphs) {
+//         this.frame.contents.children[morphs].destroy();
+//     }
+
+//     // add additional cells
+//     ceil = morphs;
+//     i = this.frame.contents.children.length;
+
+//     if (ceil > i + 1) {
+//         for (i; i < ceil; ++i) {
+//             cell = new CellMorph(
+//                 vertices.at(i),
+//                 this.cellColor,
+//                 i,
+//                 this.parentCell
+//             );
+//             this.frame.contents.add(cell);
+//         }
+//     }
+
+//     this.fixLayout();
+//     this.frame.contents.adjustBounds();
+//     this.frame.contents.setLeft(this.frame.left(0));
+// }
+
+GraphWatcherMorph.prototype.update = function () {
+    var vertices, edges;
 
     vertices = this.graph.getVertices();
+    edges = this.graph.getEdges();
 
-    // adjust start index to current graph size
-    this.start = Math.max(
-        Math.min(
-            this.start,
-            Math.floor((vertices.length() - 1) / this.range)
-                * this.range + 1
-        ),
-        1
-    );
-    
-    // refresh existing cells
-    // highest index
-    max = Math.min(
-        this.start + this.range - 1,
-        vertices.length()
-    );
-
-    // number of morphs available for refreshing
-    ceil = Math.min(
-        (max - this.start + 1),
-        this.frame.contents.children.length
-    );
-
-    for (i = 0; i < this.frame.contents.children.length; ++i) {
-        cell = this.frame.contents.children[i];
-        cnts = vertices.at(i + 1);
-
-        if (cell.contents !== cnts) {
-            cell.contents = cnts;
-            cell.fixLayout();
-            if (this.lastCell) {
-                cell.setLeft(this.lastCell.left());
-            }
-        }
-        this.lastCell = cell;
-    }
-
-    // remove excess cells
-    // number of morphs to be shown
-    morphs = max - this.start + 1;
-
-    while (this.frame.contents.children.length > morphs) {
-        this.frame.contents.children[morphs].destroy();
-    }
-
-    // add additional cells
-    ceil = morphs;
-    i = this.frame.contents.children.length;
-
-    if (ceil > i + 1) {
-        for (i; i < ceil; ++i) {
-            cell = new CellMorph(
-                vertices.at(i),
-                this.cellColor,
-                i,
-                this.parentCell
-            );
-            this.frame.contents.add(cell);
-        }
-    }
-
-    this.fixLayout();
-    this.frame.contents.adjustBounds();
-    this.frame.contents.setLeft(this.frame.left(0));
+    this.isInSync();
 }
+
+GraphWatcherMorph.prototype.isInSync = function() {
+    var vertices, vSize, edges, eSize, i, obj1, obj2;
+
+    var compareItems = function (a, b) {
+        if (typeof(a) === 'number') {
+            a = a.toString();
+        }
+        if (typeof(b) === 'number') {
+            b = b.toString();
+        }
+        console.log(typeof(a))
+        
+        if (a instanceof Number && b instanceof Number) {
+            return true;
+        }
+        return false;
+    }
+
+    vertices = this.graph.getVertices();
+    vSize = vertices.length();
+    // if (vSize !== this.renderedVertices.length) {
+    //     return false;
+    // }
+    for (i = 1; i <= vSize; ++i) {
+        obj1 = vertices.at(i);
+        obj2 = this.renderedVertices[i - 1];
+        console.log(compareItems(obj1, obj2));
+    }
+
+    edges = this.graph.getEdges();
+
+}
+
 
 GraphWatcherMorph.prototype.fixLayout = function () {
     if (this.frame) {
@@ -342,7 +455,7 @@ GraphWatcherMorph.prototype.arrangeCells = function () {
     for (i = 0; i < end; ++i) {
         cell = this.frame.contents.children[i];
         if (lastCell) {
-            cell.setTop(lastCell.bottom());
+            cell.setLeft(lastCell.right());;
         }
         lastCell = cell;
     }
