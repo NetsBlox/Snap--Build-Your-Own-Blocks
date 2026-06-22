@@ -1692,6 +1692,7 @@ SyntaxElementMorph.prototype.flash = function () {
         this.setColor(this.activeHighlight);
     }
 };
+//this is probably important
 
 SyntaxElementMorph.prototype.unflash = function () {
     if (this.cachedNormalColor) {
@@ -1700,6 +1701,7 @@ SyntaxElementMorph.prototype.unflash = function () {
         this.setColor(clr);
     }
 };
+//this is also probably important
 
 SyntaxElementMorph.prototype.doWithAlpha = function (alpha, callback) {
     var current = SyntaxElementMorph.prototype.alpha,
@@ -2748,11 +2750,27 @@ BlockMorph.prototype.toggleSnapSound = function () {
     if (this.snapSound !== null) {
         this.snapSound = null;
     } else {
+        console.log("i am loading this sound 1");
         BlockMorph.prototype.snapSound = document.createElement('audio');
         BlockMorph.prototype.snapSound.src = 'src/click.wav';
     }
     CommentMorph.prototype.snapSound = BlockMorph.prototype.snapSound;
 };
+//BEGIN EDITS
+BlockMorph.prototype.clackSound = null;
+//never getting to this function :-(
+BlockMorph.prototype.toggleSteppingSound = function () {
+    if (this.clackSound !== null) {
+        this.clackSound = null;
+        console.log("i just made the clack sound null");
+    } else {
+        console.log("i just defined the clack sound");
+        BlockMorph.prototype.clackSound = document.createElement('audio');
+        BlockMorph.prototype.clackSound.src = 'src/clack.wav';
+    }
+    CommentMorph.prototype.clackSound = BlockMorph.prototype.clackSound;
+};
+//END EDITS
 
 // BlockMorph instance creation:
 
@@ -4585,6 +4603,7 @@ BlockMorph.prototype.toggleHighlight = function () {
         this.addHighlight();
     }
 };
+//this might be important
 
 BlockMorph.prototype.highlight = function (color, blur, border) {
     var highlight = new BlockHighlightMorph(),

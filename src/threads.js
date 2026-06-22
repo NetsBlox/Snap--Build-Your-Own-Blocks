@@ -332,7 +332,9 @@ ThreadManager.prototype.step = function () {
                 proc.lastYield = Date.now();
             }
         });
-        this.wantsToPause = (Process.prototype.flashTime > 0.5);
+        this.wantsToPause = (Process.prototype.flashTime > 0.5
+            && Process.prototype.enableSingleStepping
+        );
         if (isInterrupted) {
             if (this.wantsToPause) {
                 this.pauseAll();
@@ -348,6 +350,37 @@ ThreadManager.prototype.step = function () {
     });
     this.removeTerminatedProcesses();
 };
+
+//BEGIN EDIT
+ThreadManager.prototype.stepWithSounds = function () {  //put make noise command in here (or maybe it won't work at all in threads? move to GUI? how????)
+    var isInterrupted;
+    if (Process.prototype.enableSoundStepping) {
+        this.processes.forEach(proc => {
+            if (proc.isInterrupted) {
+                proc.runStep();
+                //BlockMorph.prototype.clackSound.play(); //how to make this sound play
+                isInterrupted = true;
+            } else {
+                proc.lastYield = Date.now();
+            }
+        });
+        this.wantsToPause = (Process.prototype.enableSoundStepping); //this did not do anything
+        if (isInterrupted) {
+            if (this.wantsToPause) {
+                this.pauseAll();
+            }
+            return;
+        }
+    }
+
+    this.processes.forEach(proc => {
+        if (!proc.homeContext.receiver.isPickedUp() && !proc.isDead) {
+            proc.runStep();
+        }
+    });
+    this.removeTerminatedProcesses();
+}
+//END EDIT
 
 ThreadManager.prototype.removeTerminatedProcesses = function () {
     // and un-highlight their scripts
@@ -449,7 +482,7 @@ ThreadManager.prototype.doWhen = function (block, receiver, stopIt) {
             'the predicate takes\ntoo long for a\ncustom hat block',
             true, // suppress errors => handle them right here instead
             null, // caller process for JS-functions
-            true // return the whole home context instead of just he result
+            true // return the whole home context instead of just the result
         );
     } catch (error) {
         block.addErrorHighlight();
@@ -478,6 +511,9 @@ ThreadManager.prototype.doWhen = function (block, receiver, stopIt) {
 };
 
 ThreadManager.prototype.toggleSingleStepping = function () {
+    if (!Process.prototype.enableSingleStepping && Process.prototype.enableSoundStepping){
+        return;
+    }
     Process.prototype.enableSingleStepping =
         !Process.prototype.enableSingleStepping;
     if (!Process.prototype.enableSingleStepping) {
@@ -488,6 +524,37 @@ ThreadManager.prototype.toggleSingleStepping = function () {
         });
     }
 };
+
+//BEGIN EDIT
+ThreadManager.prototype.toggleSoundStepping = function () {
+    if (this.reportIsFastTracking && !Process.prototype.enableSoundStepping){
+        //report error somehow?
+        return;
+    }
+    else if (!Process.prototype.enableSoundStepping && Process.prototype.enableSingleStepping){
+        //report error somehow
+        return;
+    }
+    else {
+        Process.prototype.enableSoundStepping = 
+        !Process.prototype.enableSoundStepping;
+        BlockMorph.prototype.toggleSteppingSound(); //can only be activated by a user action womps BUT! it loads the sound
+        //BlockMorph.prototype.clackSound.play(); //this is broken, can only happen in gui (i think)
+    }
+    if (!Process.prototype.enableSoundStepping) { //what does this do
+        this.processes.forEach(proc => {
+            if (!proc.isPaused) {
+                proc.unflash();
+            }
+        });
+        //IDE_Morph.prototype.controlBar.refreshSlider(); //did not fix speed issue
+        //IDE_Morph.prototype.controlBar.refreshResumeSymbol(); //also did not fix speed issue
+    }
+    if (Process.prototype.enableSoundStepping){
+        Process.prototype.flashTime = 0.4;
+    }
+}
+//END EDIT
 
 // Process /////////////////////////////////////////////////////////////
 
@@ -562,6 +629,9 @@ Process.prototype.isCatchingErrors = true;
 Process.prototype.enableHyperOps = true; // experimental hyper operations
 Process.prototype.enableLiveCoding = false; // experimental
 Process.prototype.enableSingleStepping = false; // experimental
+//BEGIN EDIT
+Process.prototype.enableSoundStepping = false;
+//END EDIT
 Process.prototype.enableCompiling = false; // experimental
 Process.prototype.flashTime = 0; // experimental
 // Process.prototype.enableJS = false;
@@ -690,8 +760,12 @@ Process.prototype.pause = function () {
     }
 };
 
-Process.prototype.resume = function () {
-    if (!this.enableSingleStepping) {
+Process.prototype.resume = function () { //what does this do
+    if (!this.enableSingleStepping
+        //BEGIN EDIT
+        || !this.enableSoundStepping
+        //END EDIT
+    ) {
         this.unflash();
     }
     this.isPaused = false;
@@ -2375,6 +2449,7 @@ Process.prototype.reportIsFastTracking = function () {
     }
     return false;
 };
+//THIS IS IMPORTANT
 
 Process.prototype.doSetGlobalFlag = function (name, bool) {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
@@ -6087,9 +6162,14 @@ Process.prototype.reportFrameCount = function () {
 
 // Process single-stepping
 
-Process.prototype.flashContext = function () {
+Process.prototype.flashContext = function () { //this does make it flash, but it flashes really fast
+    //how is it flashing each block???
     var expr = this.context.expression;
-    if (this.enableSingleStepping &&
+    if ((this.enableSingleStepping
+        //BEGIN EDITS
+        || this.enableSoundStepping) 
+        //END EDITS
+         &&
             !this.isAtomic &&
             expr instanceof SyntaxElementMorph &&
             !(expr instanceof CommandSlotMorph) &&
@@ -6565,7 +6645,7 @@ function Context(
     this.isContinuation = false;
     this.startTime = null;
     this.activeSends = null;
-    this.activeAudio = null;
+    this.activeAudio = null; //could be important
     this.activeNote = null;
     this.isCustomBlock = false; // marks the end of a custom block's stack
     this.isCustomCommand = null; // used for ignoring URL reporters' results

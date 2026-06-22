@@ -1403,6 +1403,13 @@ ActionManager.prototype._onAddBlock = function(block, ownerId, x, y, callback) {
     if (firstBlock.snapSound) {
         firstBlock.snapSound.play();
     }
+    
+    //BEGIN EDIT
+    //what does this do?
+    if (firstBlock.clackSound) {
+        firstBlock.clackSound.play();
+    }
+    //END EDIT
 
     if (!this._customBlocks[ownerId]) {  // not a custom block
         position = this.getAdjustedPosition(position, owner.scripts);

@@ -818,6 +818,41 @@ IDE_Morph.prototype.createControlBar = function () {
         stageSizeButton.hide();
     }
 
+    //BEGIN EDIT
+    button = new ToggleButtonMorph(
+        null, //colors,
+        this, // the IDE is the target
+        'toggleSoundStepping',
+        [
+            new SymbolMorph('notes', 16), //one if it's on, one if it's off?
+            new SymbolMorph('notes', 16)
+        ],
+        () => Process.prototype.enableSoundStepping // query
+    );
+
+    button.corner = 12;
+    button.color = colors[0];
+    button.highlightColor = colors[1];
+    button.pressColor = new Color(153, 255, 213);
+    button.labelMinExtent = new Point(36, 18);
+    button.padding = 0;
+    button.labelShadowOffset = new Point(-1, -1);
+    button.labelShadowColor = colors[1];
+    button.labelColor = this.buttonLabelColor;
+    button.contrast = this.buttonContrast;
+    button.hint = 'Sound stepping';
+    button.fixLayout();
+    button.refresh();
+    soundSteppingButton = button;
+    this.controlBar.add(soundSteppingButton);
+    this.controlBar.soundSteppingButton = soundSteppingButton; // for refreshing
+
+    if (this.performerMode) {
+        appModeButton.hide();
+        stageSizeButton.hide();
+    }
+    //END EDIT
+
     // stopButton
     button = new ToggleButtonMorph(
         null, // colors
@@ -1081,8 +1116,13 @@ IDE_Morph.prototype.createControlBar = function () {
         steppingButton.setCenter(myself.controlBar.center());
         steppingButton.setRight(slider.left() - padding);
 
+        //BEGIN EDIT
+        soundSteppingButton.setCenter(myself.controlBar.center());
+        soundSteppingButton.setRight(steppingButton.left() - padding);
+        //END EDIT
+
         extensionsButton.setCenter(myself.controlBar.center());
-        extensionsButton.setRight(steppingButton.left() - padding);
+        extensionsButton.setRight(soundSteppingButton.left() - padding);
 
         settingsButton.setCenter(myself.controlBar.center());
         settingsButton.setLeft(this.left());
@@ -2514,6 +2554,14 @@ IDE_Morph.prototype.toggleSingleStepping = function () {
     this.controlBar.refreshSlider();
 };
 
+//BEGIN EDIT
+IDE_Morph.prototype.toggleSoundStepping = function () {
+    this.stage.threads.toggleSoundStepping();
+    this.controlBar.soundSteppingButton.refresh();
+    this.controlBar.refreshSlider();  //did not fix bug like i wanted but is probably fine
+};
+//END EDIT
+
 IDE_Morph.prototype.toggleCameraSupport = function () {
     CamSnapshotDialogMorph.prototype.enableCamera =
         !CamSnapshotDialogMorph.prototype.enableCamera;
@@ -2665,6 +2713,10 @@ IDE_Morph.prototype.applySavedSettings = function () {
         fade = this.getSetting('fade'),
         language = this.getSetting('language'),
         click = this.getSetting('click'),
+        sstepping = this.getSetting('sstepping'),
+        /*
+        sound = this.getSetting('sound'), //what is this
+        */
         longform = this.getSetting('longform'),
         longurls = this.getSetting('longurls'),
         plainprototype = this.getSetting('plainprototype'),
@@ -2703,6 +2755,14 @@ IDE_Morph.prototype.applySavedSettings = function () {
     if (click && !BlockMorph.prototype.snapSound) {
         BlockMorph.prototype.toggleSnapSound();
     }
+
+    //BEGIN EDIT
+    /*
+    if (sstepping && !BlockMorph.prototype.clackSound){ //doesn't work
+        BlockMorph.prototype.toggleSteppingSound();
+    }
+        */
+    //END EDIT
 
     // long form
     if (longform) {
@@ -3417,6 +3477,26 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to turn on\n visible stepping (slow)',
         false
     );
+    //BEGIN EDIT
+    addPreference(
+        'Sound stepping',
+        () => {
+            BlockMorph.prototype.toggleSteppingSound();
+            if (BlockMorph.prototype.clackSound) {
+                this.saveSetting('sstepping', true);
+            } else {
+                this.removeSetting('sstepping');
+            }
+            //BlockMorph.prototype.clackSound.play(); //does not throw an error here, but also does not play
+            //where in the gui can i trigger the noise?
+        },
+        'toggleSoundStepping',
+        Process.prototype.enableSoundStepping,
+        'uncheck to turn off\nsound stepping',
+        'check to turn on\nsound stepping',
+        false
+    );
+    //END EDIT
     addPreference(
         'Log pen vectors',
         () => StageMorph.prototype.enablePenLogging =

@@ -2008,7 +2008,10 @@ function BlockEditorMorph(definition, target) {
 BlockEditorMorph.prototype.init = function (definition, target) {
     var scripts, proto, scriptsFrame, block, comment,
         isLive = Process.prototype.enableLiveCoding ||
-            Process.prototype.enableSingleStepping;
+            Process.prototype.enableSingleStepping
+            //BEGIN EDIT
+             ||Process.prototype.enableSoundStepping;
+            //END EDIT
 
     // additional properties:
     this.definition = definition;
