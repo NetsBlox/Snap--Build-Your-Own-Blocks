@@ -9,6 +9,7 @@ Oscillator.prototype.options = ['frequency', 'value'];
 Oscillator.prototype.init = function (type, parameters) {
     this.type = type;
     this.parameters = this.validateParameters(parameters);
+    this.id =  Math.floor(Math.random() * 1000000000);
     console.log(this.parameters);
 };
 
@@ -45,6 +46,10 @@ Oscillator.prototype.getValue = function () {
     return this.parameters.value;
 };
 
+Oscillator.prototype.getType = function () {
+    return 'oscillator';
+}
+
 // Gain //////////////////////////////////////////////////////////////
 
 function Gain(value) {
@@ -54,7 +59,12 @@ function Gain(value) {
 Gain.prototype.init = function (value) {
     // TODO - add more validation
     this.parameters = { gain: value };
+    this.id =  Math.floor(Math.random() * 1000000000);
 };
+
+Gain.prototype.getType = function () {
+    return 'gain';
+}
 
 // Filter ////////////////////////////////////////////////////////////
 
@@ -67,6 +77,7 @@ Filter.prototype.options = ['frequency', 'Q', 'gain'];
 Filter.prototype.init = function (type, parameters) {
     this.type = type;
     this.parameters = this.validateParameters(parameters);
+    this.id =  Math.floor(Math.random() * 1000000000);
 };
 
 Filter.prototype.validateParameters = function (parameters) {
@@ -88,6 +99,10 @@ Filter.prototype.validateParameters = function (parameters) {
     });
 };
 
+Filter.prototype.getType = function () {
+    return this.type;
+}
+
 // Effect ////////////////////////////////////////////////////////////
 
 function AudioEffect(type, parameters) {
@@ -104,6 +119,7 @@ AudioEffect.prototype.init = function (type, parameters) {
         break;
     }
     this.parameters = this.validateParameters(parameters);
+    this.id =  Math.floor(Math.random() * 1000000000);
 };
 
 AudioEffect.prototype.validateParameters = function (parameters) {
@@ -125,6 +141,10 @@ AudioEffect.prototype.validateParameters = function (parameters) {
     });
 }
 
+AudioEffect.prototype.getType = function () {
+    return this.type;
+}
+
 // Instrument ////////////////////////////////////////////////////////
 
 function Instrument(graph) {
@@ -132,7 +152,7 @@ function Instrument(graph) {
 }
 
 Instrument.prototype.init = function (graph) {
-    this.source = this.validateAudioGraph(graph);
+    this.source = this.validateSource(graph);
     this.graph = graph;
 };
 
@@ -152,3 +172,41 @@ Instrument.prototype.validateSource = function (graph) {
     // TODO check that only valid blocks are in the graph
     return graph.contents.at(1);
 };
+
+Instrument.prototype.getNodeInformation = function () {
+    var nodes, info;
+    nodes = this.graph.getVertices();
+    info = {};
+
+    nodes.contents.forEach(node => {
+        if (!info[node.id]) {
+            info[node.id] = {
+                'type': node.getType(),
+                'parameters': node.parameters,
+                'id': node.id,
+                'connections': []
+            };
+        }
+    });
+
+    return info;
+}
+
+Instrument.prototype.getParameters = function () {
+    var nodesInfo, edges, 
+        src, dst,
+        audioNodes;
+
+    nodesInfo = this.getNodeInformation();
+
+    edges = this.graph.getEdges();
+    edges.contents.forEach(e => {
+        src = e.at(1).id;
+        dst = e.at(2).id;
+        nodesInfo[src].connections.push(nodesInfo[dst]);
+    });
+
+    audioNodes = Object.keys(nodesInfo).map(id => nodesInfo[id]);
+
+    return { 'audioNodes': audioNodes };
+}

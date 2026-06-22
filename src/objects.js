@@ -10925,64 +10925,6 @@ CostumeEditorMorph.prototype.mouseDownLeft = function (pos) {
 CostumeEditorMorph.prototype.mouseMove
     = CostumeEditorMorph.prototype.mouseDownLeft;
 
-// Instrument ////////////////////////////////////////////////////////
-
-// This is a BeatBlox instrument 
-
-function Instrument(id, src) {
-    this.id = id;
-    this.src = src;
-}
-
-// Oscillator ////////////////////////////////////////////////////////
-
-// This is a BeatBlox oscillator
-
-function Oscillator(type, parameters) {
-    this.type = type;
-    this.parameters = parameters;
-}
-
-Oscillator.prototype.getFrequency = function () {
-    if (!this.parameters.frequency) {
-        return 440;
-    }
-    return this.parameters.frequency;
-}
-
-Oscillator.prototype.getValue = function () {
-    if (!this.parameters.value) {
-        return 1;
-    }
-    return this.parameters.value;
-}
-
-// Gain //////////////////////////////////////////////////////////////
-
-function Gain(value) {
-    this.parameters = {
-        gain: value
-    };
-}
-
-// Filter ////////////////////////////////////////////////////////////
-
-// This is a BeatBlox filter
-
-function Filter(type, parameters) {
-    this.type = type;
-    this.parameters = parameters;
-}
-
-// Effect ////////////////////////////////////////////////////////////
-
-// This is a BeatBlox effect
-
-function AudioEffect(type, parameters) {
-    this.type = type;
-    this.parameters = parameters;
-}
-
 // Sound /////////////////////////////////////////////////////////////
 
 // Sound instance creation
