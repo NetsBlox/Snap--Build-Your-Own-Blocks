@@ -1,4 +1,50 @@
+function AudioNode(type, parameters) {
+    this.init(type, parameters);
+}
+
+AudioNode.prototype.init = function (type, parameters, parameterOptions) {
+    parameterOptions = parameterOptions || [];
+    this.type = type;
+    this.parameters = AudioNode.prototype.validateParameters(parameters, parameterOptions);
+    this.id = Math.floor(Math.random() * 1000000000);
+};
+
+AudioNode.prototype.validateParameters = function (parameters, parameterOptions) {
+    parameters = parameters || new List();
+    
+    if (!(parameters instanceof List)) {
+        throw Error("parameters must be a list");
+    }
+
+    parameters.contents.forEach(element => {
+        if (!(element instanceof List)) {
+            throw Error("invalid param list");
+        }
+        if (element.length() !== 2) {
+            throw Error("invalid param list");
+        }
+        const option = element.at(1);
+        if (parameterOptions.indexOf(option) === -1) {
+            throw Error(`invalid param option: ${option}`);
+        }
+    });
+
+    return parameters;
+};
+
+AudioNode.prototype.getType = function () {
+    return this.type;
+};
+
+AudioNode.prototype.getId = function () {
+    return this.id;
+};
+
 // Oscillator ////////////////////////////////////////////////////////
+
+Oscillator.prototype = new AudioNode();
+Oscillator.prototype.constructor = Oscillator;
+Oscillator.uber = AudioNode.prototype;
 
 function Oscillator(type, parameters) {
     this.init(type, parameters);
@@ -7,66 +53,30 @@ function Oscillator(type, parameters) {
 Oscillator.prototype.options = ['frequency', 'value'];
 
 Oscillator.prototype.init = function (type, parameters) {
-    this.type = type;
-    this.parameters = this.validateParameters(parameters);
-    this.id =  Math.floor(Math.random() * 1000000000);
-    console.log(this.parameters);
+    Oscillator.uber.init.call(this, type, parameters, Oscillator.prototype.options);
 };
-
-Oscillator.prototype.validateParameters = function (parameters) {
-    if (!(parameters instanceof List)) {
-        throw Error("parameters must be a list");
-    }
-
-    parameters.contents.forEach(element => {
-        if (!(element instanceof List)) {
-            throw Error("invalid param list");
-        }
-        if (element.length() !== 2) {
-            throw Error("invalid param list");
-        }
-        const option = element.at(1);
-        if (Oscillator.prototype.options.indexOf(option) === -1) {
-            throw Error(`invalid param option: ${option}`);
-        }
-    });
-};
-
-Oscillator.prototype.getFrequency = function () {
-    if (!this.parameters.frequency) {
-        return 440;
-    }
-    return this.parameters.frequency;
-};
-
-Oscillator.prototype.getValue = function () {
-    if (!this.parameters.value) {
-        return 1;
-    }
-    return this.parameters.value;
-};
-
-Oscillator.prototype.getType = function () {
-    return 'oscillator';
-}
 
 // Gain //////////////////////////////////////////////////////////////
 
+Gain.prototype = new AudioNode();
+Gain.prototype.constructor = Gain;
+Gain.uber = AudioNode.prototype;
+
 function Gain(value) {
-    this.init(value);
+    this.init('gain', new List([new List(['gain', value])]));
 }
 
-Gain.prototype.init = function (value) {
-    // TODO - add more validation
-    this.parameters = { gain: value };
-    this.id =  Math.floor(Math.random() * 1000000000);
+Gain.prototype.options = ['gain'];
+
+Gain.prototype.init = function (type, parameters) {
+    Gain.uber.init.call(this, type, parameters, Gain.prototype.options);
 };
 
-Gain.prototype.getType = function () {
-    return 'gain';
-}
-
 // Filter ////////////////////////////////////////////////////////////
+
+Filter.prototype = new AudioNode();
+Filter.prototype.constructor = Filter;
+Filter.uber = AudioNode.prototype;
 
 function Filter(type, parameters) {
     this.init(type, parameters);
@@ -75,35 +85,14 @@ function Filter(type, parameters) {
 Filter.prototype.options = ['frequency', 'Q', 'gain'];
 
 Filter.prototype.init = function (type, parameters) {
-    this.type = type;
-    this.parameters = this.validateParameters(parameters);
-    this.id =  Math.floor(Math.random() * 1000000000);
+    Filter.uber.init.call(this, type, parameters, Filter.prototype.options);
 };
-
-Filter.prototype.validateParameters = function (parameters) {
-    if (!(parameters instanceof List)) {
-        throw new Error("parameters must be a list");
-    }
-
-    parameters.contents.forEach(element => {
-        if (!(element instanceof List)) {
-            throw Error("invalid param list");
-        }
-        if (element.length() !== 2) {
-            throw Error("invalid param list");
-        }
-        const option = element.at(1);
-        if (Filter.prototype.options.indexOf(option) === -1) {
-            throw Error(`invalid param option: ${option}`)
-        }
-    });
-};
-
-Filter.prototype.getType = function () {
-    return this.type;
-}
 
 // Effect ////////////////////////////////////////////////////////////
+
+AudioEffect.prototype = new AudioNode();
+AudioEffect.prototype.constructor = AudioEffect;
+AudioEffect.uber = AudioNode.prototype;
 
 function AudioEffect(type, parameters) {
     this.init(type, parameters);
@@ -112,38 +101,13 @@ function AudioEffect(type, parameters) {
 AudioEffect.prototype.options = null;
 
 AudioEffect.prototype.init = function (type, parameters) {
-    this.type = type;
     switch (type) {
     case 'delay':
         AudioEffect.prototype.options = ['delayTime'];
         break;
     }
-    this.parameters = this.validateParameters(parameters);
-    this.id =  Math.floor(Math.random() * 1000000000);
+    AudioEffect.uber.init.call(this, type, parameters, AudioEffect.prototype.options);
 };
-
-AudioEffect.prototype.validateParameters = function (parameters) {
-    if (!(parameters instanceof List)) {
-        throw Error("parameters must be a list");
-    }
-
-    parameters.contents.forEach(element => {
-        if (!(element instanceof List)) {
-            throw Error("invalid param list");
-        }
-        if (element.length() !== 2) {
-            throw Error("invalid param list");
-        }
-        const option = element.at(1);
-        if (AudioEffect.prototype.options.indexOf(option) === -1) {
-            throw Error(`invalid param option: ${option}`);
-        }
-    });
-}
-
-AudioEffect.prototype.getType = function () {
-    return this.type;
-}
 
 // Instrument ////////////////////////////////////////////////////////
 
@@ -166,10 +130,14 @@ Instrument.prototype.validateSource = function (graph) {
     if (!(graph.contents.at(1) instanceof Oscillator)) {
         throw new Error('invalid audio source');
     }
+    graph.contents.contents.forEach(node => {
+        if (!(node instanceof AudioNode)) {
+            throw new Error('audio graph must only be made up of audio nodes');
+        }
+    });
     // TODO add other valid audio sources
     // TODO add a gain node check
     // TODO there must only be one destination
-    // TODO check that only valid blocks are in the graph
     return graph.contents.at(1);
 };
 
