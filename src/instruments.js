@@ -1,22 +1,22 @@
-function AudioNode(type, parameters) {
-    this.init(type, parameters);
+function AudioNode(type, parametersList) {
+    this.init(type, parametersList);
 }
 
-AudioNode.prototype.init = function (type, parameters, parameterOptions) {
+AudioNode.prototype.init = function (type, parametersList, parameterOptions) {
     parameterOptions = parameterOptions || [];
     this.type = type;
-    this.parameters = AudioNode.prototype.validateParameters(parameters, parameterOptions);
+    this.parameters = AudioNode.prototype.parseParameters(parametersList, parameterOptions);
     this.id = Math.floor(Math.random() * 1000000000);
 };
 
-AudioNode.prototype.validateParameters = function (parameters, parameterOptions) {
-    parameters = parameters || new List();
+AudioNode.prototype.validateParameters = function (parametersList, parameterOptions) {
+    parametersList = parametersList || new List();
     
-    if (!(parameters instanceof List)) {
+    if (!(parametersList instanceof List)) {
         throw Error("parameters must be a list");
     }
 
-    parameters.contents.forEach(element => {
+    parametersList.contents.forEach(element => {
         if (!(element instanceof List)) {
             throw Error("invalid param list");
         }
@@ -29,8 +29,21 @@ AudioNode.prototype.validateParameters = function (parameters, parameterOptions)
         }
     });
 
-    return parameters;
+    return parametersList;
 };
+
+AudioNode.prototype.parseParameters = function (parametersList, parameterOptions) {
+    var _parameters, 
+        key, value;
+    _parameters = {};
+    parametersList = AudioNode.prototype.validateParameters(parametersList, parameterOptions);
+    parametersList.contents.forEach(element => {
+        key = element.at(1);
+        value = element.at(2);
+        _parameters[key] = value
+    });
+    return _parameters;
+}
 
 AudioNode.prototype.getType = function () {
     return this.type;
@@ -46,14 +59,14 @@ Oscillator.prototype = new AudioNode();
 Oscillator.prototype.constructor = Oscillator;
 Oscillator.uber = AudioNode.prototype;
 
-function Oscillator(type, parameters) {
-    this.init(type, parameters);
+function Oscillator(type, parametersList) {
+    this.init(type, parametersList);
 }
 
 Oscillator.prototype.options = ['frequency', 'value'];
 
-Oscillator.prototype.init = function (type, parameters) {
-    Oscillator.uber.init.call(this, type, parameters, Oscillator.prototype.options);
+Oscillator.prototype.init = function (type, parametersList) {
+    Oscillator.uber.init.call(this, type, parametersList, Oscillator.prototype.options);
 };
 
 // Gain //////////////////////////////////////////////////////////////
@@ -68,8 +81,8 @@ function Gain(value) {
 
 Gain.prototype.options = ['gain'];
 
-Gain.prototype.init = function (type, parameters) {
-    Gain.uber.init.call(this, type, parameters, Gain.prototype.options);
+Gain.prototype.init = function (type, parametersList) {
+    Gain.uber.init.call(this, type, parametersList, Gain.prototype.options);
 };
 
 // Filter ////////////////////////////////////////////////////////////
@@ -78,14 +91,14 @@ Filter.prototype = new AudioNode();
 Filter.prototype.constructor = Filter;
 Filter.uber = AudioNode.prototype;
 
-function Filter(type, parameters) {
-    this.init(type, parameters);
+function Filter(type, parametersList) {
+    this.init(type, parametersList);
 }
 
 Filter.prototype.options = ['frequency', 'Q', 'gain'];
 
-Filter.prototype.init = function (type, parameters) {
-    Filter.uber.init.call(this, type, parameters, Filter.prototype.options);
+Filter.prototype.init = function (type, parametersList) {
+    Filter.uber.init.call(this, type, parametersList, Filter.prototype.options);
 };
 
 // Effect ////////////////////////////////////////////////////////////
@@ -94,19 +107,19 @@ AudioEffect.prototype = new AudioNode();
 AudioEffect.prototype.constructor = AudioEffect;
 AudioEffect.uber = AudioNode.prototype;
 
-function AudioEffect(type, parameters) {
-    this.init(type, parameters);
+function AudioEffect(type, parametersList) {
+    this.init(type, parametersList);
 }
 
 AudioEffect.prototype.options = null;
 
-AudioEffect.prototype.init = function (type, parameters) {
+AudioEffect.prototype.init = function (type, parametersList) {
     switch (type) {
     case 'delay':
         AudioEffect.prototype.options = ['delayTime'];
         break;
     }
-    AudioEffect.uber.init.call(this, type, parameters, AudioEffect.prototype.options);
+    AudioEffect.uber.init.call(this, type, parametersList, AudioEffect.prototype.options);
 };
 
 // Instrument ////////////////////////////////////////////////////////
