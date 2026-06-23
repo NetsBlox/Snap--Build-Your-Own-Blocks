@@ -43,7 +43,7 @@ AudioNode.prototype.parseParameters = function (parametersList, parameterOptions
         _parameters[key] = value
     });
     return _parameters;
-}
+};
 
 AudioNode.prototype.getType = function () {
     return this.type;
@@ -171,7 +171,7 @@ Instrument.prototype.getNodeInformation = function () {
     });
 
     return info;
-}
+};
 
 Instrument.prototype.getParameters = function () {
     var nodesInfo, edges, 
@@ -190,4 +190,4 @@ Instrument.prototype.getParameters = function () {
     audioNodes = Object.keys(nodesInfo).map(id => nodesInfo[id]);
 
     return { 'audioNodes': audioNodes };
-}
+};
