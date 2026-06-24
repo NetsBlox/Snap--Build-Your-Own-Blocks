@@ -176,7 +176,7 @@ Instrument.prototype.getNodeInformation = function () {
 Instrument.prototype.getParameters = function () {
     var nodesInfo, edges, 
         src, dst,
-        audioNodes;
+        source, audioNodes;
 
     nodesInfo = this.getNodeInformation();
 
@@ -188,6 +188,12 @@ Instrument.prototype.getParameters = function () {
     });
 
     audioNodes = Object.keys(nodesInfo).map(id => nodesInfo[id]);
+    source = {
+        'type': this.source.getType(),
+        'parameters': this.source.parameters,
+        'id': this.source.id,
+        'connections': []
+    };  
 
-    return { 'audioNodes': audioNodes };
+    return { 'source': source, 'audioNodes': audioNodes };
 };
