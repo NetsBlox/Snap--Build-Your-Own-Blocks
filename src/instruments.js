@@ -46,11 +46,36 @@ AudioNode.prototype.parseParameters = function (parametersList, parameterOptions
 };
 
 AudioNode.prototype.getType = function () {
+    if (this.isOscillator()) {
+        return 'oscillator';
+    }
+    if (this.isBiquad()) {
+        return 'biquad';
+    }
     return this.type;
 };
 
 AudioNode.prototype.getId = function () {
     return this.id;
+};
+
+AudioNode.prototype.isOscillator = function () {
+    switch (this.type) {
+    case 'sine': case 'sawtooth': case 'triangle': case 'square':
+        return true;
+    default:
+        return false;
+    }
+};
+
+AudioNode.prototype.isBiquad = function () {
+    switch (this.type) {
+    case 'lowpass': case 'highpass': case 'bandpass': case 'lowshelf':
+    case 'highshelf': case 'peaking': case 'notch': case 'allpass':
+        return true;
+    default:
+        return false;
+    }
 };
 
 // Oscillator ////////////////////////////////////////////////////////
@@ -67,6 +92,7 @@ Oscillator.prototype.options = ['frequency', 'value'];
 
 Oscillator.prototype.init = function (type, parametersList) {
     Oscillator.uber.init.call(this, type, parametersList, Oscillator.prototype.options);
+    this.parameters['type'] = this.type;
 };
 
 // Gain //////////////////////////////////////////////////////////////
@@ -99,6 +125,7 @@ Filter.prototype.options = ['frequency', 'Q', 'gain'];
 
 Filter.prototype.init = function (type, parametersList) {
     Filter.uber.init.call(this, type, parametersList, Filter.prototype.options);
+    this.parameters['type'] = this.type;
 };
 
 // Effect ////////////////////////////////////////////////////////////
@@ -144,7 +171,7 @@ Instrument.prototype.validateSource = function (graph) {
         throw new Error('invalid audio source');
     }
     graph.contents.contents.forEach(node => {
-        if (!(node instanceof AudioNode)) {
+        if (!(node instanceof AudioNode || node instanceof Graph)) {
             throw new Error('audio graph must only be made up of audio nodes');
         }
     });
