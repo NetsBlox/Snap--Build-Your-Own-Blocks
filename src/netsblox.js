@@ -25,15 +25,13 @@ NetsBloxMorph.prototype.init = function (isAutoFill, config) {
         this.services.fetchHosts(this.cloud.username);
     }
 
-    this.nn = null;
-
     // initialize inherited properties:
     this.serializer = new NetsBloxSerializer();
 
     var myself = this;
     // attach the event listeners
-    window.addEventListener('ideLoaded', function() {
-        if (!(myself.isSupportedBrowser())) myself.showBrowserNotification();
+    window.addEventListener("ideLoaded", function () {
+        if (!myself.isSupportedBrowser()) myself.showBrowserNotification();
     });
 };
 
@@ -59,6 +57,7 @@ NetsBloxMorph.prototype.onInvalidHosts = function (servicesHosts) {
 
 NetsBloxMorph.prototype.buildPanes = function () {
     this.createRoom();
+    this.createNN();
     NetsBloxMorph.uber.buildPanes.call(this);
 };
 
@@ -245,16 +244,14 @@ NetsBloxMorph.prototype.createSpriteEditor = function() {
         this.spriteEditor = new RoomEditorMorph(this.room, this.sliderColor);
         this.spriteEditor.color = this.groupColor;
         this.add(this.spriteEditor);
-    }
-    else if (this.currentTab === 'nn'){
+    } else if (this.currentTab === "nn") {
         if (this.spriteEditor) {
             this.spriteEditor.destroy();
         }
-        this.spriteEditor = new NNEditorMorph(this.sliderColor);
+        this.spriteEditor = new NNTabMorph(this.nn, this.sliderColor);
         this.spriteEditor.color = this.groupColor;
-        this.add(this.spriteEditor)
-    }
-    else {
+        this.add(this.spriteEditor);
+    } else {
         NetsBloxMorph.uber.createSpriteEditor.call(this);
     }
 };
@@ -392,13 +389,14 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
         tabColors,
         null, // target
         function () {
-            SnapActions.selectTab('nn');
-            tabBar.tabTo('nn');
+            SnapActions.selectTab("nn");
+            tabBar.tabTo("nn");
         },
-        localize('Neural Network'), // label
-        function () {  // query
-            return myself.currentTab === 'nn';
-        }
+        localize("Neural Network"), // label
+        function () {
+            // query
+            return myself.currentTab === "nn";
+        },
     );
     nntab.padding = 3;
     nntab.corner = tabCorner;
@@ -1329,4 +1327,25 @@ NetsBloxMorph.prototype.unlinkAccount = async function (account) {
             this.showMessage(localize('Unable to unlink account: ') + req.responseText, 2);
         }
     }
+};
+
+NetsBloxMorph.prototype.createNN = function () {
+    this.nn = new NNManagerMorph();
+};
+
+// Add createPalette hook
+NetsBloxMorph.prototype.createPalette = function (forSearching) {
+    NetsBloxMorph.uber.createPalette.call(this, forSearching);
+    const _ReactToDropOf = this.palette.reactToDropOf;
+    this.palette.reactToDropOf = (droppedMorph, hand) => {
+        if (droppedMorph instanceof NNNodeMorph) {
+            if (droppedMorph.id) {
+                SnapActions.removeNNNode(droppedMorph);
+            } else {
+                droppedMorph.perish();
+            }
+        } else {
+            _ReactToDropOf.call(this, droppedMorph, hand);
+        }
+    };
 };

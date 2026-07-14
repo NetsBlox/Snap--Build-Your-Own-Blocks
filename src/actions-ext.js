@@ -3,7 +3,11 @@
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
-    'deleteMessageType'
+    'deleteMessageType',
+
+    //Neural Network actions
+    'removeNNNode'
+        
 );
 
 ActionManager.URL = 'ws://' + SERVER_ADDRESS + '/collaboration';
@@ -142,3 +146,12 @@ SnapActions.isReadOnly = function() {
 
     return !isEditable;
 };
+
+SnapActions.onRemoveNNNode = function() {
+    console.log(this)
+    console.log("removing node")
+}
+
+SnapActions._removeNNNode = function() {
+    console.log("pre removing node")
+}
