@@ -1804,7 +1804,7 @@ Process.prototype.doInsertInList = function (element, index, list) {
     if (index === '') {
         return null;
     }
-    if (this.inputOption(index) === 'any') {
+    if (this.inputOption(index) === localize('any') || this.inputOption(index) === 'any') {
         idx = this.reportBasicRandom(1, list.length() + 1);
     }
     if (this.inputOption(index) === 'last') {
@@ -1823,7 +1823,7 @@ Process.prototype.doReplaceInList = function (index, list, element) {
     if (index === '') {
         return null;
     }
-    if (this.inputOption(index) === 'any') {
+    if (this.inputOption(index) === localize('any') || this.inputOption(index) === 'any') {
         idx = this.reportBasicRandom(1, list.length());
     }
     if (this.inputOption(index) === 'last') {
@@ -1856,7 +1856,7 @@ Process.prototype.reportListItem = function (index, list) {
     if (index === '') {
         return '';
     }
-    if (this.inputOption(index) === 'any') {
+    if (this.inputOption(index) === localize('any') || this.inputOption(index) === 'any') {
         return list.at(this.reportBasicRandom(1, list.length()));
     }
     if (this.inputOption(index) === 'last') {
@@ -4187,7 +4187,7 @@ Process.prototype.reportBasicLetter = function (idx, string) {
     var str, i;
 
     str = isNil(string) ? '' : string.toString();
-    if (this.inputOption(idx) === 'any') {
+    if (this.inputOption(index) === localize('any') || this.inputOption(index) === 'any') {
         idx = this.reportBasicRandom(1, str.length);
     }
     if (this.inputOption(idx) === 'last') {
