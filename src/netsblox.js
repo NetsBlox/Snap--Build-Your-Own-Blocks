@@ -385,28 +385,30 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     tab.fixLayout();
     tabBar.add(tab);
 
-    var nntab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {
-            SnapActions.selectTab("nn");
-            tabBar.tabTo("nn");
-        },
-        localize("Neural Network"), // label
-        function () {
-            // query
-            return myself.currentTab === "nn";
-        },
-    );
-    nntab.padding = 3;
-    nntab.corner = tabCorner;
-    nntab.edge = 1;
-    nntab.labelShadowOffset = new Point(-1, -1);
-    nntab.labelShadowColor = tabColors[1];
-    nntab.labelColor = this.buttonLabelColor;
-    nntab.rerender();
-    nntab.fixLayout();
-    tabBar.add(nntab);
+    if (MorphicPreferences.showNNTab) {
+        var nntab = new TabMorph(
+            tabColors,
+            null, // target
+            function () {
+                SnapActions.selectTab("nn");
+                tabBar.tabTo("nn");
+            },
+            localize("Neural Network"), // label
+            function () {
+                // query
+                return myself.currentTab === "nn";
+            },
+        );
+        nntab.padding = 3;
+        nntab.corner = tabCorner;
+        nntab.edge = 1;
+        nntab.labelShadowOffset = new Point(-1, -1);
+        nntab.labelShadowColor = tabColors[1];
+        nntab.labelColor = this.buttonLabelColor;
+        nntab.rerender();
+        nntab.fixLayout();
+        tabBar.add(nntab);
+    }
 
     tabBar.fixLayout();
     tabBar.children.forEach(function (each) {

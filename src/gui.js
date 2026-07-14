@@ -3515,6 +3515,14 @@ IDE_Morph.prototype.settingsMenu = function () {
         true
     );
     addPreference(
+        'Show Neural Network tab',
+        'toggleNNTab',
+        MorphicPreferences.showNNTab,
+        'check to hide experimental neural network tab',
+        'check to show experimental neural network tab',
+        true
+    );
+    addPreference(
         'Zebra coloring',
         'toggleZebraColoring',
         BlockMorph.prototype.zebraContrast,

@@ -6,7 +6,10 @@
 
 ////////////////////////////////////////////////////
 // Override submodule for exporting of message types
+// And other misc things
 ////////////////////////////////////////////////////
+
+MorphicPreferences.showNNTab = false;
 IDE_Morph.prototype.UrlActionRegistry = {};
 IDE_Morph.prototype.parseUrlAnchors = function (querystring, hash) {
     // Parse the hash options
@@ -42,6 +45,11 @@ IDE_Morph.prototype.getUrlSettings = function (querystring, hash) {
     const UrlAction = this.UrlActionRegistry[anchorsDict.get('action')] || NoMainParam;
     return new UrlAction(anchorsDict, hash);
 };
+
+IDE_Morph.prototype.toggleNNTab = function () {
+    MorphicPreferences.showNNTab = !MorphicPreferences.showNNTab;
+    this.refreshIDE();
+}
 
 class UrlParamError extends Error {}
 class MissingParameterError extends UrlParamError {
