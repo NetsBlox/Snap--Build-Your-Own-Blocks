@@ -1,0 +1,6 @@
+{
+  "formatter": {
+    "indentStyle": "space", // default is `tab`
+    "indentWidth": 4// default is `80`
+  }
+}

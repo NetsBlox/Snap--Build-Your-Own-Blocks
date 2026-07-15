@@ -182,8 +182,21 @@ IDE_Morph.uber = Morph.prototype;
 
 // IDE_Morph preferences settings and skins
 
-IDE_Morph.prototype.setDefaultDesign = function () {
+IDE_Morph.prototype.isBright = false;
+
+IDE_Morph.prototype.setDefaultDesign = function () { // skeuomorphic
     MorphicPreferences.isFlat = false;
+    IDE_Morph.prototype.scriptsPaneTexture = this.scriptsTexture();
+};
+
+IDE_Morph.prototype.setFlatDesign = function () {
+    MorphicPreferences.isFlat = true;
+    IDE_Morph.prototype.scriptsPaneTexture = null;
+};
+
+IDE_Morph.prototype.setDefaultTheme = function () { // dark
+    IDE_Morph.prototype.isBright = false;
+
     SpriteMorph.prototype.paletteColor = new Color(30, 30, 30);
     SpriteMorph.prototype.paletteTextColor = new Color(230, 230, 230);
     StageMorph.prototype.paletteTextColor
@@ -207,7 +220,6 @@ IDE_Morph.prototype.setDefaultDesign = function () {
     ];
     IDE_Morph.prototype.rotationStyleColors = IDE_Morph.prototype.tabColors;
     IDE_Morph.prototype.appModeColor = BLACK;
-    IDE_Morph.prototype.scriptsPaneTexture = this.scriptsTexture();
     IDE_Morph.prototype.padding = 1;
 
     SpriteIconMorph.prototype.labelColor
@@ -223,8 +235,9 @@ IDE_Morph.prototype.setDefaultDesign = function () {
     ScriptsMorph.prototype.feedbackColor = WHITE;
 };
 
-IDE_Morph.prototype.setFlatDesign = function () {
-    MorphicPreferences.isFlat = true;
+IDE_Morph.prototype.setBrightTheme = function () {
+    IDE_Morph.prototype.isBright = true;
+
     SpriteMorph.prototype.paletteColor = WHITE;
     SpriteMorph.prototype.paletteTextColor = new Color(70, 70, 70);
     StageMorph.prototype.paletteTextColor
@@ -246,7 +259,6 @@ IDE_Morph.prototype.setFlatDesign = function () {
     ];
     IDE_Morph.prototype.rotationStyleColors = IDE_Morph.prototype.tabColors;
     IDE_Morph.prototype.appModeColor = IDE_Morph.prototype.frameColor;
-    IDE_Morph.prototype.scriptsPaneTexture = null;
     IDE_Morph.prototype.padding = 1;
 
     SpriteIconMorph.prototype.labelColor
@@ -278,6 +290,7 @@ IDE_Morph.prototype.scriptsTexture = function () {
     return pic;
 };
 
+IDE_Morph.prototype.setDefaultTheme();
 IDE_Morph.prototype.setDefaultDesign();
 
 // IDE_Morph instance creation:
@@ -603,7 +616,8 @@ IDE_Morph.prototype.createLogo = function () {
         );
         gradient.addColorStop(0, 'black');
         gradient.addColorStop(0.5, myself.frameColor.toString());
-        ctx.fillStyle = MorphicPreferences.isFlat ?
+        ctx.fillStyle = MorphicPreferences.isFlat ||
+                IDE_Morph.prototype.isBright ?
             myself.frameColor.toString() : gradient;
         ctx.fillRect(0, 0, this.width(), this.height());
         if (this.cachedTexture) {
@@ -698,12 +712,18 @@ IDE_Morph.prototype.createControlBar = function () {
         steppingButton,
         cloudButton,
         x,
-        colors = MorphicPreferences.isFlat ? this.tabColors
-            : [
-                this.groupColor,
-                this.frameColor.darker(50),
-                this.frameColor.darker(50)
-            ],
+        colors = this.isBright ? this.tabColors
+        : [
+            this.groupColor,
+            this.frameColor.darker(50),
+            this.frameColor.darker(50)
+        ],
+        activeColor = new Color(153, 255, 213),
+        activeColors = [
+            activeColor,
+            activeColor.lighter(40),
+            activeColor.lighter(40)
+        ],
         myself = this;
 
     if (this.controlBar) {
@@ -743,7 +763,7 @@ IDE_Morph.prototype.createControlBar = function () {
     button.padding = 0;
     button.labelShadowOffset = new Point(-1, -1);
     button.labelShadowColor = colors[1];
-    button.labelColor = MorphicPreferences.isFlat ?
+    button.labelColor = this.isBright ?
         WHITE
         : this.buttonLabelColor;
     button.contrast = this.buttonContrast;
@@ -842,7 +862,7 @@ IDE_Morph.prototype.createControlBar = function () {
     button.labelShadowOffset = new Point(-1, -1);
     button.labelShadowColor = colors[1];
     button.labelColor = new Color(
-        MorphicPreferences.isFlat ? 128 : 200,
+        this.isBright ? 128 : 200,
         0,
         0
     );
@@ -875,7 +895,7 @@ IDE_Morph.prototype.createControlBar = function () {
     button.padding = 0;
     button.labelShadowOffset = new Point(-1, -1);
     button.labelShadowColor = colors[1];
-    button.labelColor = MorphicPreferences.isFlat ?
+    button.labelColor = this.isBright ?
         new Color(220, 185, 0)
         : new Color(255, 220, 0);
     button.contrast = this.buttonContrast;
@@ -902,7 +922,7 @@ IDE_Morph.prototype.createControlBar = function () {
     button.labelShadowColor = colors[1];
     button.labelColor = new Color(
         0,
-        MorphicPreferences.isFlat ? 100 : 200,
+        this.isBright ? 100 : 200,
         0
     );
     button.contrast = this.buttonContrast;
@@ -1147,7 +1167,7 @@ IDE_Morph.prototype.createControlBar = function () {
             true,
             false,
             false,
-            MorphicPreferences.isFlat ? null : new Point(2, 1),
+            IDE_Morph.prototype.isBright ? null : new Point(2, 1),
             myself.frameColor.darker(myself.buttonContrast)
         );
         txt.color = myself.buttonLabelColor;
@@ -1192,7 +1212,7 @@ IDE_Morph.prototype.createCategories = function () {
         var labelWidth = 75,
             colors = [
                 myself.frameColor,
-                myself.frameColor.darker(MorphicPreferences.isFlat ? 5 : 50),
+                myself.frameColor.darker(IDE_Morph.prototype.isBright ? 5 : 50),
                 SpriteMorph.prototype.blockColor[category]
             ],
             button;
@@ -1231,9 +1251,10 @@ IDE_Morph.prototype.createCategories = function () {
         button.corner = 8;
         button.padding = 0;
         button.labelShadowOffset = new Point(-1, -1);
-        button.labelShadowColor = colors[1];
+        button.labelShadowColor = IDE_Morph.prototype.isBright ?
+            CLEAR : colors[1];
         button.labelColor = myself.buttonLabelColor;
-        if (MorphicPreferences.isFlat) {
+        if (IDE_Morph.prototype.isBright) {
             button.labelPressColor = WHITE;
         }
         button.fixLayout();
@@ -1695,7 +1716,8 @@ IDE_Morph.prototype.createSpriteEditor = function () {
             scripts.alpha = 0;
         } else {
             scripts.color = this.groupColor;
-            scripts.cachedTexture = this.scriptsPaneTexture;
+            scripts.cachedTexture = MorphicPreferences.isFlat ? null
+                : this.scriptsTexture();
         }
 
         this.spriteEditor = new ScrollFrameMorph(
@@ -1777,7 +1799,7 @@ IDE_Morph.prototype.createCorralBar = function () {
         newbutton,
         paintbutton,
         cambutton,
-        colors = MorphicPreferences.isFlat ? this.tabColors
+        colors = IDE_Morph.prototype.isBright ? this.tabColors
         : [
             this.groupColor,
             this.frameColor.darker(50),
@@ -2274,7 +2296,7 @@ IDE_Morph.prototype.render = function (ctx) {
         frame = this.stage.bounds.translateBy(
             this.position().neg()
         ).expandBy(2);
-        ctx.strokeStyle = (MorphicPreferences.isFlat ? this.backgroundColor
+        ctx.strokeStyle = (this.isBright ? this.backgroundColor
             : this.groupColor).toString();
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -2622,6 +2644,22 @@ IDE_Morph.prototype.toggleRetina = function () {
 
 // IDE_Morph skins
 
+IDE_Morph.prototype.defaultLooks = function () {
+    this.setDefaultDesign();
+    this.setDefaultTheme();
+    this.refreshIDE();
+    this.removeSetting('design');
+    this.removeSetting('theme');
+};
+
+IDE_Morph.prototype.flatBrightLooks = function () {
+    this.setFlatDesign();
+    this.setBrightTheme();
+    this.refreshIDE();
+    this.saveSetting('design', 'flat');
+    this.saveSetting('theme', 'bright');
+};
+
 IDE_Morph.prototype.defaultDesign = function () {
     this.setDefaultDesign();
     this.refreshIDE();
@@ -2632,6 +2670,18 @@ IDE_Morph.prototype.flatDesign = function () {
     this.setFlatDesign();
     this.refreshIDE();
     this.saveSetting('design', 'flat');
+};
+
+IDE_Morph.prototype.defaultTheme = function () {
+    this.setDefaultTheme();
+    this.refreshIDE();
+    this.removeSetting('theme');
+};
+
+IDE_Morph.prototype.brightTheme = function () {
+    this.setBrightTheme();
+    this.refreshIDE();
+    this.saveSetting('theme', 'bright');
 };
 
 IDE_Morph.prototype.refreshIDE = function () {
@@ -2661,6 +2711,7 @@ IDE_Morph.prototype.refreshIDE = function () {
 
 IDE_Morph.prototype.applySavedSettings = function () {
     var design = this.getSetting('design'),
+        theme = this.getSetting('theme'),
         zoom = this.getSetting('zoom'),
         fade = this.getSetting('fade'),
         language = this.getSetting('language'),
@@ -2678,6 +2729,13 @@ IDE_Morph.prototype.applySavedSettings = function () {
         this.setFlatDesign();
     } else {
         this.setDefaultDesign();
+    }
+
+    // theme
+    if (theme === 'bright') {
+        this.setBrightTheme();
+    } else {
+        this.setDefaultTheme();
     }
 
     // blocks zoom
@@ -3347,6 +3405,10 @@ IDE_Morph.prototype.settingsMenu = function () {
         'languageMenu'
     );
     menu.addItem(
+        localize('Looks') + '...',
+        'looksMenu'
+    );
+    menu.addItem(
         'Zoom blocks...',
         'userSetBlocksScale'
     );
@@ -3453,6 +3515,14 @@ IDE_Morph.prototype.settingsMenu = function () {
         true
     );
     addPreference(
+        'Show Neural Network tab',
+        'toggleNNTab',
+        MorphicPreferences.showNNTab,
+        'check to hide experimental neural network tab',
+        'check to show experimental neural network tab',
+        true
+    );
+    addPreference(
         'Zebra coloring',
         'toggleZebraColoring',
         BlockMorph.prototype.zebraContrast,
@@ -3539,19 +3609,6 @@ IDE_Morph.prototype.settingsMenu = function () {
         'uncheck for smooth\nscaling of vector costumes',
         'check to rasterize\nSVGs on import',
         true
-    );
-    addPreference(
-        'Flat design',
-        () => {
-            if (MorphicPreferences.isFlat) {
-                return this.defaultDesign();
-            }
-            this.flatDesign();
-        },
-        MorphicPreferences.isFlat,
-        'uncheck for default\nGUI design',
-        'check for alternative\nGUI design',
-        false
     );
     addPreference(
         'Nested auto-wrapping',
@@ -6250,6 +6307,87 @@ IDE_Morph.prototype.reflectLanguage = function (lang, callback, noSave) {
     if (callback) {callback.call(this); }
 };
 
+// IDE_Morph design settings
+
+IDE_Morph.prototype.looksMenu = function () {
+    var menu = new MenuMorph(this),
+        world = this.world(),
+        shiftClicked = (world.currentKey === 16),
+        pos = this.controlBar.settingsButton.bottomLeft(),
+        tick = new SymbolMorph(
+            'tick',
+            MorphicPreferences.menuFontSize * 0.75
+        ),
+        empty = tick.fullCopy(),
+        on = new SymbolMorph(
+            'checkedBox',
+            MorphicPreferences.menuFontSize * 0.75
+        ),
+        off = new SymbolMorph(
+            'rectangle',
+            MorphicPreferences.menuFontSize * 0.75
+        );
+
+    function addPreference(label, toggle, test, onHint, offHint, hide) {
+        if (!hide || shiftClicked) {
+            menu.addItem(
+                [
+                    (test? on : off),
+                    localize(label)
+                ],
+                toggle,
+                test ? onHint : offHint,
+                hide ? new Color(100, 0, 0) : null
+            );
+        }
+    }
+
+    empty.render = nop;
+
+    menu.addItem(
+        [
+            MorphicPreferences.isFlat || IDE_Morph.prototype.isBright ? empty : tick,
+            localize('Default')
+        ],
+        this.defaultLooks
+    );
+    menu.addItem(
+        [
+            MorphicPreferences.isFlat && IDE_Morph.prototype.isBright ? tick : empty,
+            localize('Flat Bright')
+        ],
+        this.flatBrightLooks
+    );
+    menu.addLine();
+    addPreference(
+        'Flat design',
+        () => {
+            if (MorphicPreferences.isFlat) {
+                return this.defaultDesign();
+            }
+            this.flatDesign();
+        },
+        MorphicPreferences.isFlat,
+        'uncheck for default\nGUI design',
+        'check for alternative\nGUI design',
+        false
+    );
+    addPreference(
+        'Bright theme',
+        () => {
+            if (IDE_Morph.prototype.isBright) {
+                return this.defaultTheme();
+            }
+            this.brightTheme();
+        },
+        IDE_Morph.prototype.isBright,
+        'uncheck for default\nGUI theme',
+        'check for alternative\nGUI theme',
+        false
+    );
+    menu.popup(world, pos);
+};
+
 // IDE_Morph blocks scaling
 
 IDE_Morph.prototype.userSetBlocksScale = function () {
@@ -6279,8 +6417,9 @@ IDE_Morph.prototype.userSetBlocksScale = function () {
     sample = new FrameMorph();
     sample.acceptsDrops = false;
     sample.color = IDE_Morph.prototype.groupColor;
-    if (SyntaxElementMorph.prototype.alpha > 0.8) {
-        sample.cachedTexture = this.scriptsPaneTexture;
+    if (!MorphicPreferences.isFlat &&
+            SyntaxElementMorph.prototype.alpha > 0.8) {
+        sample.cachedTexture = this.scriptsTexture();
     }
     sample.setExtent(new Point(250, 180));
     scrpt.setPosition(sample.position().add(10));
@@ -10154,7 +10293,7 @@ StageHandleMorph.prototype.init = function (target) {
     this.target = target || null;
     this.userState = 'normal'; // or 'highlight'
     HandleMorph.uber.init.call(this);
-    this.color = MorphicPreferences.isFlat ?
+    this.color = IDE_Morph.prototype.isBright ?
             IDE_Morph.prototype.backgroundColor : new Color(190, 190, 190);
     this.isDraggable = false;
     this.setExtent(new Point(12, 50));
@@ -10166,7 +10305,7 @@ StageHandleMorph.prototype.render = function (ctx) {
     if (this.userState === 'highlight') {
         this.renderOn(
             ctx,
-            MorphicPreferences.isFlat ?
+            IDE_Morph.prototype.isBright ?
                     new Color(245, 245, 255) : new Color(100, 100, 255),
             this.color
         );
@@ -10298,7 +10437,7 @@ PaletteHandleMorph.prototype.init = function (target) {
     this.target = target || null;
     this.userState = 'normal';
     HandleMorph.uber.init.call(this);
-    this.color = MorphicPreferences.isFlat ?
+    this.color = IDE_Morph.prototype.isBright ?
             IDE_Morph.prototype.backgroundColor : new Color(190, 190, 190);
     this.isDraggable = false;
     this.setExtent(new Point(12, 50));
