@@ -786,6 +786,21 @@ SyntaxElementMorph.prototype.labelParts = {
         tags: 'read-only',
         menu: 'shadowedVariablesMenu'
     },
+    '%vm': { //cannot move this to TTS file, i think
+        type: 'input',
+        tags: 'read-only',
+        menu: 'voiceMenu'
+    },
+    '%pm': { //TODO this should be a slider but idk how to make that happen
+        type: 'input',
+        tags: 'read-only',
+        menu: 'pitchMenu'
+    },
+    '%rm': {
+        type: 'input',
+        tags: 'read-only',
+        menu: 'rateMenu'
+    },
 
     // code mapping
 
@@ -1525,6 +1540,189 @@ SyntaxElementMorph.prototype.getVarNamesDict = function () {
     return {};
 };
 
+SyntaxElementMorph.prototype.blockToReadableText = function () {
+    var returnStringBlock = '';
+    for (var child of this.children) {
+        if (child instanceof RingMorph) {
+            returnStringBlock += this.evaluateArg(child) + ' ';
+        } else if (child instanceof ReporterBlockMorph) {
+            returnStringBlock += child.blockToReadableText() + ' ';
+        } else if (child instanceof BlockLabelMorph) {
+            returnStringBlock += this.evaluateBlockLabel(child) + ' ';
+        } else if (child instanceof ArgMorph) {
+            returnStringBlock += this.evaluateArg(child) + ' ';
+        } else if (child instanceof BlockSymbolMorph) {
+            returnStringBlock += this.evaluateBlockSymbol(child) + ' ';
+        }
+    }
+    return returnStringBlock;
+};
+
+SyntaxElementMorph.prototype.scriptToReadableText = function () {
+    var returnStringScript = this.blockToReadableText(),
+        next = this.nextBlock && this.nextBlock();
+    if (next) {
+        returnStringScript += '...' + next.scriptToReadableText(); //pause long between blocks
+    } else {
+        returnStringScript += '......'; //pause even longer between scripts
+    }
+    return returnStringScript;
+};
+
+SyntaxElementMorph.prototype.evaluateBlockLabel = function (blockLabel) {
+    var returnString = blockLabel.text;
+    if (returnString.includes('secs')) { //manual fixes for words the reader stinks at pronouncing
+        var stringArr = returnString.split('secs');
+        returnString = stringArr[0] + ' seconds ' + stringArr[1]; 
+    }
+    if (returnString.includes('x ')) {
+        var stringArr = returnString.split('x');
+        returnString = stringArr[0] + ' ex ' + stringArr[1];
+        console.log(returnString);
+    }
+    if (returnString.includes('\u2212')) {
+        var stringArr = returnString.split('\u2212');
+        returnString = stringArr[0] + ' minus ' + stringArr[1];
+    }
+    if (returnString.includes('/')) {
+        var stringArr = returnString.split('/');
+        returnString = stringArr[0] + ' divided by ' + stringArr[1];
+    }
+    if (returnString.includes('#')) {
+        var stringArr = returnString.split('#');
+        returnString = stringArr[0] + ' number ' + stringArr[1];
+    }
+    return returnString;
+};
+
+SyntaxElementMorph.prototype.evaluateArg = function (arg) {
+    var returnString = '';
+    if (arg instanceof InputSlotMorph) { 
+        if (this.evaluateInput(arg)) {
+            return this.evaluateInput(arg);
+        } else {
+            returnString += arg.evaluate();
+        }
+    } else if (arg instanceof MultiArgMorph) {
+        if (arg.parent instanceof RingMorph) { //so that it doesn't read the parent of a ringmorph, only what's inside of it
+            return '';
+        } //only multiargs with parents that are ringmorphs are the ringmorph name thingies
+        returnString += this.evaluateMultiArg(arg); 
+    } else if (arg instanceof TemplateSlotMorph) {
+        returnString += arg.contents ? arg.contents() : '';
+    } else if (arg instanceof ColorSlotMorph) {
+        returnString += ' color ';
+    } else if (arg instanceof BooleanSlotMorph) {
+        arg.value === false ? returnString += 'false' : arg.value === true ? 
+            returnString += 'true' : returnString += 'boolean';
+    } else if (arg instanceof FunctionSlotMorph) {
+        returnString += arg.blockToReadableText();
+    } else if (arg instanceof CSlotMorph) {
+        returnString += this.evaluateCSlot(arg) + ' . ';
+    } else if (arg instanceof RingMorph) {
+        returnString += this.evaluateRing(arg);
+    } else if (arg instanceof BlockMorph) {
+        returnString += arg.blockToReadableText();
+    } else {
+        returnString += 'argument';
+    }
+    return returnString;
+};
+
+SyntaxElementMorph.prototype.evaluateRing = function (ring) {
+    var returnString = '',
+    ringSlot = ring.children.find(function (c) {
+        return c instanceof RingCommandSlotMorph ||
+            c instanceof RingReporterSlotMorph;
+    }),
+        inputNames = ring.children.find(function (c) {
+            return c instanceof MultiArgMorph;
+        });
+    if (ringSlot) {
+        var innerBlock = ringSlot.children.find(function (c) {
+            return c instanceof CommandBlockMorph ||
+                c instanceof ReporterBlockMorph
+        });
+        if (innerBlock) {
+            returnString += innerBlock.scriptToReadableText();
+        } else {
+            returnString += ' ';
+        }
+    }
+    if (inputNames) {
+        var hasNames = inputNames.children.some(function (c) {
+            return c instanceof TemplateSlotMorph;
+        });
+        if (hasNames) {
+            returnString += ' ' + this.evaluateMultiArg(inputNames);
+        }
+    }
+    return returnString;
+};
+
+SyntaxElementMorph.prototype.evaluateBlockSymbol = function (symbol) {
+    if (symbol.name === 'flag') {
+        return ' green flag ';
+    } else if (symbol.name === 'turnRight') {
+        return ' right ';
+    } else if (symbol.name === 'turnLeft') {
+        return ' left ';
+    } else {
+        return '';
+    }
+};
+
+SyntaxElementMorph.prototype.evaluateInput = function (input) {
+    var droppedReporter = input.children.find(function (c) {
+        return c instanceof ReporterBlockMorph;
+    });
+    if (droppedReporter) {
+        return droppedReporter.blockToReadableText();
+    } else {
+        return input.evaluate();
+    }
+};
+
+SyntaxElementMorph.prototype.evaluateMultiArg = function (arg) {
+    var parts = [];
+    for (var child of arg.children) {
+        if (child instanceof BlockMorph) {
+            parts.push(child.blockToReadableText());
+        } else if (child instanceof BlockLabelMorph) {
+            parts.push(this.evaluateBlockLabel(child));
+        } else if (child instanceof TemplateSlotMorph) {
+            var reporter = child.children.find(function(c) { return c instanceof ReporterBlockMorph; });
+            if (reporter) {
+                var label = reporter.children.find(function(c) { return c instanceof BlockLabelMorph; });
+                if (label) {
+                    parts.push(label.text || label.labelString);
+                }
+            }
+        } else if (child instanceof InputSlotMorph) {
+            var val = this.evaluateInput(child);
+            parts.push(val || child.evaluate());
+        }
+    }
+    return parts.join(' ');
+};
+
+SyntaxElementMorph.prototype.evaluateCSlot = function (slot) {
+    var nested = null,
+        returnString = '';
+    for (var child of slot.children) {
+        if (child instanceof CommandBlockMorph) {
+            nested = child;
+            break;
+        }
+    }
+    if (nested) {
+        returnString += '...' + nested.scriptToReadableText();
+    } else {
+        returnString += '...';
+    }
+    return returnString;
+};
+
 // Variable refactoring
 
 SyntaxElementMorph.prototype.refactorVarInStack = function (
@@ -1692,7 +1890,10 @@ SyntaxElementMorph.prototype.flash = function () {
         this.setColor(this.activeHighlight);
     }
 };
-//this is probably important
+
+// SyntaxElementMorph.prototype.playClackSound = function () {
+//     clackSound.play();
+// };
 
 SyntaxElementMorph.prototype.unflash = function () {
     if (this.cachedNormalColor) {
@@ -2745,32 +2946,48 @@ BlockMorph.prototype.zebraContrast = 40; // alternating color brightness
 // BlockMorph sound feedback:
 
 BlockMorph.prototype.snapSound = null;
+BlockMorph.prototype.isHoverTTS = null;
 
 BlockMorph.prototype.toggleSnapSound = function () {
     if (this.snapSound !== null) {
         this.snapSound = null;
     } else {
-        console.log("i am loading this sound 1");
         BlockMorph.prototype.snapSound = document.createElement('audio');
         BlockMorph.prototype.snapSound.src = 'src/click.wav';
     }
     CommentMorph.prototype.snapSound = BlockMorph.prototype.snapSound;
 };
-//BEGIN EDITS
-BlockMorph.prototype.clackSound = null;
-//never getting to this function :-(
-BlockMorph.prototype.toggleSteppingSound = function () {
-    if (this.clackSound !== null) {
-        this.clackSound = null;
-        console.log("i just made the clack sound null");
-    } else {
-        console.log("i just defined the clack sound");
-        BlockMorph.prototype.clackSound = document.createElement('audio');
-        BlockMorph.prototype.clackSound.src = 'src/clack.wav';
+
+// for hover TTS- already exists in threads, but needed to exist here as well
+BlockMorph.prototype.readScriptAloud = function (topBlock) {
+    var stage = this.parentThatIsA(IDE_Morph).stage,
+        blocksInScript = [],
+        current = topBlock;
+    while (current) {
+        blocksInScript.push(current);
+        current = current.nextBlock && current.nextBlock();
     }
-    CommentMorph.prototype.clackSound = BlockMorph.prototype.clackSound;
+    var utterance = new SpeechSynthesisUtterance(topBlock.scriptToReadableText());
+    if (stage && stage.ttsVoice) { utterance.voice = stage.ttsVoice; }
+    if (stage && stage.ttsRate !== undefined) { utterance.rate = stage.ttsRate; }
+    if (stage && stage.ttsPitch !== undefined) { utterance.pitch = stage.ttsPitch; }
+
+    utterance.onstart = function () {
+        blocksInScript.forEach(function (b) { 
+            b.activeHighlight = '#cd84db';
+            b.addHighlight();
+        });
+    };
+    utterance.onend = function () {
+        blocksInScript.forEach(function (b) { b.removeHighlight(); });
+    };
+    utterance.onerror = function (e) {
+        if (e.error === 'interrupted' || e.error === 'canceled') {
+            blocksInScript.forEach(function (b) { b.removeHighlight(); });
+        }
+    };
+    window.speechSynthesis.speak(utterance);
 };
-//END EDITS
 
 // BlockMorph instance creation:
 
@@ -4934,6 +5151,25 @@ BlockMorph.prototype.mouseEnterBounds = function (dragged) {
     if (!dragged && this.alpha < 1) {
         this.alpha = Math.min(this.alpha + 0.2, 1);
         this.rerender();
+    }
+};
+
+//for hover TTS
+BlockMorph.prototype.mouseEnter = function () {
+    var myself = this,
+        topBlock = this.topBlock ? this.topBlock() : this;
+
+    this._hoverReadTimeout = setTimeout(function () {
+        if (BlockMorph.prototype.isHoverTTS && !Process.prototype.blockSpeaking) {
+            myself.readScriptAloud(topBlock);
+        }
+    }, 800);
+};
+
+BlockMorph.prototype.mouseLeave = function () {
+    clearTimeout(this._hoverReadTimeout);
+    if (BlockMorph.prototype.isHoverTTS){
+        window.speechSynthesis.cancel();
     }
 };
 
@@ -9643,6 +9879,59 @@ InputSlotMorph.prototype.distancesMenu = function () {
         );
     }
     return dict;
+};
+
+
+//this thing loads full menu first try, but is very very ugly
+var voiceMenuCache = {};
+
+function refreshVoiceMenuCache() {
+    var voices = window.speechSynthesis.getVoices(),
+        voiceMenuCache = {};
+    voices.forEach(function (voice) {
+        voiceMenuCache[voice.name + ' (' + voice.lang + ')'] = voice.name;
+    });
+}
+
+// Keep the cache updated whenever the browser (re)loads its voice list.
+window.speechSynthesis.onvoiceschanged = refreshVoiceMenuCache;
+
+// Populate it once immediately, in case voices are already available.
+refreshVoiceMenuCache();
+
+InputSlotMorph.prototype.voiceMenu = function () {
+    var voiceMenuCache = {};
+
+    function refreshVoiceMenuCache(voiceMenuCache) {
+        var voices = window.speechSynthesis.getVoices();
+        voices.forEach(function (voice) {
+            voiceMenuCache[voice.name + ' (' + voice.lang + ')'] = voice.name;
+        });
+    };
+
+    window.speechSynthesis.onvoiceschanged = refreshVoiceMenuCache;
+    refreshVoiceMenuCache(voiceMenuCache);
+
+    if (Object.keys(voiceMenuCache).length === 0) {
+        refreshVoiceMenuCache();
+    }
+    return voiceMenuCache;
+};
+
+InputSlotMorph.prototype.pitchMenu = function () {
+    var menu = {};
+    for (var i = 0; i < 3; i++){
+        menu[i] = i;
+    }
+    return menu;
+};
+
+InputSlotMorph.prototype.rateMenu = function () {
+    var menu = {};
+    for (var i = 0; i < 7; i++) {
+        menu[i] = 0.5 + (i * 0.25);
+    }
+    return menu;
 };
 
 InputSlotMorph.prototype.clonablesMenu = function () {

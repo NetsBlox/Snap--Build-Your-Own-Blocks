@@ -463,7 +463,7 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'console log %mult%s'
         },
 
-        // Sound
+        // Sound   
         playSound: {
             type: 'command',
             category: 'sound',
@@ -850,6 +850,46 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'command',
             category: 'other',
             spec: 'warp %c'
+        },
+         readAllScripts: {
+            type: 'command',
+            category: 'other',
+            spec: 'read all scripts aloud'
+        },
+        readThisScript: {
+            type: 'command',
+            category: 'other',
+            spec: 'read this script aloud',
+        },
+        readAllScriptsOptions: {
+            type: 'command',
+            category: 'other',
+            spec: 'read all scripts aloud with %vm voice, at %rm rate, at %pm pitch'
+        },
+        readThisScriptOptions: {
+            type: 'command',
+            category: 'other',
+            spec: 'read this script aloud with %vm voice, at %rm rate, at %pm pitch'
+        },
+        setVoice: {
+            type: 'command',
+            category: 'other',
+            spec: 'change voice to %vm'
+        },
+        setRate: {
+            type: 'command',
+            category: 'other',
+            spec: 'change rate of speech to %rm'
+        },
+        setPitch: {
+            type: 'command',
+            category: 'other',
+            spec: 'change pitch of speech to %pm'
+        },
+        stopReading: {
+            type: 'command',
+            category: 'other',
+            spec: 'stop reading'
         },
 
         // Message passing
@@ -2484,9 +2524,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 
     } else if (cat === 'sound') {
 
-        blocks.push(block('playSound'));
-        blocks.push(block('doPlaySoundUntilDone'));
-        blocks.push(block('doStopAllSounds'));
         blocks.push('-');
         blocks.push(block('doPlaySoundAtRate'));
         blocks.push(block('reportGetSoundAttribute'));
@@ -2628,6 +2665,16 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getLastMessage'));
         blocks.push('-');
         blocks.push(block('doWarp'));
+        if (!BlockMorph.prototype.isHoverTTS) {
+            blocks.push(block('readAllScripts'));
+            blocks.push(block('readThisScript'));
+            blocks.push(block('readAllScriptsOptions'));
+            blocks.push(block('readThisScriptOptions'));
+        }
+        blocks.push(block('setVoice'));
+        blocks.push(block('setRate'));
+        blocks.push(block('setPitch'));
+        blocks.push(block('stopReading'));
         blocks.push('-');
         blocks.push(block('doWait'));
         blocks.push(block('doWaitUntil'));
@@ -9079,6 +9126,16 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getLastMessage'));
         blocks.push('-');
         blocks.push(block('doWarp'));
+        if (!BlockMorph.prototype.isHoverTTS) {
+            blocks.push(block('readAllScripts'));
+            blocks.push(block('readThisScript'));
+            blocks.push(block('readAllScriptsOptions'));
+            blocks.push(block('readThisScriptOptions'));
+        }
+        blocks.push(block('setVoice'));
+        blocks.push(block('setRate'));
+        blocks.push(block('setPitch'));
+        blocks.push(block('stopReading'));
         blocks.push('-');
         blocks.push(block('doWait'));
         blocks.push(block('doWaitUntil'));

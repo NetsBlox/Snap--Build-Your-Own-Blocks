@@ -133,6 +133,7 @@ SymbolMorph.prototype.names = [
     'polygon',
     'closedBrush',
     'notes',
+    'sound',
     'camera',
     'location',
     'footprints',
@@ -458,6 +459,9 @@ SymbolMorph.prototype.renderShape = function (ctx, aColor) {
         break;
     case 'notes':
         this.renderSymbolNotes(ctx, aColor);
+        break;
+    case 'sound':
+        this.renderSymbolSound(ctx, aColor);
         break;
     case 'camera':
         this.renderSymbolCamera(ctx, aColor);
@@ -2038,6 +2042,45 @@ SymbolMorph.prototype.renderSymbolNotes = function (ctx, color) {
     ctx.moveTo(size - (l / 2), size - (r * 2));
     ctx.lineTo(size - (l / 2), l);
     ctx.stroke();
+};
+
+SymbolMorph.prototype.renderSymbolSound = function (ctx, color) {
+    var w = this.symbolWidth(),
+        cy = w / 2,
+        r = w * 0.05,
+        arcRadii = [0.42, 0.57, 0.72],
+        centerArcX = w * 0.22,
+        angle = radians(38),
+        i;
+
+    ctx.fillStyle = color.toString();
+
+    // 1. Draw the speaker body (rectangular base + expanding cone)
+    ctx.beginPath();
+    ctx.moveTo(w * 0.12 + r, cy - w * 0.18);
+    ctx.lineTo(w * 0.30, cy - w * 0.18);
+    ctx.lineTo(w * 0.56 - r, cy - w * 0.44);
+    ctx.arcTo(w * 0.56, cy - w * 0.44, w * 0.56, cy - w * 0.44 + r, r);
+    ctx.lineTo(w * 0.56, cy + w * 0.44 - r);
+    ctx.arcTo(w * 0.56, cy + w * 0.44, w * 0.56 - r, cy + w * 0.44, r);
+    ctx.lineTo(w * 0.30, cy + w * 0.18);
+    ctx.lineTo(w * 0.12 + r, cy + w * 0.18);
+    ctx.arcTo(w * 0.12, cy + w * 0.18, w * 0.12, cy + w * 0.18 - r, r);
+    ctx.lineTo(w * 0.12, cy - w * 0.18 + r);
+    ctx.arcTo(w * 0.12, cy - w * 0.18, w * 0.12 + r, cy - w * 0.18, r);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Draw the 3 sound wave arcs on the right
+    ctx.strokeStyle = color.toString();
+    ctx.lineWidth = w * 0.08;
+    ctx.lineCap = 'round';
+
+    for (i = 0; i < arcRadii.length; i += 1) {
+        ctx.beginPath();
+        ctx.arc(centerArcX, cy, w * arcRadii[i], -angle, angle, false);
+        ctx.stroke();
+    }
 };
 
 SymbolMorph.prototype.renderSymbolCamera = function (ctx, color) {

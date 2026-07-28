@@ -351,37 +351,6 @@ ThreadManager.prototype.step = function () {
     this.removeTerminatedProcesses();
 };
 
-//BEGIN EDIT
-ThreadManager.prototype.stepWithSounds = function () {  //put make noise command in here (or maybe it won't work at all in threads? move to GUI? how????)
-    var isInterrupted;
-    if (Process.prototype.enableSoundStepping) {
-        this.processes.forEach(proc => {
-            if (proc.isInterrupted) {
-                proc.runStep();
-                //BlockMorph.prototype.clackSound.play(); //how to make this sound play
-                isInterrupted = true;
-            } else {
-                proc.lastYield = Date.now();
-            }
-        });
-        this.wantsToPause = (Process.prototype.enableSoundStepping); //this did not do anything
-        if (isInterrupted) {
-            if (this.wantsToPause) {
-                this.pauseAll();
-            }
-            return;
-        }
-    }
-
-    this.processes.forEach(proc => {
-        if (!proc.homeContext.receiver.isPickedUp() && !proc.isDead) {
-            proc.runStep();
-        }
-    });
-    this.removeTerminatedProcesses();
-}
-//END EDIT
-
 ThreadManager.prototype.removeTerminatedProcesses = function () {
     // and un-highlight their scripts
     var remaining = [],
@@ -511,49 +480,30 @@ ThreadManager.prototype.doWhen = function (block, receiver, stopIt) {
 };
 
 ThreadManager.prototype.toggleSingleStepping = function () {
-    if (!Process.prototype.enableSingleStepping && Process.prototype.enableSoundStepping){
+    if (!Process.prototype.enableSingleStepping) {
+        //when sound stepping is functional- need '&& !Process.prototype.enableSoundStepping'
         return;
     }
     Process.prototype.enableSingleStepping =
         !Process.prototype.enableSingleStepping;
-    if (!Process.prototype.enableSingleStepping) {
-        this.processes.forEach(proc => {
-            if (!proc.isPaused) {
-                proc.unflash();
-            }
-        });
-    }
 };
 
 //BEGIN EDIT
-ThreadManager.prototype.toggleSoundStepping = function () {
-    if (this.reportIsFastTracking && !Process.prototype.enableSoundStepping){
-        //report error somehow?
-        return;
-    }
-    else if (!Process.prototype.enableSoundStepping && Process.prototype.enableSingleStepping){
-        //report error somehow
-        return;
-    }
-    else {
-        Process.prototype.enableSoundStepping = 
-        !Process.prototype.enableSoundStepping;
-        BlockMorph.prototype.toggleSteppingSound(); //can only be activated by a user action womps BUT! it loads the sound
-        //BlockMorph.prototype.clackSound.play(); //this is broken, can only happen in gui (i think)
-    }
-    if (!Process.prototype.enableSoundStepping) { //what does this do
-        this.processes.forEach(proc => {
-            if (!proc.isPaused) {
-                proc.unflash();
-            }
-        });
-        //IDE_Morph.prototype.controlBar.refreshSlider(); //did not fix speed issue
-        //IDE_Morph.prototype.controlBar.refreshResumeSymbol(); //also did not fix speed issue
-    }
-    if (Process.prototype.enableSoundStepping){
-        Process.prototype.flashTime = 0.4;
-    }
-}
+// ThreadManager.prototype.toggleSoundStepping = function () {
+//     if (this.reportIsFastTracking) {
+//         return;
+//     }
+//     else if (!Process.prototype.enableSoundStepping && Process.prototype.enableSingleStepping){
+//         return;
+//     }
+//     else {
+//         Process.prototype.enableSoundStepping = 
+//         !Process.prototype.enableSoundStepping;
+//     }
+//     if (Process.prototype.enableSoundStepping){
+//         Process.prototype.flashTime = 0.4;
+//     }
+// }
 //END EDIT
 
 // Process /////////////////////////////////////////////////////////////
@@ -629,9 +579,8 @@ Process.prototype.isCatchingErrors = true;
 Process.prototype.enableHyperOps = true; // experimental hyper operations
 Process.prototype.enableLiveCoding = false; // experimental
 Process.prototype.enableSingleStepping = false; // experimental
-//BEGIN EDIT
-Process.prototype.enableSoundStepping = false;
-//END EDIT
+// Process.prototype.enableSoundStepping = false;
+Process.prototype.buttonSpeaking = false;
 Process.prototype.enableCompiling = false; // experimental
 Process.prototype.flashTime = 0; // experimental
 // Process.prototype.enableJS = false;
@@ -762,9 +711,7 @@ Process.prototype.pause = function () {
 
 Process.prototype.resume = function () { //what does this do
     if (!this.enableSingleStepping
-        //BEGIN EDIT
-        || !this.enableSoundStepping
-        //END EDIT
+        // || !this.enableSoundStepping
     ) {
         this.unflash();
     }
@@ -3131,8 +3078,268 @@ Process.prototype.blockReceiver = function () {
             : this.homeContext.receiver || this.receiver;
 };
 
-// Process sound primitives (interpolated)
+//BEGIN EDIT
+Process.prototype.setVoice = function (voiceName) {
+    var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+        voices = window.speechSynthesis.getVoices();
+        matchingVoice = voices.find(function (v) { //find the voice object matching input voiceName
+        return v.name === voiceName;
+        });
 
+    if (matchingVoice) {
+        stage.ttsVoice = matchingVoice;
+    }
+};
+
+Process.prototype.setRate = function (rate) {
+    stage = this.homeContext.receiver.parentThatIsA(StageMorph);
+    stage.ttsRate = rate;
+};
+
+Process.prototype.setPitch = function (pitch) {
+    stage = this.homeContext.receiver.parentThatIsA(StageMorph);
+    stage.ttsPitch = pitch;
+};
+
+//global tracker for highlighted blocks
+Process.prototype.currentlyHighlighted = [];
+
+Process.prototype.readAllScripts = function () {
+    var utterance = new SpeechSynthesisUtterance(),
+        self = this,
+        purpleColor = new Color(205, 132, 219);
+    if (!BlockMorph.prototype.isHoverTTS) {
+        var sprite = this.homeContext.receiver,
+            scripts = sprite.scripts.children,
+            stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+            topBlocks = scripts.filter(function (topBlock) {
+            return topBlock instanceof SyntaxElementMorph;
+        });
+        var allSegments = topBlocks.map(function (topBlock) {
+            var blocksInScript = [],
+                current = topBlock;
+            while (current) {
+                blocksInScript.push(current);
+                current = current.nextBlock && current.nextBlock();
+            }
+            return {
+                text: topBlock.scriptToReadableText(),
+                blocks: blocksInScript
+            };
+        });
+        function speakSegments(segments, i, stage) {
+            if (i >= segments.length) {
+                return;
+            }
+            var seg = segments[i];
+            utterance.text = seg.text;
+            utterance.lang = SnapTranslator.language || 'en'; //no way to test this
+            if (stage.ttsVoice) {
+                utterance.voice = stage.ttsVoice;
+            }
+            if (stage.ttsRate !== undefined) {
+                utterance.rate = stage.ttsRate;
+            }
+            if (stage.ttsPitch !== undefined) {
+                utterance.pitch = stage.ttsPitch;
+            }
+            utterance.onstart = function () {
+                seg.blocks.forEach(function (b) {
+                    b.addHighlight({color: purpleColor});
+                    self.currentlyHighlighted.push(b);
+                });
+            };
+            utterance.onend = function () {
+                seg.blocks.forEach(function (b) { 
+                    b.removeHighlight();
+                    var idx = self.currentlyHighlighted.indexOf(b);
+                    if (idx > -1) {
+                        self.currentlyHighlighted.splice(idx, 1);
+                    }
+                });
+                speakSegments(segments, i + 1, stage);
+            };
+            utterance.onerror = function (e) {
+                seg.blocks.forEach(function (b) { 
+                    b.removeHighlight();
+                    var idx = self.currentlyHighlighted.indexOf(b);
+                    if (idx > -1) {
+                        self.currentlyHighlighted.splice(idx, 1);
+                    }
+                });
+            };
+            window.speechSynthesis.speak(utterance);
+        }
+        speakSegments(allSegments, 0, stage);
+    }
+};
+
+Process.prototype.readThisScript = function () {
+    var self = this,
+        purpleColor = new Color(205, 132, 219);
+    if (!BlockMorph.prototype.isHoverTTS) {
+        var currentBlock = this.context.expression,
+            topBlock = currentBlock.topBlock ? currentBlock.topBlock() : currentBlock;
+        if (!topBlock) {
+            return;
+        }
+        var fullText = topBlock.scriptToReadableText(),
+            stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+            utterance = new SpeechSynthesisUtterance(fullText);
+        utterance.lang = SnapTranslator.language || 'en'; //no way to test this
+        if (stage.ttsVoice) {
+            utterance.voice = stage.ttsVoice;
+        }
+        if (stage.ttsPitch) {
+            utterance.pitch = stage.ttsPitch;
+        }
+        if (stage.ttsRate) {
+            utterance.rate = stage.ttsRate;
+        }
+        utterance.onstart = function () {
+            topBlock.addHighlight();
+            self.currentlyHighlighted.push(topBlock);
+        };
+        utterance.onend = function () {
+            topBlock.removeHighlight();
+            var idx = self.currentlyHighlighted.indexOf(topBlock);
+            if (idx > -1) {
+                self.currentlyHighlighted.splice(idx, 1);
+            }
+        };
+        utterance.onerror = function (e) {
+            topBlock.removeHighlight();
+            var idx = self.currentlyHighlighted.indexOf(topBlock);
+            if (idx > -1) {
+                self.currentlyHighlighted.splice(idx, 1);
+            }
+        };
+        window.speechSynthesis.speak(utterance);
+    }
+};
+
+Process.prototype.readAllScriptsOptions = function (voiceName, rate, pitch) {
+    var self = this,
+        purpleColor = new Color(205, 132, 219);
+    if (!BlockMorph.prototype.isHoverTTS){
+        var sprite = this.homeContext.receiver,
+            scripts = sprite.scripts.children,
+            stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+            topBlocks = scripts.filter(function (topBlock) {
+            return topBlock instanceof SyntaxElementMorph;
+        });
+        var allSegments = topBlocks.map(function (topBlock) {
+            var blocksInScript = [],
+                current = topBlock;
+            while (current) {
+                blocksInScript.push(current);
+                current = current.nextBlock && current.nextBlock();
+            }
+            return {
+                text: topBlock.scriptToReadableText(),
+                blocks: blocksInScript
+            };
+        });
+        function speakSegments(segments, i, stage, voiceName, rate, pitch) {
+            if (i >= segments.length) {
+                return;
+            }
+            var seg = segments[i],
+                utterance = new SpeechSynthesisUtterance(seg.text),
+                voiceList = speechSynthesis.getVoices();
+            var matchingVoice = voiceList.find(function (v) {
+                return v.name === voiceName;
+            });
+            utterance.voice = matchingVoice;
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            utterance.lang = SnapTranslator.language || 'en';
+
+            utterance.onstart = function () {
+                seg.blocks.forEach(function (b) {
+                    b.addHighlight({color: purpleColor});
+                    self.currentlyHighlighted.push(b);
+                });
+            };
+            utterance.onend = function () {
+                seg.blocks.forEach(function (b) { 
+                    b.removeHighlight();
+                    var idx = self.currentlyHighlighted.indexOf(b);
+                    if (idx > -1) {
+                        self.currentlyHighlighted.splice(idx, 1);
+                    }
+                });
+                speakSegments(segments, i + 1, stage, voiceName, rate, pitch);
+            };
+            utterance.onerror = function (e) {
+                seg.blocks.forEach(function (b) {
+                    b.removeHighlight();
+                    var idx = self.currentlyHighlighted.indexOf(b);
+                    if (idx > -1) {
+                        self.currentlyHighlighted.splice(idx, 1);
+                    }
+                });
+            };
+            window.speechSynthesis.speak(utterance);
+        }
+        speakSegments(allSegments, 0, stage, voiceName, rate, pitch);
+    }
+};
+
+Process.prototype.readThisScriptOptions = function (voiceName, rate, pitch) {
+    var self = this,
+        purpleColor = new Color(205, 132, 219);
+    if (!BlockMorph.prototype.isHoverTTS && !Process.prototype.blockSpeaking) {
+        var currentBlock = this.context.expression,
+            topBlock = currentBlock.topBlock ? currentBlock.topBlock() : currentBlock;
+        if (!topBlock) {
+            return; 
+        }
+        var fullText = topBlock.scriptToReadableText(),
+            utterance = new SpeechSynthesisUtterance(fullText),
+            voices = window.speechSynthesis.getVoices(),
+            matchingVoice = voices.find(function (v) {
+            return v.name === voiceName;
+        });
+        utterance.voice = matchingVoice;
+        utterance.rate = rate;
+        utterance.pitch = pitch;
+        utterance.lang = SnapTranslator.language || 'en';
+        utterance.onstart = function () {
+            topBlock.addHighlight();
+            self.currentlyHighlighted.push(topBlock);
+        };
+        utterance.onend = function () {
+            topBlock.removeHighlight();
+            var idx = self.currentlyHighlighted.indexOf(topBlock);
+            if (idx > -1) {
+                self.currentlyHighlighted.splice(idx, 1);
+            }
+        };
+        utterance.onerror = function (e) {
+            topBlock.removeHighlight();
+            var idx = self.currentlyHighlighted.indexOf(topBlock);
+            if (idx > -1) {
+                self.currentlyHighlighted.splice(idx, 1);
+            }
+        };
+        window.speechSynthesis.speak(utterance);
+    }
+};
+
+Process.prototype.stopReading = function () {
+    if (window.speechSynthesis){
+        window.speechSynthesis.cancel();
+    }
+    if (this.currentlyHighlighted) {
+        this.currentlyHighlighted.forEach(function (b) {
+            b.removeHighlight();
+        });
+        this.currentlyHighlighted = [];
+    }
+};
+
+// Process sound primitives (interpolated)
 Process.prototype.playSound = function (name) {
     if (name instanceof List) {
         return this.doPlaySoundAtRate(name, 44100);
@@ -6162,14 +6369,11 @@ Process.prototype.reportFrameCount = function () {
 
 // Process single-stepping
 
-Process.prototype.flashContext = function () { //this does make it flash, but it flashes really fast
-    //how is it flashing each block???
+Process.prototype.flashContext = function () { 
     var expr = this.context.expression;
     if ((this.enableSingleStepping
-        //BEGIN EDITS
-        || this.enableSoundStepping) 
-        //END EDITS
-         &&
+        // || this.enableSoundStepping
+        )&&
             !this.isAtomic &&
             expr instanceof SyntaxElementMorph &&
             !(expr instanceof CommandSlotMorph) &&
@@ -6177,6 +6381,9 @@ Process.prototype.flashContext = function () { //this does make it flash, but it
             expr.world() &&
             !(expr instanceof ColorSlotMorph)) {
         this.unflash();
+        // if (this.enableSoundStepping) {
+        //     expr.playClackSound(); //brocken
+        // }
         expr.flash();
         this.context.isFlashing = true;
         this.flashingContext = this.context;

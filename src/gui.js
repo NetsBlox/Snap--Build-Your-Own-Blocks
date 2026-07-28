@@ -124,6 +124,9 @@ function ensureFullUrl(url) {
     return url;
 }
 
+var clackAudio = new Audio();
+clackAudio.src = 'src/clackNew.wav';
+
 var SPEECH_RECOGNIZER = undefined;
 var SPEECH_RECOGNIZER_REQUESTS = [];
 var SPEECH_RECOGNIZER_RESULT = '';
@@ -704,6 +707,7 @@ IDE_Morph.prototype.createControlBar = function () {
                 this.frameColor.darker(50),
                 this.frameColor.darker(50)
             ],
+        clackAudio,
         myself = this;
 
     if (this.controlBar) {
@@ -818,40 +822,72 @@ IDE_Morph.prototype.createControlBar = function () {
         stageSizeButton.hide();
     }
 
-    //BEGIN EDIT
-    button = new ToggleButtonMorph(
-        null, //colors,
-        this, // the IDE is the target
-        'toggleSoundStepping',
-        [
-            new SymbolMorph('notes', 16), //one if it's on, one if it's off?
-            new SymbolMorph('notes', 16)
-        ],
-        () => Process.prototype.enableSoundStepping // query
-    );
+    //SOUND STEPPING BUTTON- will not work with current server issues
 
-    button.corner = 12;
-    button.color = colors[0];
-    button.highlightColor = colors[1];
-    button.pressColor = new Color(153, 255, 213);
-    button.labelMinExtent = new Point(36, 18);
-    button.padding = 0;
-    button.labelShadowOffset = new Point(-1, -1);
-    button.labelShadowColor = colors[1];
-    button.labelColor = this.buttonLabelColor;
-    button.contrast = this.buttonContrast;
-    button.hint = 'Sound stepping';
-    button.fixLayout();
-    button.refresh();
-    soundSteppingButton = button;
-    this.controlBar.add(soundSteppingButton);
-    this.controlBar.soundSteppingButton = soundSteppingButton; // for refreshing
+    // this.clackSound = new Sound(clackAudio, 'clack');
+
+    // button = new ToggleButtonMorph(
+    //     null,
+    //     this,
+    //     'toggleSoundStepping',
+    //     [
+    //         new SymbolMorph('notes', 16),
+    //         new SymbolMorph('notes', 16)
+    //     ],
+    //     () => Process.prototype.enableSoundStepping // query
+    // );
+
+    // button.corner = 12;
+    // button.color = colors[0];
+    // button.highlightColor = colors[1];
+    // button.pressColor = new Color(153, 255, 213);
+    // button.labelMinExtent = new Point(36, 18);
+    // button.padding = 0;
+    // button.labelShadowOffset = new Point(-1, -1);
+    // button.labelShadowColor = colors[1];
+    // button.labelColor = this.buttonLabelColor;
+    // button.contrast = this.buttonContrast;
+    // button.hint = 'Sound stepping';
+    // button.fixLayout();
+    // button.refresh();
+    // soundSteppingButton = button;
+    // this.controlBar.add(soundSteppingButton);
+    // this.controlBar.soundSteppingButton = soundSteppingButton;
 
     if (this.performerMode) {
         appModeButton.hide();
         stageSizeButton.hide();
     }
     //END EDIT
+
+    //TTS button
+    button = new ToggleButtonMorph(
+        null,
+        this,
+        'readAllScripts',
+        [
+            new SymbolMorph('sound', 16),
+            new SymbolMorph('sound', 16)
+        ],
+        () => Process.prototype.buttonSpeaking  
+    );
+
+    button.corner = 12;
+    button.color = colors[0];
+    button.highlightColor = colors[1];
+    button.pressColor = new Color(153, 255, 213);
+    button.labelMinExtent = new Point(36, 18); 
+    button.padding = 0;
+    button.labelShadowOffset = new Point(-1, -1);
+    button.labelShadowColor = colors[1];
+    button.labelColor = this.buttonLabelColor;
+    button.contrast = this.buttonContrast;
+    button.hint = 'Read all scripts aloud';
+    button.fixLayout();
+    button.refresh();
+    ttsButton = button;
+    this.controlBar.add(button);
+    this.controlBar.ttsButton = ttsButton;
 
     // stopButton
     button = new ToggleButtonMorph(
@@ -1116,13 +1152,11 @@ IDE_Morph.prototype.createControlBar = function () {
         steppingButton.setCenter(myself.controlBar.center());
         steppingButton.setRight(slider.left() - padding);
 
-        //BEGIN EDIT
-        soundSteppingButton.setCenter(myself.controlBar.center());
-        soundSteppingButton.setRight(steppingButton.left() - padding);
-        //END EDIT
+        ttsButton.setCenter(myself.controlBar.center());
+        ttsButton.setRight(extensionsButton.left());
 
         extensionsButton.setCenter(myself.controlBar.center());
-        extensionsButton.setRight(soundSteppingButton.left() - padding);
+        extensionsButton.setRight(steppingButton.left() - padding);
 
         settingsButton.setCenter(myself.controlBar.center());
         settingsButton.setLeft(this.left());
@@ -2554,13 +2588,107 @@ IDE_Morph.prototype.toggleSingleStepping = function () {
     this.controlBar.refreshSlider();
 };
 
-//BEGIN EDIT
-IDE_Morph.prototype.toggleSoundStepping = function () {
-    this.stage.threads.toggleSoundStepping();
-    this.controlBar.soundSteppingButton.refresh();
-    this.controlBar.refreshSlider();  //did not fix bug like i wanted but is probably fine
+//for sound stepping button
+// IDE_Morph.prototype.toggleSoundStepping = function () {
+//     this.stage.threads.toggleSoundStepping();
+//     this.controlBar.soundSteppingButton.refresh();
+//     this.controlBar.refreshSlider();
+// };
+
+IDE_Morph.prototype.readAllScripts = function() {
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        Process.prototype.buttonSpeaking = false;
+        this.controlBar.ttsButton.refresh();
+        return;
+    }
+    
+    if (!this.currentSprite) {
+        return;
+    }
+    
+    var sprite = this.currentSprite,
+        scripts = sprite.scripts.children,
+        stage = sprite.parentThatIsA(StageMorph),
+        topBlocks = scripts.filter(function (topBlock) {
+            return topBlock instanceof SyntaxElementMorph;
+        });
+    
+    if (topBlocks.length === 0) {
+        return;
+    }
+    
+    Process.prototype.buttonSpeaking = true;
+    this.controlBar.ttsButton.refresh();
+    
+    var utterance = new SpeechSynthesisUtterance(),
+        purpleColor = new Color(205, 132, 219),
+        currentlyHighlighted = [],
+        ttsButton = this.controlBar.ttsButton,
+        allSegments = topBlocks.map(function (topBlock) {
+            var blocksInScript = [],
+                current = topBlock;
+            while (current) {
+                blocksInScript.push(current);
+                current = current.nextBlock && current.nextBlock();
+            }
+            return {
+                text: topBlock.scriptToReadableText(),
+                blocks: blocksInScript
+            };
+        });
+    
+    function speakSegments(segments, i) {
+        if (i >= segments.length) {
+            // Button reader finished
+            Process.prototype.buttonSpeaking = false;
+            ttsButton.refresh();
+            return;
+        }
+        var seg = segments[i];
+        utterance.text = seg.text;
+        utterance.lang = SnapTranslator.language || 'en';
+        if (stage.ttsVoice) {
+            utterance.voice = stage.ttsVoice;
+        }
+        if (stage.ttsRate !== undefined) {
+            utterance.rate = stage.ttsRate;
+        }
+        if (stage.ttsPitch !== undefined) {
+            utterance.pitch = stage.ttsPitch;
+        }
+        utterance.onstart = function () {
+            seg.blocks.forEach(function (b) {
+                b.addHighlight({color: purpleColor});
+                currentlyHighlighted.push(b);
+            });
+        };
+        utterance.onend = function () {
+            seg.blocks.forEach(function (b) { 
+                b.removeHighlight();
+                var idx = currentlyHighlighted.indexOf(b);
+                if (idx > -1) {
+                    currentlyHighlighted.splice(idx, 1);
+                }
+            });
+            speakSegments(segments, i + 1);  // continue to next segment
+        };
+        utterance.onerror = function (e) {
+            seg.blocks.forEach(function (b) { 
+                b.removeHighlight();
+                var idx = currentlyHighlighted.indexOf(b);
+                if (idx > -1) {
+                    currentlyHighlighted.splice(idx, 1);
+                }
+            });
+            // On error, finish button reading
+            Process.prototype.buttonSpeaking = false;
+            ttsButton.refresh();
+        };
+        window.speechSynthesis.speak(utterance);
+    }
+    speakSegments(allSegments, 0);
 };
-//END EDIT
 
 IDE_Morph.prototype.toggleCameraSupport = function () {
     CamSnapshotDialogMorph.prototype.enableCamera =
@@ -2757,11 +2885,9 @@ IDE_Morph.prototype.applySavedSettings = function () {
     }
 
     //BEGIN EDIT
-    /*
-    if (sstepping && !BlockMorph.prototype.clackSound){ //doesn't work
+    if (sstepping && !BlockMorph.prototype.Sound){ //doesn't work
         BlockMorph.prototype.toggleSteppingSound();
     }
-        */
     //END EDIT
 
     // long form
@@ -3477,26 +3603,14 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to turn on\n visible stepping (slow)',
         false
     );
-    //BEGIN EDIT
-    addPreference(
-        'Sound stepping',
-        () => {
-            BlockMorph.prototype.toggleSteppingSound();
-            if (BlockMorph.prototype.clackSound) {
-                this.saveSetting('sstepping', true);
-            } else {
-                this.removeSetting('sstepping');
-            }
-            //BlockMorph.prototype.clackSound.play(); //does not throw an error here, but also does not play
-            //where in the gui can i trigger the noise?
-        },
-        'toggleSoundStepping',
-        Process.prototype.enableSoundStepping,
-        'uncheck to turn off\nsound stepping',
-        'check to turn on\nsound stepping',
-        false
-    );
-    //END EDIT
+    // addPreference(
+    //     'Sound stepping',
+    //     'toggleSoundStepping',
+    //     Process.prototype.enableSoundStepping,
+    //     'uncheck to turn off\nsound stepping',
+    //     'check to turn on\nsound stepping',
+    //     false
+    // );
     addPreference(
         'Log pen vectors',
         () => StageMorph.prototype.enablePenLogging =
@@ -3924,7 +4038,30 @@ IDE_Morph.prototype.settingsMenu = function () {
         'check to enable\ndropping commands in all rings',
         true
     );
-
+    menu.addLine();
+    addPreference(
+        'Hover for text-to-speech',
+        () => {
+            BlockMorph.prototype.isHoverTTS = !BlockMorph.prototype.isHoverTTS;
+            this.flushBlocksCache('control');
+            this.refreshPalette();
+        },
+        BlockMorph.prototype.isHoverTTS,
+        'check to turn on hovering for TTS',
+        'check to turn off hovering for TTS'
+    );
+    menu.addPair(
+        localize('Set TTS rate...'),
+        'ttsRateMenu'
+    );
+    menu.addPair(
+        localize('Set TTS pitch...'),
+        'ttsPitchMenu' //TODO: define this
+    );
+    menu.addPair(
+        localize('Set TTS voice...'),
+        'ttsVoiceMenu' //TODO: define this
+    );
     return menu;
 };
 
@@ -6277,6 +6414,103 @@ IDE_Morph.prototype.languageMenu = function () {
             }
         )
     );
+    menu.popup(world, pos);
+};
+
+IDE_Morph.prototype.ttsRateMenu = function () {
+    var menu = new MenuMorph(this),
+        world = this.world(),
+        pos = this.controlBar.settingsButton.bottomLeft(),
+        tick = new SymbolMorph(
+            'tick',
+            MorphicPreferences.menuFontSize * 0.75
+        ),
+        empty = tick.fullCopy(),
+        rates = [0, 1, 2, 3, 4, 5, 6];
+
+    empty.render = nop;
+    
+    rates.forEach(rate =>
+        menu.addItem(
+            [
+                this.stage.ttsRate === rate ? tick : empty,
+                rate.toString()
+            ],
+            () => {
+                this.stage.ttsRate = rate;
+            }
+        )
+    );
+    
+    menu.popup(world, pos);
+};
+
+IDE_Morph.prototype.ttsPitchMenu = function () {
+    var menu = new MenuMorph(this),
+        world = this.world(),
+        pos = this.controlBar.settingsButton.bottomLeft(),
+        tick = new SymbolMorph(
+            'tick',
+            MorphicPreferences.menuFontSize * 0.75
+        ),
+        empty = tick.fullCopy(),
+        pitches = [0, 1, 2];
+
+    empty.render = nop;
+    
+    pitches.forEach(pitch =>
+        menu.addItem(
+            [
+                this.stage.ttsPitch === pitch ? tick : empty,
+                pitch.toString()
+            ],
+            () => {
+                this.stage.ttsPitch = pitch;
+            }
+        )
+    );
+    
+    menu.popup(world, pos);
+};
+
+IDE_Morph.prototype.ttsVoiceMenu = function () {
+    var menu = new MenuMorph(this),
+        world = this.world(),
+        pos = this.controlBar.settingsButton.bottomLeft(),
+        tick = new SymbolMorph(
+            'tick',
+            MorphicPreferences.menuFontSize * 0.75
+        ),
+        empty = tick.fullCopy(),
+        voices = speechSynthesis.getVoices(),
+        myself = this;
+
+    empty.render = nop;
+    
+    var populateVoices = function() {
+        voices = speechSynthesis.getVoices();
+        menu.items = [];
+        
+        voices.forEach(voice =>
+            menu.addItem(
+                [
+                    myself.stage.ttsVoice === voice ? tick : empty,
+                    voice.name + ' (' + voice.lang + ')'
+                ],
+                () => {
+                    myself.stage.ttsVoice = voice;
+                }
+            )
+        );
+    };
+    
+    if (voices.length === 0) {
+        // Voices not loaded yet, wait for voiceschanged event
+        speechSynthesis.onvoiceschanged = populateVoices;
+    } else {
+        populateVoices();
+    }
+    
     menu.popup(world, pos);
 };
 
