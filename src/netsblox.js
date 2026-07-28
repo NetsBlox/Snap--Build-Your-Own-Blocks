@@ -1350,4 +1350,5 @@ NetsBloxMorph.prototype.createPalette = function (forSearching) {
             _ReactToDropOf.call(this, droppedMorph, hand);
         }
     };
+    return this.palette;
 };
