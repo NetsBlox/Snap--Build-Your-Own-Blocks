@@ -1,15 +1,16 @@
 // start a static file server w/ an extra route for index.html
-import { fileURLToPath } from "url";
-import fs from "fs";
-import fsp from "fs/promises";
-import http from "http";
-import { Transform } from "stream";
-import { pipeline } from "stream/promises";
-import nodeStatic from "node-static";
-import fetch from "node-fetch";
+
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import http from "node:http";
+import path from "node:path";
+import { Transform } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { fileURLToPath } from "node:url";
 import dot from "dot";
-import path from "path";
-import assert from "assert/strict";
+import fetch from "node-fetch";
+import nodeStatic from "node-static";
+
 const port = process.env.PORT ? +process.env.PORT : 8000;
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const indexTpl = dot.template(
