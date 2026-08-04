@@ -76,6 +76,8 @@ function __parseDirectedFork (graphContents) {
 
 var Graph;
 var GraphWatcherMorph;
+var EdgeMorph;
+var VertexMorph;
 
 // Graph /////////////////////////////////////////////////////////////////////////////////
 
@@ -204,15 +206,82 @@ function GraphWatcherMorph(graph, parentCell) {
 }
 
 GraphWatcherMorph.prototype.init = function (graph, parentCell) {
+    this.graph = graph || new Graph();
+    this.parentCell = parentCell || null;
 
+    GraphWatcherMorph.uber.init.call(
+        this,
+        SyntaxElementMorph.prototype.rounding,
+        1,
+        new Color(120, 120, 120)
+    );
+
+    // TODO - extent should change automatically with the graph size.
+    this.setExtent(new Point(100, 100));
+
+    this.vertex = new VertexMorph('');
+    this.add(this.vertex);
 };
 
+// TODO
 GraphWatcherMorph.prototype.update = function () {
-    
+    var vertices = this.graph.getVertices(),
+        edges = this.graph.getEdges();
+
+    // syncronize vertex morphs
+    // syncronize edge morphs
+    // compute layout
+    this.fixLayout();
 };
 
+// TODO
+GraphWatcherMorph.prototype.expand = function (maxExtent) {
+    return;
+};
+
+// TODO
 GraphWatcherMorph.prototype.fixLayout = function () {
-    
+    return;
 };
 
 GraphWatcherMorph.prototype.render = WatcherMorph.prototype.render;
+
+// EdgeMorph /////////////////////////////////////////////////////////////////////////////
+
+EdgeMorph.prototype = new BoxMorph();
+EdgeMorph.prototype.constructor = EdgeMorph;
+EdgeMorph.uber = BoxMorph.prototype;
+
+function EdgeMorph(src, dst) {
+    this.init(src, dst);
+}
+
+EdgeMorph.prototype.init = function (src, dst) {
+    this.src = src;
+    this.dst = dst;
+
+    EdgeMorph.uber.init.call(
+        this,
+        0,
+        1,
+        new Color(120, 120, 120)
+    );
+};
+
+// VertexMorph ///////////////////////////////////////////////////////////////////////////
+
+VertexMorph.prototype = new CircleBoxMorph();
+VertexMorph.prototype.constructor = VertexMorph;
+VertexMorph.uber = CircleBoxMorph.prototype;
+
+function VertexMorph(value) {
+    this.init(value);
+}
+
+VertexMorph.prototype.init = function (value) {
+    this.value = value;
+
+    VertexMorph.uber.init.call(this);
+
+    this.setExtent(new Point(10, 10));
+};
