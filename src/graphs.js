@@ -83,32 +83,23 @@ function Graph(list, type) {
     this.contents = list;
     this.type = type;
     this.id =  Math.floor(Math.random() * 1000000000);
+    this.lastChanged = Date.now();
 }
 
+// TODO
 Graph.prototype.toString = function () {
     var returnString = '';    
-    // TODO
     return returnString;
 }
 
 Graph.prototype.getEdges = function () {
-    var edges;
-    // TODO
     switch (this.type) {
         case 'directed flow':
-            edges = __parseDirectedFlow(this.contents);
-            break;
+            return __parseDirectedFlow(this.contents);
         case 'directed fork':
-            edges = __parseDirectedFork(this.contents);
-            break;
-        case 'undirected flow':
-            // TODO
-        case 'undirected fork':
-            // TODO
-        default:
-            throw new Error('unsuported graph type');
+            return __parseDirectedFork(this.contents);
     }
-    return edges;
+    throw new Error('unsuported graph type');
 }
 
 Graph.prototype.getVertices = function () {
@@ -213,155 +204,15 @@ function GraphWatcherMorph(graph, parentCell) {
 }
 
 GraphWatcherMorph.prototype.init = function (graph, parentCell) {
-    var myself = this;
 
-    this.graph = graph || new Graph();
-    this.start = 1;
-    this.range = 100;
-    this.lastCell = null;
-    this.parentCell = parentCell || null;
-
-    this.frame = new ScrollFrameMorph(null, 10);
-    this.frame.alpha = 0;
-    this.frame.acceptsDrops = false;
-    this.frame.contents.acceptsDrops = false;
-
-    GraphWatcherMorph.uber.init.call(
-        this,
-        SyntaxElementMorph.prototype.rounding,
-        1,
-        new Color(120, 120, 120)
-    );
-
-    this.color = new Color(220, 220, 220);
-    this.isDraggable = false;
-    this.setExtent(new Point(80, 70));
-    this.add(this.frame);
-    this.update();
-    this.fixLayout();
 };
 
 GraphWatcherMorph.prototype.update = function () {
-    var i, cell, cnts, max, ceil, vertices, morphs;
-
-    this.frame.contents.children.forEach(m => {
-        if (m instanceof CellMorph) {
-            if (m.contentsMorph instanceof ListWatcherMorph) {
-                m.contentsMorph.update();
-            } else if (isSnapObject(m.contents) ||
-                    (m.contents instanceof Costume)) {
-                m.update();
-            }
-        } 
-    });
-
-    vertices = this.graph.getVertices();
-
-    // adjust start index to current graph size
-    this.start = Math.max(
-        Math.min(
-            this.start,
-            Math.floor((vertices.length() - 1) / this.range)
-                * this.range + 1
-        ),
-        1
-    );
     
-    // refresh existing cells
-    // highest index
-    max = Math.min(
-        this.start + this.range - 1,
-        vertices.length()
-    );
-
-    // number of morphs available for refreshing
-    ceil = Math.min(
-        (max - this.start + 1),
-        this.frame.contents.children.length
-    );
-
-    for (i = 0; i < this.frame.contents.children.length; ++i) {
-        cell = this.frame.contents.children[i];
-        cnts = vertices.at(i + 1);
-
-        if (cell.contents !== cnts) {
-            cell.contents = cnts;
-            cell.fixLayout();
-            if (this.lastCell) {
-                cell.setLeft(this.lastCell.left());
-            }
-        }
-        this.lastCell = cell;
-    }
-
-    // remove excess cells
-    // number of morphs to be shown
-    morphs = max - this.start + 1;
-
-    while (this.frame.contents.children.length > morphs) {
-        this.frame.contents.children[morphs].destroy();
-    }
-
-    // add additional cells
-    ceil = morphs;
-    i = this.frame.contents.children.length;
-
-    if (ceil > i + 1) {
-        for (i; i < ceil; ++i) {
-            cell = new CellMorph(
-                vertices.at(i),
-                this.cellColor,
-                i,
-                this.parentCell
-            );
-            this.frame.contents.add(cell);
-        }
-    }
-
-    this.fixLayout();
-    this.frame.contents.adjustBounds();
-    this.frame.contents.setLeft(this.frame.left(0));
 };
 
 GraphWatcherMorph.prototype.fixLayout = function () {
-    if (this.frame) {
-        this.arrangeCells();
-        this.frame.setPosition(this.position().add(3));
-        this.frame.bounds.corner = this.bounds.corner.subtract(new Point(
-            3,
-            17
-        ));
-        this.frame.fixLayout();
-        this.frame.contents.adjustBounds();
-    }
-};
-
-GraphWatcherMorph.prototype.arrangeCells = function () {
-    var i, cell, lastCell,
-    end = this.frame.contents.children.length;
-    for (i = 0; i < end; ++i) {
-        cell = this.frame.contents.children[i];
-        if (lastCell) {
-            cell.setLeft(lastCell.right());;
-        }
-        lastCell = cell;
-    }
-    this.frame.contents.adjustBounds();
-};
-
-GraphWatcherMorph.prototype.expand = function (maxExtent) {
-    // make sure to show all (first 100) cells
-    var fe = this.frame.contents.extent(),
-        ext = new Point(fe.x + 6, fe.y + 6);
-    if (maxExtent) {
-        ext = ext.min(maxExtent);
-    }
-    this.setExtent(ext);
-};
-
-GraphWatcherMorph.prototype.show = function () {
-    GraphWatcherMorph.uber.show.call(this);
-    this.frame.contents.adjustBounds();
+    
 };
 
 GraphWatcherMorph.prototype.render = WatcherMorph.prototype.render;
