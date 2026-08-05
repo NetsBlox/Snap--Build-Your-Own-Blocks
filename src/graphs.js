@@ -71,12 +71,35 @@ function __parseDirectedFork (graphContents) {
     return edges;
 }
 
+function __merge_list(a, b) {
+    b.forEach(x => {
+        if (!a.contains(x)) 
+            a.add(x);
+    });
+    return a;
+}
+
+function __load_vertices(list) {
+    var vertices = new List();
+    list.contents.forEach(x => {
+        var newElements = x.vertices ? x instanceof Graph : new List([new Vertex(x)]);
+        newElements.contents.forEach(e => {
+            if (!vertices.contains(e)) 
+                vertices.add(e);
+        });
+    });
+    vertices = vertices.map(x => new Vertex(x));
+    return vertices;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
 var Graph;
 var GraphWatcherMorph;
+var Edge;
 var EdgeMorph;
+var Vertex;
 var VertexMorph;
 
 // Graph /////////////////////////////////////////////////////////////////////////////////
@@ -84,8 +107,13 @@ var VertexMorph;
 function Graph(list, type) {
     this.contents = list;
     this.type = type;
-    this.id =  Math.floor(Math.random() * 1000000000);
+    this.id = Math.floor(Math.random() * 1000000000);
     this.lastChanged = Date.now();
+    this.vertices = __load_vertices(list);
+    console.log(this.vertices);
+    console.log(this.getVertices());
+    
+    //load edges
 }
 
 // TODO
@@ -246,19 +274,25 @@ GraphWatcherMorph.prototype.fixLayout = function () {
 
 GraphWatcherMorph.prototype.render = WatcherMorph.prototype.render;
 
+// Edge //////////////////////////////////////////////////////////////////////////////////
+
+function Edge(src, dst) {
+    this.src = src;
+    this.dst = dst;
+}
+
 // EdgeMorph /////////////////////////////////////////////////////////////////////////////
 
 EdgeMorph.prototype = new BoxMorph();
 EdgeMorph.prototype.constructor = EdgeMorph;
 EdgeMorph.uber = BoxMorph.prototype;
 
-function EdgeMorph(src, dst) {
-    this.init(src, dst);
+function EdgeMorph(egde) {
+    this.init(edge);
 }
 
-EdgeMorph.prototype.init = function (src, dst) {
-    this.src = src;
-    this.dst = dst;
+EdgeMorph.prototype.init = function (edge) {
+    this.edge;
 
     EdgeMorph.uber.init.call(
         this,
@@ -268,18 +302,45 @@ EdgeMorph.prototype.init = function (src, dst) {
     );
 };
 
+// Vertex ////////////////////////////////////////////////////////////////////////////////
+
+function Vertex(value) {
+    this.value = value
+}
+
+Vertex.prototype.getValue = function () {
+    return this.value;
+};
+
+Vertex.prototype.equals = function (vertex) {
+    return this.value == vertex.value
+};
+
+// VertexSet /////////////////////////////////////////////////////////////////////////////
+
+function VertexSet(list) {
+    this.list = list || new List();
+    list.contents.forEach(element => {
+        if (!(element instanceof Vertex))
+            throw new Error('VertexSet must only contain Vertex objects');
+    });
+}
+
+VertexSet.prototype.contains = function (vertex) {
+};
+
 // VertexMorph ///////////////////////////////////////////////////////////////////////////
 
 VertexMorph.prototype = new CircleBoxMorph();
 VertexMorph.prototype.constructor = VertexMorph;
 VertexMorph.uber = CircleBoxMorph.prototype;
 
-function VertexMorph(value) {
-    this.init(value);
+function VertexMorph(vertex) {
+    this.init(vertex);
 }
 
-VertexMorph.prototype.init = function (value) {
-    this.value = value;
+VertexMorph.prototype.init = function (vertex) {
+    this.vertex = vertex;
 
     VertexMorph.uber.init.call(this);
 
