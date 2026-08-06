@@ -71,31 +71,8 @@ function __parseDirectedFork (graphContents) {
     return edges;
 }
 
-function __merge_list(a, b) {
-    b.forEach(x => {
-        if (!a.contains(x)) 
-            a.add(x);
-    });
-    return a;
-}
-
-function __load_vertices(list) {
-    var vertices = new List();
-    list.contents.forEach(x => {
-        var newElements = x.vertices ? x instanceof Graph : new List([new Vertex(x)]);
-        newElements.contents.forEach(e => {
-            if (!vertices.contains(e)) 
-                vertices.add(e);
-        });
-    });
-    vertices = vertices.map(x => new Vertex(x));
-    return vertices;
-}
-
-
 //////////////////////////////////////////////////////////////////////////////////////////
 
-var Graph;
 var GraphWatcherMorph;
 var Edge;
 var EdgeMorph;
@@ -104,120 +81,100 @@ var VertexMorph;
 
 // Graph /////////////////////////////////////////////////////////////////////////////////
 
-function Graph(list, type) {
-    this.contents = list;
-    this.type = type;
-    this.id = Math.floor(Math.random() * 1000000000);
-    this.lastChanged = Date.now();
-    this.vertices = __load_vertices(list);
-    console.log(this.vertices);
-    console.log(this.getVertices());
-    
-    //load edges
-}
+class Graph {
 
-// TODO
-Graph.prototype.toString = function () {
-    var returnString = '';    
-    return returnString;
-}
+    #contents;
+    #type;
+    #id;
+    #lastChanged;
+    #vertices;
+    #edges;
 
-Graph.prototype.getEdges = function () {
-    switch (this.type) {
-        case 'directed flow':
-            return __parseDirectedFlow(this.contents);
-        case 'directed fork':
-            return __parseDirectedFork(this.contents);
+    constructor(list, type) {
+        this.#contents = list.contents;
+        this.#type = type;
+        this.#id = Math.floor(Math.random() * 100000000);
+        this.#lastChanged = Date.now();
+        this.#loadVertices();
+        this.#loadEdges();
     }
-    throw new Error('unsuported graph type');
-}
 
-Graph.prototype.getVertices = function () {
-    var vertices = new List(),
-        graphSize = this.contents.length(),
-        temp,
-        i, j;
+    get verticies() {
+        return this.#vertices.map(x => x.snapify());
+    }
 
-    var _insertIf = function (item) {
-        if (vertices.indexOf(item) === 0)
-            vertices.add(item)
+    // TODO
+    get edges() {
+        return;
+    }
+
+    // TODO
+    toString() {
+        return '';
+    }
+
+    valueOf() {
+        return NaN;
+    }
+
+    get #roots() {
+        return this.#getBoundaryVertices('head');
+    }
+
+    get #leaves() {
+        return this.#getBoundaryVertices('tail');
+    } 
+
+    get #head() {
+        return this.#contents[0];
+    }
+
+    get #tail() {
+        return this.#contents[this.#contents.length];
+    }
+
+    #loadVertices() {
+        const vertices = new List();
+        this.contents.forEach(x => {
+            const newElements = x instanceof Graph 
+                ? x.getVertices() 
+                : new List([x]);
+
+            newElements.contents.forEach(e => {
+                if (!vertices.contains(e)) 
+                    vertices.add(e);
+            });
+        });
+
+        this.#vertices = vertices.map(x => new Vertex(x));
+    }
+
+    #loadEdges() {
+        const edges = new List();
+        for (let i = 0; i < contents.length - 1; ++i) {
+            
+        }
+        this.edges = edges;
     };
-        
-    for (i = 1; i <= graphSize; ++i) {
-        if (this.contents.at(i) instanceof Graph) {
-            temp = this.contents.at(i).getVertices();
-            for (j = 1; j <= temp.length(); ++j)
-                _insertIf(temp.at(j));
-        }
-        else
-            _insertIf(this.contents.at(i))
-    }
-    
-    return vertices;
-}
 
-Graph.prototype.getRoots = function () {
-    var roots = new List(),
-        graphSize = this.contents.length(),
-        temp, i, j;
-
-    if (this.type === 'directed flow') {
-        temp = this.contents.at(1);
-        if (temp instanceof Graph)
-            return temp.getRoots();
-        roots.add(temp);
-        return roots;
-    }
-
-    if (this.type === 'directed fork') {
-        for (i = 1; i <= graphSize; ++i) {
-            temp = this.contents.at(i);
-            if (!(temp instanceof Graph))
-                roots.add(temp);
-            else {
-                temp = temp.getRoots();
-                for (j = 1; j <= temp.length(); ++j)
-                    roots.add(temp.at(j))
+    #getBoundaryVertices(endpoint) {
+        const elements = (() => {
+            switch (this.type) {
+                case 'directed flow': return [this[endpoint]];
+                case 'directed fork': return this.contents;
+                default: throw new Error('unsupported graph type');
             }
-        }
-        return roots;
+        })();
+
+        const vertices = [];
+        elements.forEach(v => {
+            const arr = v instanceof Graph
+                ? v.getBoundaryVertices(endpoint).asArray()
+                : [new Vertex(v)];
+            vertices.push(...arr);
+        });
+        return new List(vertices);
     }
-
-    throw new Error('unsupported graph type');
-}
-
-Graph.prototype.getLeaves = function () {
-    var leaves = new List(),
-        graphSize = this.contents.length(),
-        temp, i, j;
-
-    if (this.type === 'directed flow') {
-        temp = this.contents.at(graphSize);
-        if (temp instanceof Graph)
-            return temp.getLeaves();
-        leaves.add(temp);
-        return leaves; 
-    }
-  
-    if (this.type === 'directed fork') {
-        for (i = 1; i <= graphSize; ++i) {
-            temp = this.contents.at(i);
-            if (!(temp instanceof Graph))
-                leaves.add(temp);
-            else {
-                temp = temp.getLeaves();
-                for (j = 1; j <= temp.length(); ++j)
-                    leaves.add(temp.at(j))
-            }
-        }
-        return leaves;
-    }
-
-    throw new Error('unsupported graph type');
-}
-
-Graph.prototype.valueOf = function () {
-    return NaN;
 }
 
 // GraphWatcherMorph//////////////////////////////////////////////////////////////////////
@@ -308,7 +265,7 @@ function Vertex(value) {
     this.value = value
 }
 
-Vertex.prototype.getValue = function () {
+Vertex.prototype.snapify = function () {
     return this.value;
 };
 
