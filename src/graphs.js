@@ -16,8 +16,6 @@
 
 */
 
-// Helper function ///////////////////////////////////////////////////////////////////////
-
 function __parseDirectedFlow (graphContents) {
     var edges = new List(),
         seenGraphs = new List(),
@@ -71,18 +69,7 @@ function __parseDirectedFork (graphContents) {
     return edges;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
-
-var GraphWatcherMorph;
-var Edge;
-var EdgeMorph;
-var Vertex;
-var VertexMorph;
-
-// Graph /////////////////////////////////////////////////////////////////////////////////
-
 class Graph {
-
     #contents;
     #type;
     #id;
@@ -97,6 +84,10 @@ class Graph {
         this.#lastChanged = Date.now();
         this.#loadVertices();
         this.#loadEdges();
+    }
+
+    get contents() {
+        return this.#contents;
     }
 
     get verticies() {
@@ -151,10 +142,10 @@ class Graph {
 
     #loadEdges() {
         const edges = new List();
-        for (let i = 0; i < contents.length - 1; ++i) {
+        for (let i = 0; i < this.#contents.length - 1; ++i) {
             
         }
-        this.edges = edges;
+        this.#edges = edges;
     };
 
     #getBoundaryVertices(endpoint) {
@@ -177,129 +168,122 @@ class Graph {
     }
 }
 
-// GraphWatcherMorph//////////////////////////////////////////////////////////////////////
+class GraphWatcherMorph extends BoxMorph {
+    #parentCell;
+    #graph;
 
-GraphWatcherMorph.prototype = new BoxMorph();
-GraphWatcherMorph.prototype.constructor = GraphWatcherMorph;
-GraphWatcherMorph.uber = BoxMorph.prototype;
+    constructor(graph = new Graph(), parentCell = null) {
+        super(
+            SyntaxElementMorph.prototype.rounding,
+            1,
+            new Color(120, 120, 120)
+        );
 
-GraphWatcherMorph.prototype.cellColor =
-    SpriteMorph.prototype.blockColor.graphs;
+        this.#parentCell = parentCell;
+        this.#graph = graph;
 
-function GraphWatcherMorph(graph, parentCell) {
-    this.init(graph, parentCell);
+        // TODO - extent should change automatically with the graph size/
+        this.setExtent(new Point(100, 100));
+
+        this.vertex = new VertexMorph('');
+        this.add(this.vertex);
+    }
+
+    get parentCell() {
+        return this.#parentCell();
+    }
+
+    // TODO
+    update() {
+        const vertices = this.#graph.vertices;
+        const edges = this.#graph.edges;
+
+        // syncronize vertex morphs
+        // syncronize edge morphs
+        // compute layout
+        this.fixLayout();
+    }
+
+    // TODO
+    expand(maxExtent) {
+        return;
+    }
+
+    // TODO
+    fixLayout() {
+        return;
+    }
+
+    render = WatcherMorph.prototype.render;
 }
 
-GraphWatcherMorph.prototype.init = function (graph, parentCell) {
-    this.graph = graph || new Graph();
-    this.parentCell = parentCell || null;
+class Edge {
+    #src;
+    #dst;
 
-    GraphWatcherMorph.uber.init.call(
-        this,
-        SyntaxElementMorph.prototype.rounding,
-        1,
-        new Color(120, 120, 120)
-    );
+    constructor(src, dst) {
+        this.#src = src;
+        this.#dst = dst;
+    }
 
-    // TODO - extent should change automatically with the graph size.
-    this.setExtent(new Point(100, 100));
+    get src() {
+        return this.#src;
+    }
 
-    this.vertex = new VertexMorph('');
-    this.add(this.vertex);
-};
-
-// TODO
-GraphWatcherMorph.prototype.update = function () {
-    var vertices = this.graph.getVertices(),
-        edges = this.graph.getEdges();
-
-    // syncronize vertex morphs
-    // syncronize edge morphs
-    // compute layout
-    this.fixLayout();
-};
-
-// TODO
-GraphWatcherMorph.prototype.expand = function (maxExtent) {
-    return;
-};
-
-// TODO
-GraphWatcherMorph.prototype.fixLayout = function () {
-    return;
-};
-
-GraphWatcherMorph.prototype.render = WatcherMorph.prototype.render;
-
-// Edge //////////////////////////////////////////////////////////////////////////////////
-
-function Edge(src, dst) {
-    this.src = src;
-    this.dst = dst;
+    get dst() {
+        return this.#dst;
+    }
 }
 
-// EdgeMorph /////////////////////////////////////////////////////////////////////////////
+class EdgeMorph extends BoxMorph {
+    #edge;
 
-EdgeMorph.prototype = new BoxMorph();
-EdgeMorph.prototype.constructor = EdgeMorph;
-EdgeMorph.uber = BoxMorph.prototype;
-
-function EdgeMorph(egde) {
-    this.init(edge);
+    constructor(edge) {
+        super(0, 1, new Color(120, 120, 120));
+        this.#edge = edge;
+    }
 }
 
-EdgeMorph.prototype.init = function (edge) {
-    this.edge;
+class Vertex {
+    #value;
 
-    EdgeMorph.uber.init.call(
-        this,
-        0,
-        1,
-        new Color(120, 120, 120)
-    );
-};
+    constructor(value) {
+        this.#value = value;
+    }
 
-// Vertex ////////////////////////////////////////////////////////////////////////////////
+    snapify() {
+        return this.#value;
+    }
 
-function Vertex(value) {
-    this.value = value
+    equals(vertex) {
+        return this.snapify() == vertex.snapify(); 
+    }
 }
 
-Vertex.prototype.snapify = function () {
-    return this.value;
-};
+class VertexSet {
+    #list;
 
-Vertex.prototype.equals = function (vertex) {
-    return this.value == vertex.value
-};
+    constructor(list = new List()) {
+        list.contents.forEach(element => {
+            if (!(element instanceof Vertex))
+                throw new Error('VertexSet must only contain Vertex objects');
+        });
+        this.#list = list;
+    }
 
-// VertexSet /////////////////////////////////////////////////////////////////////////////
-
-function VertexSet(list) {
-    this.list = list || new List();
-    list.contents.forEach(element => {
-        if (!(element instanceof Vertex))
-            throw new Error('VertexSet must only contain Vertex objects');
-    });
+    // TODO
+    contains(vertex) {
+        return;
+    }
 }
 
-VertexSet.prototype.contains = function (vertex) {
-};
+class VertexMorph extends CircleBoxMorph {
+    #vertex;
 
-// VertexMorph ///////////////////////////////////////////////////////////////////////////
-
-VertexMorph.prototype = new CircleBoxMorph();
-VertexMorph.prototype.constructor = VertexMorph;
-VertexMorph.uber = CircleBoxMorph.prototype;
-
-function VertexMorph(vertex) {
-    this.init(vertex);
+    constructor(vertex) {
+        super();
+        this.#vertex = vertex;
+        this.setExtent(new Point(10, 10));
+    }
 }
 
-VertexMorph.prototype.init = function (vertex) {
-    this.vertex = vertex;
-
-    VertexMorph.uber.init.call(this);
-
-    this.setExtent(new Point(10, 10));
-};
