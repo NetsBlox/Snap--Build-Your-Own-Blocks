@@ -4747,13 +4747,8 @@ IDE_Morph.prototype.isPreviousVersion = function () {
 };
 
 IDE_Morph.prototype.share = async function () {
-    const res = await this.cloud.publishProject(this.cloud?.projectId);
-
-    // TODO: this feels wrong in terms of the cloud response - if ever fixed in cloud, update here
-    if (res === 'Public') {
-        this.showMessage('Project must first be saved to the cloud!');
-        return;
-    }
+    // NOTE: This throws on error response.
+    await this.cloud.publishProject(this.cloud?.projectId); 
 
     const username = this.cloud?.username;
     const projName = this.room?.name;

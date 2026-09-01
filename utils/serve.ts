@@ -58,7 +58,7 @@ function getDefaultView(req: express.Request): ViewType {
             : undefined;
     return {
         TITLE: "NetsBlox",
-        DESCRIPTION: "Add project notes here...",
+        DESCRIPTION: "A NetsBlox App!",
         CLOUD: cloud || process.env.NB_CLOUD_URL || DEFAULTS.NB_CLOUD_URL,
         IS_DEV_MODE: process.env.NODE_ENV !== "production",
         IMAGE: undefined,
@@ -186,7 +186,7 @@ app.get("/thumbnails/:exampleName", async (req, res) => {
     return res.type("png").send(buffer);
 });
 
-app.use("/bugs/", express.json({ limit: "1" }));
+app.use("/bugs/", express.json({ limit: "10mb" }));
 app.use(((err, _req, res, next) => {
     if (err?.type === "entity.too.large") {
         res.status(413).send("Bug report too large. Please reduce the size.");
@@ -197,10 +197,6 @@ app.use(((err, _req, res, next) => {
 }) as express.ErrorRequestHandler);
 
 app.post("/bugs/", async (req, res) => {
-    if (!NB_BUG_DIR) {
-        const msg = "Bug reports are not supported by this deployment.";
-        return res.status(400).send(msg);
-    }
     const report = JSON.stringify(req.body);
     const infix = req.query.auto ? "auto" : "user";
     const filename = `${Date.now()}-${infix}-report.json`;
