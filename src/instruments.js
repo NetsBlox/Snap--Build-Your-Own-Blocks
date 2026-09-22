@@ -1,226 +1,226 @@
-function AudioNode(type, parametersList) {
-    this.init(type, parametersList);
-}
+/**
+ * @author Gabriel Barnard - gabriel.h.barnard@vanderbilt.edu 
+ */
 
-AudioNode.prototype.init = function (type, parametersList, parameterOptions) {
-    parameterOptions = parameterOptions || [];
-    this.type = type;
-    this.parameters = AudioNode.prototype.parseParameters(parametersList, parameterOptions);
-    this.id = Math.floor(Math.random() * 1000000000);
-};
+const OSCILLATOR_OPTIONS = ['frequency', 'value'];
+const GAIN_OPTIONS = ['gain'];
+const FILTER_OPTIONS = ['frequency', 'Q', 'gain'];
+const EFFECT_OPTIONS = { delay: ['delayTime'] }; 
 
-AudioNode.prototype.validateParameters = function (parametersList, parameterOptions) {
-    parametersList = parametersList || new List();
+class AudioNode {
+    /**
+     * @param {String} type
+     * @param {List} parameters
+     * @param {Array} options - valid parameter key values
+     */
+    constructor(type, parameters, options = []) {
+        this._type = type;
+        this._parameters = {};
+        this._id = Math.floor(Math.random() * 1000000000);
+        this._setParameters(parameters, options);
+    }
+
+    get type() {
+        if (this.isOscillator()) {
+            return 'oscillator';
+        }
+        if (this.isBiquad()) {
+            return 'biquad';
+        }
+        return this._type;
+    }
+
+    get parameters() {
+        return this._parameters;
+    }
+
+    get id() {
+        return this._id;
+    }
+
+    /**
+     * @return {Boolean} true if the Audio Node is a type of oscillator
+     */
+    isOscillator() {
+        switch (this._type) {
+            case 'sine': case 'sawtooth': 
+            case 'triangle': case 'square':
+                return true;
+        default:
+            return false;
+        }
+    }
+
+    /**
+     * @return {Boolean} true if the Audio Node is a type of filter
+     */
+    isBiquad() {
+        switch (this._type) {
+            case 'lowpass': case 'highpass': case 'bandpass': case 'lowshelf':
+            case 'highshelf': case 'peaking': case 'notch': case 'allpass':
+                return true;
+        default:
+            return false;
+        }
+    }
     
-    if (!(parametersList instanceof List)) {
-        throw Error("parameters must be a list");
+    /**
+     * @param {List} parameters
+     * @param {Array} options - valid parameter key values
+     */
+    _setParameters(parameters, options) {
+        parameters = this._validateParameters(parameters, options);
+        parameters.contents.forEach(element => {
+            const key = element.at(1);
+            const value = element.at(2);
+            this._parameters[key] = value;
+        });
     }
 
-    parametersList.contents.forEach(element => {
-        if (!(element instanceof List)) {
-            throw Error("invalid param list");
+    /**
+     * @param {List} parameters
+     * @param {Array} options - valid parameter key values
+     * @return a validated parameter list
+     * @throws {Error} if the parameters are invalid
+     */
+    _validateParameters(parameters = new List(), options) {
+        if (!(parameters instanceof List)) {
+            throw Error("parameters must be of type List"); 
         }
-        if (element.length() !== 2) {
-            throw Error("invalid param list");
-        }
-        const option = element.at(1);
-        if (parameterOptions.indexOf(option) === -1) {
-            throw Error(`invalid param option: ${option}`);
-        }
-    });
 
-    return parametersList;
-};
+        parameters.contents.forEach(element => {
+            if (!(element instanceof List)) {
+                throw Error("each parameter entry must be of type List");
+            }
+            if (element.length() !== 2) {
+                throw Error("parameter must contain two elements");
+            }
 
-AudioNode.prototype.parseParameters = function (parametersList, parameterOptions) {
-    var _parameters, 
-        key, value;
-    _parameters = {};
-    parametersList = AudioNode.prototype.validateParameters(parametersList, parameterOptions);
-    parametersList.contents.forEach(element => {
-        key = element.at(1);
-        value = element.at(2);
-        _parameters[key] = value
-    });
-    return _parameters;
-};
+            const option = element.at(1);
+            if (options.indexOf(option) === -1) {
+                throw Error(`invalid param option: ${option}`);
+            }  
+        });
 
-AudioNode.prototype.getType = function () {
-    if (this.isOscillator()) {
-        return 'oscillator';
+        return parameters;
     }
-    if (this.isBiquad()) {
-        return 'biquad';
+} 
+
+class Oscillator extends AudioNode {
+    /**
+     * @param {String} type - the type of oscillator
+     * @param {List} parameters
+     */
+    constructor(type, parameters) {
+        super(type, parameters, OSCILLATOR_OPTIONS);
+        this._parameters['type'] = this._type;
     }
-    return this.type;
-};
-
-AudioNode.prototype.getId = function () {
-    return this.id;
-};
-
-AudioNode.prototype.isOscillator = function () {
-    switch (this.type) {
-    case 'sine': case 'sawtooth': case 'triangle': case 'square':
-        return true;
-    default:
-        return false;
-    }
-};
-
-AudioNode.prototype.isBiquad = function () {
-    switch (this.type) {
-    case 'lowpass': case 'highpass': case 'bandpass': case 'lowshelf':
-    case 'highshelf': case 'peaking': case 'notch': case 'allpass':
-        return true;
-    default:
-        return false;
-    }
-};
-
-// Oscillator ////////////////////////////////////////////////////////
-
-Oscillator.prototype = new AudioNode();
-Oscillator.prototype.constructor = Oscillator;
-Oscillator.uber = AudioNode.prototype;
-
-function Oscillator(type, parametersList) {
-    this.init(type, parametersList);
 }
 
-Oscillator.prototype.options = ['frequency', 'value'];
-
-Oscillator.prototype.init = function (type, parametersList) {
-    Oscillator.uber.init.call(this, type, parametersList, Oscillator.prototype.options);
-    this.parameters['type'] = this.type;
-};
-
-// Gain //////////////////////////////////////////////////////////////
-
-Gain.prototype = new AudioNode();
-Gain.prototype.constructor = Gain;
-Gain.uber = AudioNode.prototype;
-
-function Gain(value) {
-    this.init('gain', new List([new List(['gain', value])]));
+class Gain extends AudioNode {
+    /**
+     * @param {Number} gain
+     */
+    constructor(value) {
+        super(
+            'gain', 
+            new List([new List(['gain', value])]),
+            GAIN_OPTIONS
+        );
+    }
 }
 
-Gain.prototype.options = ['gain'];
-
-Gain.prototype.init = function (type, parametersList) {
-    Gain.uber.init.call(this, type, parametersList, Gain.prototype.options);
-};
-
-// Filter ////////////////////////////////////////////////////////////
-
-Filter.prototype = new AudioNode();
-Filter.prototype.constructor = Filter;
-Filter.uber = AudioNode.prototype;
-
-function Filter(type, parametersList) {
-    this.init(type, parametersList);
+class Filter extends AudioNode {
+    /**
+     * @param {String} type - the type of filter
+     * @param {List} parameters
+     */
+    constructor(type, parameters) {
+        super(type, parameters, FILTER_OPTIONS);
+        this._parameters['type'] = this._type;
+    }
 }
 
-Filter.prototype.options = ['frequency', 'Q', 'gain'];
-
-Filter.prototype.init = function (type, parametersList) {
-    Filter.uber.init.call(this, type, parametersList, Filter.prototype.options);
-    this.parameters['type'] = this.type;
-};
-
-// Effect ////////////////////////////////////////////////////////////
-
-AudioEffect.prototype = new AudioNode();
-AudioEffect.prototype.constructor = AudioEffect;
-AudioEffect.uber = AudioNode.prototype;
-
-function AudioEffect(type, parametersList) {
-    this.init(type, parametersList);
+class AudioEffect extends AudioNode {
+    /**
+     * @param {String} type - the type of effect
+     * @param {List} parameters
+     */
+    constructor(type, parameters) {
+        super(type, parameters, EFFECT_OPTIONS[type]); 
+    }
 }
 
-AudioEffect.prototype.options = null;
+//TODO add instrument node
 
-AudioEffect.prototype.init = function (type, parametersList) {
-    switch (type) {
-    case 'delay':
-        AudioEffect.prototype.options = ['delayTime'];
-        break;
+class Instrument {
+    /**
+     * @param {Graph} graph
+     */
+    constructor(graph) {
+        this._source = this._validateSource(graph);
+        this._graph = graph;
     }
-    AudioEffect.uber.init.call(this, type, parametersList, AudioEffect.prototype.options);
-};
 
-// Instrument ////////////////////////////////////////////////////////
-
-function Instrument(graph) {
-    this.init(graph);
-}
-
-Instrument.prototype.init = function (graph) {
-    this.source = this.validateSource(graph);
-    this.graph = graph;
-};
-
-Instrument.prototype.validateSource = function (graph) {
-    if (!(graph instanceof Graph)) {
-        throw Error('error: instrument must be created from audio graph');
+    get info() {
+        const info = {};
+        this._graph.getVertices().contents.forEach(vertex => {
+            if (!info[vertex.id]) {
+                info[vertex.id] = {
+                    'type': vertex.type,
+                    'parameters': vertex.parameters,
+                    'id': vertex.id,
+                    'connections': []
+                };
+            }
+        });
+        return info;
     }
-    if (graph.type !== 'directed flow') {
-        throw new Error('instrument must only have one source');
+
+    get parameters() {
+        const info = this.info;
+        this._graph.getEdges().contents.forEach(e => {
+            const src = e.at(1).id;
+            const dst = e.at(2).id;
+            info[src].connections.push(info[dst]);
+        });
+
+        const audioNodes = Object.keys(info).map(id => info[id]);
+        const source = {
+            'type': this._source.type,
+            'parameters': this._source.parameters,
+            'id': this._source.id,
+            'connections': []
+        };  
+
+        return { 'source': source, 'audioNodes': audioNodes };
     }
-    if (!(graph.contents.at(1) instanceof Oscillator)) {
-        throw new Error('invalid audio source');
-    }
-    graph.contents.contents.forEach(node => {
-        if (!(node instanceof AudioNode || node instanceof Graph)) {
-            throw new Error('audio graph must only be made up of audio nodes');
+    
+    /**
+     * Ensures the provided graph is a valid audio-routing-graph
+     *
+     * @param {Graph} graph
+     * @return {AudioNode} the source of the audio-routing-graph 
+     */
+    _validateSource(graph) {
+        if (!(graph instanceof Graph)) {
+            throw Error('error: instrument must be created from audio graph');
         }
-    });
-    // TODO add other valid audio sources
-    // TODO add a gain node check
-    // TODO there must only be one destination
-    return graph.contents.at(1);
-};
-
-Instrument.prototype.getNodeInformation = function () {
-    var nodes, info;
-    nodes = this.graph.getVertices();
-    info = {};
-
-    nodes.contents.forEach(node => {
-        if (!info[node.id]) {
-            info[node.id] = {
-                'type': node.getType(),
-                'parameters': node.parameters,
-                'id': node.id,
-                'connections': []
-            };
+        if (graph.type !== 'directed flow') {
+            throw new Error('instrument must only have one source');
         }
-    });
+        if (!(graph.contents.at(1) instanceof Oscillator)) {
+            throw new Error('invalid audio source');
+        }
+        graph.contents.contents.forEach(node => {
+            if (!(node instanceof AudioNode || node instanceof Graph)) {
+                throw new Error('audio graph must only be made up of audio nodes');
+            }
+        });
+        // TODO add other valid audio sources
+        // TODO add a gain node check
+        // TODO there must only be one destination
+        return graph.contents.at(1);
+    }
+}
 
-    return info;
-};
-
-Instrument.prototype.getParameters = function () {
-    var nodesInfo, edges, 
-        src, dst,
-        source, audioNodes;
-
-    nodesInfo = this.getNodeInformation();
-
-    edges = this.graph.getEdges();
-    edges.contents.forEach(e => {
-        src = e.at(1).id;
-        dst = e.at(2).id;
-        nodesInfo[src].connections.push(nodesInfo[dst]);
-    });
-
-    audioNodes = Object.keys(nodesInfo).map(id => nodesInfo[id]);
-    source = {
-        'type': this.source.getType(),
-        'parameters': this.source.parameters,
-        'id': this.source.id,
-        'connections': []
-    };  
-
-    return { 'source': source, 'audioNodes': audioNodes };
-};
