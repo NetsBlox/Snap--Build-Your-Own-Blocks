@@ -228,15 +228,13 @@ class Instrument {
             if (!(node instanceof AudioNode || node instanceof Graph || node instanceof Instrument)) {
                 throw new Error('audio graph must only be made up of audio nodes');
             }
-            if (node instanceof Instrument && index != 1) {
-                throw new Error('Instruments can only be sources');
+            if ((node instanceof Instrument || node instanceof Oscillator) && index != 1) {
+                throw new Error('Instruments and Oscillators can only be sources');
             }
             ++index;
         });
         
-        // TODO osc can only be a source
         // TODO add a gain node check
-        // TODO there must only be one destination
         return source instanceof Instrument ? source.source : source;
     }
     
