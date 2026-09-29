@@ -151,15 +151,23 @@ class AudioEffect extends AudioNode {
     }
 }
 
-//TODO add instrument node
-
 class Instrument {
     /**
      * @param {Graph} graph
      */
     constructor(graph) {
         this._source = this._validateSource(graph);
-        this._graph = graph;
+        this._graph = this._reformatGraph(graph);
+    }
+
+    get source() {
+        return this._source;
+    }
+
+    get graph() {
+        const contents = this._graph.contents.asArray();
+        const type = this._graph.type;
+        return new Graph(new List(contents), type);
     }
 
     get info() {
@@ -191,11 +199,11 @@ class Instrument {
             'parameters': this._source.parameters,
             'id': this._source.id,
             'connections': []
-        };  
+        };
 
         return { 'source': source, 'audioNodes': audioNodes };
     }
-    
+ 
     /**
      * Ensures the provided graph is a valid audio-routing-graph
      *
@@ -209,18 +217,45 @@ class Instrument {
         if (graph.type !== 'directed flow') {
             throw new Error('instrument must only have one source');
         }
-        if (!(graph.contents.at(1) instanceof Oscillator)) {
+
+        const source = graph.contents.at(1);
+        if (!(source instanceof Oscillator || source instanceof Instrument)) {
             throw new Error('invalid audio source');
         }
+
+        let index = 1;
         graph.contents.contents.forEach(node => {
-            if (!(node instanceof AudioNode || node instanceof Graph)) {
+            if (!(node instanceof AudioNode || node instanceof Graph || node instanceof Instrument)) {
                 throw new Error('audio graph must only be made up of audio nodes');
             }
+            if (node instanceof Instrument && index != 1) {
+                throw new Error('Instruments can only be sources');
+            }
+            ++index;
         });
-        // TODO add other valid audio sources
+        
+        // TODO osc can only be a source
         // TODO add a gain node check
         // TODO there must only be one destination
-        return graph.contents.at(1);
+        return source instanceof Instrument ? source.source : source;
+    }
+    
+    /**
+     * Takes a NetsBlox graph as input and replaces each Instrument object with its equivalent graph.
+     *
+     * @param {Graph} graph
+     * @return {Graph}
+     */ 
+    _reformatGraph(graph) {
+        const contents = graph.contents;
+        let node = undefined;
+        for (let i = 1; i < contents.length(); ++i) {
+            node = contents.at(i);
+            if (node instanceof Instrument) {
+                contents.put(node.graph, i);
+            }
+        }
+        return new Graph(contents, graph.type);
     }
 }
 
