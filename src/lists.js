@@ -1213,7 +1213,8 @@ ListWatcherMorph.prototype.update = function (anyway) {
         starttime, maxtime = 1000;
     this.frame.contents.children.forEach(m => {
         if (m instanceof CellMorph) {
-            if (m.contentsMorph instanceof ListWatcherMorph) {
+            if (m.contentsMorph instanceof ListWatcherMorph ||
+                    m.contentsMorph instanceof GraphWatcherMorph) {
                 m.contentsMorph.update();
             } else if (isSnapObject(m.contents) ||
                     (m.contents instanceof Costume)) {

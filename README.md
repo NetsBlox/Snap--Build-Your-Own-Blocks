@@ -33,8 +33,10 @@ cd -
 
 Then return to the project root and start the file server with
 ```
-node utils/serve.js
+node utils/serve.ts
 ```
+
+This requires Node.js 22.18+ (or 23.6+), which can run TypeScript files directly. The server listens on port 8000 by default; set `NB_PORT` to use a different port.
 
 ## New Releases
 

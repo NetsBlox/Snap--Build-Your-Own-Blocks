@@ -2373,7 +2373,11 @@ SyntaxElementMorph.prototype.showBubble = function (value, exportPic, target) {
     } else if (value instanceof Sound) {
         morphToShow = new SymbolMorph('notes', 30);
     } else if (value instanceof Graph) {
-        morphToShow = new SymbolMorph('graph', 30);
+        morphToShow = new GraphWatcherMorph(value);
+        morphToShow.step = morphToShow.update;
+        morphToShow.isDraggable = false;
+        morphToShow.expand(this.parentThatIsA(ScrollFrameMorph).extent());
+        isClickable = true;
     } else if (value instanceof Instrument) {
         morphToShow = new SymbolMorph('piano', 30);
     } else if (value instanceof Oscillator) {
