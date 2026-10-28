@@ -10266,7 +10266,14 @@ SpriteBubbleMorph.prototype.dataAsMorph = function (data) {
         }
         contents.isDraggable = false;
     } else if (data instanceof Graph) {
-        contents = new SymbolMorph('graph', 30);
+        contents = new GraphWatcherMorph(data);
+        contents.step = contents.update;
+        if (this.stage) {
+            contents.expand(this.stage.extent().translateBy(
+                -2 * (this.edge + this.border + this.padding)
+            ));
+        }
+        contents.isDraggable = false;
     } else if (data instanceof Context) {
         img = data.image();
         contents = new Morph();
@@ -10347,6 +10354,7 @@ SpriteBubbleMorph.prototype.fixLayout = function () {
 
     // rebuild my contents
     if (!(this.contentsMorph instanceof ListWatcherMorph ||
+            this.contentsMorph instanceof GraphWatcherMorph ||
             this.contentsMorph instanceof TableFrameMorph)) {
         this.contentsMorph.destroy();
         this.contentsMorph = this.dataAsMorph(this.data);
@@ -11968,6 +11976,8 @@ CellMorph.prototype.fixLayout = function (justMe) {
             && (this.contentsMorph.list === this.contents),
         isSameTable = this.contentsMorph instanceof TableFrameMorph
             && (this.contentsMorph.tableMorph.table === this.contents),
+        isSameGraph = this.contentsMorph instanceof GraphWatcherMorph
+            && (this.contentsMorph.graph === this.contents),
         listwatcher;
 
     if (justMe) {return; }
@@ -11981,12 +11991,13 @@ CellMorph.prototype.fixLayout = function (justMe) {
     this.bounds.setWidth(Math.max(
         this.contentsMorph.width() + this.edge * 2,
         (this.contents instanceof Context ||
-            this.contents instanceof List ? 0 :
+            this.contents instanceof List ||
+            this.contents instanceof Graph ? 0 :
                     SyntaxElementMorph.prototype.fontSize * 3.5)
     ));
 
    // position my contents
-    if (!isSameList && !isSameTable) {
+    if (!isSameList && !isSameTable && !isSameGraph) {
         this.contentsMorph.setCenter(this.center());
     }
 
@@ -12011,18 +12022,20 @@ CellMorph.prototype.createContents = function () {
         isSameList = this.contentsMorph instanceof ListWatcherMorph
             && (this.contentsMorph.list === this.contents),
         isSameTable = this.contentsMorph instanceof TableFrameMorph
-            && (this.contentsMorph.tableMorph.table === this.contents);
+            && (this.contentsMorph.tableMorph.table === this.contents),
+        isSameGraph = this.contentsMorph instanceof GraphWatcherMorph
+            && (this.contentsMorph.graph === this.contents);
 
     if (this.isBig) {
         fontSize = fontSize * 1.5;
     }
 
-    if (this.contentsMorph && !isSameList && !isSameTable) {
+    if (this.contentsMorph && !isSameList && !isSameTable && !isSameGraph) {
         this.contentsMorph.destroy();
         this.version = null;
     }
 
-    if (!isSameList && !isSameTable) {
+    if (!isSameList && !isSameTable && !isSameGraph) {
         if (this.contents instanceof Morph) {
             if (isSnapObject(this.contents)) {
                 img = this.contents.thumbnail(new Point(40, 40));
@@ -12121,7 +12134,9 @@ CellMorph.prototype.createContents = function () {
             }
             this.contentsMorph.isDraggable = false;
         } else if (this.contents instanceof Graph) {
-            this.contentsMorph = new SymbolMorph('graph', 30);
+            this.contentsMorph = new GraphWatcherMorph(this.contents, this);
+            this.contentsMorph.expand(new Point(200, 150));
+            this.contentsMorph.isDraggable = false;
         } else {
             this.contentsMorph = new TextMorph(
                 !isNil(this.contents) ? this.contents.toString() : '',
@@ -12227,7 +12242,8 @@ CellMorph.prototype.layoutChanged = function () {
     this.bounds.setWidth(Math.max(
         this.contentsMorph.width() + this.edge * 2,
         (this.contents instanceof Context ||
-            this.contents instanceof List ? 0 : this.height() * 2)
+            this.contents instanceof List ||
+            this.contents instanceof Graph ? 0 : this.height() * 2)
     ));
 
     // position my contents
@@ -12465,7 +12481,8 @@ WatcherMorph.prototype.update = function () {
             this.currentValue = newValue;
         }
     }
-    if (this.cellMorph.contentsMorph instanceof ListWatcherMorph) {
+    if (this.cellMorph.contentsMorph instanceof ListWatcherMorph ||
+            this.cellMorph.contentsMorph instanceof GraphWatcherMorph) {
         this.cellMorph.contentsMorph.update();
     } else if (isSnapObject(this.cellMorph.contents)) {
         this.cellMorph.update();
