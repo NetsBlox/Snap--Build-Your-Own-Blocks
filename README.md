@@ -45,7 +45,7 @@ You will also need to install `google-closure-compiler` globally.
 npm i -g google-closure-compiler
 ```
 
-Afterwards, you will need to update the NetsBlox version numbers in `index.dot` and `src/store-ext.js` to the soon-to-be-released version.
+Afterwards, you will need to update the NetsBlox version numbers in `index.mustache` and `src/store-ext.js` to the soon-to-be-released version.
 
 Next, to create the release files, run the following command.
 Despite the name, `minify.js` will automatically build required files before minifying them.
