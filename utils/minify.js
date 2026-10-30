@@ -1,11 +1,9 @@
-/* eslint-disable no-console */
-"use strict";
+import childProcess from "node:child_process";
+import fsp from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import util from "node:util";
 
-import fsp from "fs/promises";
-import path from "path";
-import util from "util";
-import childProcess from "child_process";
-import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nop = () => {};

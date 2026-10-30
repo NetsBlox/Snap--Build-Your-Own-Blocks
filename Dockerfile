@@ -6,4 +6,4 @@ RUN npm ci && npm run build
 WORKDIR /usr/src/browser/utils
 RUN npm ci
 WORKDIR /usr/src/browser/
-CMD ["node", "utils/serve.js"]
+CMD ["node", "utils/serve.ts"]

@@ -63,7 +63,7 @@ TableFrameMorph, ColorSlotMorph, isSnapObject, newCanvas, Symbol, SVG_Costume*/
 
 /*jshint esversion: 6*/
 
-modules.threads = '2021-November-27';
+modules.threads = '2023-November-29';
 
 var ThreadManager;
 var Process;
@@ -1804,7 +1804,7 @@ Process.prototype.doInsertInList = function (element, index, list) {
     if (index === '') {
         return null;
     }
-    if (this.inputOption(index) === 'any') {
+    if (this.inputOption(index) === localize('any') || this.inputOption(index) === 'any') {
         idx = this.reportBasicRandom(1, list.length() + 1);
     }
     if (this.inputOption(index) === 'last') {
@@ -1823,7 +1823,7 @@ Process.prototype.doReplaceInList = function (index, list, element) {
     if (index === '') {
         return null;
     }
-    if (this.inputOption(index) === 'any') {
+    if (this.inputOption(index) === localize('any') || this.inputOption(index) === 'any') {
         idx = this.reportBasicRandom(1, list.length());
     }
     if (this.inputOption(index) === 'last') {
@@ -1856,7 +1856,7 @@ Process.prototype.reportListItem = function (index, list) {
     if (index === '') {
         return '';
     }
-    if (this.inputOption(index) === 'any') {
+    if (this.inputOption(index) === localize('any') || this.inputOption(index) === 'any') {
         return list.at(this.reportBasicRandom(1, list.length()));
     }
     if (this.inputOption(index) === 'last') {
@@ -3474,6 +3474,8 @@ Process.prototype.doAsk = function (data) {
         if (!activePrompter) {
             if (!isStage && !isHiddenSprite) {
                 rcvr.bubble(data, false, true);
+            } else if (isStage) {
+                rcvr.stopTalking();
             }
             this.prompter = new StagePrompterMorph(
                 isStage || isHiddenSprite ? data : null
@@ -3489,6 +3491,7 @@ Process.prototype.doAsk = function (data) {
             stage.add(this.prompter);
             this.prompter.inputField.edit();
             stage.changed();
+            
         }
     } else {
         if (this.prompter.isDone) {
@@ -4187,7 +4190,7 @@ Process.prototype.reportBasicLetter = function (idx, string) {
     var str, i;
 
     str = isNil(string) ? '' : string.toString();
-    if (this.inputOption(idx) === 'any') {
+    if (this.inputOption(index) === localize('any') || this.inputOption(index) === 'any') {
         idx = this.reportBasicRandom(1, str.length);
     }
     if (this.inputOption(idx) === 'last') {
